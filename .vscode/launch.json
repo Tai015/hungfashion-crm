@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Store Admin Launcher",
+      "preLaunchTask": "npm: install (store-admin)",
+      "runtimeExecutable": "${workspaceFolder}/store-admin/node_modules/electron/dist/electron.exe",
+      "args": ["desktop/main.js"],
+      "cwd": "${workspaceFolder}/store-admin",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}

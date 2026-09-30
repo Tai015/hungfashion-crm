@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PostgreSQL | Store Admin</title>
+    <link rel="stylesheet" href="/database.css" />
+  </head>
+  <body>
+    <div class="database-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Trở về Store Admin">
+          <span class="brand-mark">S</span>
+          <span>Store Admin <small>DATABASE</small></span>
+        </a>
+        <a class="back-link" href="/">← Về dashboard</a>
+      </header>
+
+      <main class="workspace">
+        <aside class="table-sidebar" aria-label="Danh sách bảng">
+          <div class="sidebar-head">
+            <div>
+              <span class="eyebrow">POSTGRESQL / PUBLIC</span>
+              <h1>Bảng dữ liệu</h1>
+            </div>
+            <button id="refresh-tables" class="icon-button" type="button" title="Tải lại danh sách bảng" aria-label="Tải lại danh sách bảng">↻</button>
+          </div>
+          <p id="table-count" class="table-count">Đang tải bảng...</p>
+          <nav id="table-list" class="table-list"></nav>
+        </aside>
+
+        <section class="data-panel" aria-live="polite">
+          <div class="data-toolbar">
+            <div>
+              <span class="eyebrow">TABLE VIEW</span>
+              <h2 id="selected-table">Chọn một bảng</h2>
+            </div>
+            <div class="row-count" id="row-count"></div>
+          </div>
+
+          <div id="notice" class="notice" role="status" hidden></div>
+          <div class="grid-wrap">
+            <table>
+              <thead id="table-head"></thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+
+          <footer class="pagination">
+            <span id="page-label">Chưa có dữ liệu</span>
+            <div class="page-actions">
+              <button id="previous-page" class="page-button" type="button" disabled>← Trước</button>
+              <button id="next-page" class="page-button" type="button" disabled>Tiếp →</button>
+            </div>
+          </footer>
+        </section>
+      </main>
+    </div>
+    <script src="/database.js"></script>
+  </body>
+</html>

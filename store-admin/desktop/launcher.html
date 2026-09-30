@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Store Admin Launcher</title>
+    <link rel="stylesheet" href="launcher.css" />
+    <link rel="stylesheet" href="../node_modules/sweetalert2/dist/sweetalert2.min.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <div class="mark" aria-hidden="true">S</div>
+        <div class="masthead-copy">
+          <span class="kicker">STORE OPERATIONS</span>
+          <h1>Store Admin</h1>
+        </div>
+        <span class="launcher-tag">LAUNCHER</span>
+      </header>
+
+      <section class="local-section" aria-labelledby="local-heading">
+        <div class="section-index">01 / LOCAL</div>
+        <h2 id="local-heading">Chạy trên máy này</h2>
+        <p>Khởi động PostgreSQL, Kafka và website admin. Trang admin sẽ mở trong trình duyệt mặc định.</p>
+        <div class="actions">
+          <button class="button button-primary" id="open-local" type="button">
+            <span aria-hidden="true">↗</span>
+            Mở bản local
+          </button>
+          <button class="button button-secondary" id="stop-local" type="button" title="Dừng frontend và API do launcher khởi động">
+            Dừng web
+          </button>
+          <button class="button button-secondary" id="open-database" type="button" title="Xem các bảng và bản ghi PostgreSQL">
+            Xem database
+          </button>
+          <button class="button button-secondary" id="open-kafka-ui" type="button" title="Xem topic và message Kafka">
+            Xem Kafka
+          </button>
+        </div>
+        <div class="requirements">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>Cần Docker Desktop đang chạy</span>
+        </div>
+      </section>
+
+      <section class="remote-section" aria-labelledby="remote-heading">
+        <div class="section-index">02 / DEPLOYED</div>
+        <h2 id="remote-heading">Mở bản đã deploy</h2>
+        <p>Nhập địa chỉ website admin đang chạy trên hosting.</p>
+        <form id="remote-form">
+          <label for="remote-url">Địa chỉ website</label>
+          <div class="url-row">
+            <input id="remote-url" name="url" type="url" placeholder="https://admin.example.com" autocomplete="url" />
+            <button class="button button-outline" type="submit">Mở <span aria-hidden="true">→</span></button>
+          </div>
+        </form>
+      </section>
+
+      <footer class="activity" aria-live="polite">
+        <div class="activity-heading"><span>ACTIVITY</span><span class="activity-led"></span></div>
+        <pre id="activity-log">Sẵn sàng. Chọn nơi mở Store Admin.</pre>
+      </footer>
+    </main>
+    <script src="../node_modules/sweetalert2/dist/sweetalert2.all.min.js"></script>
+    <script src="launcher.js"></script>
+  </body>
+</html>
