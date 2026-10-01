@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
+import { pool } from '../server/src/db.js';
 
-const apiUrl = (process.env.API_URL || 'http://localhost:5000').replace(/\/$/, '');
+const apiPort = Number(process.env.PORT || 5000);
+const apiUrl = (process.env.API_URL || `http://localhost:${apiPort}`).replace(/\/$/, '');
 const targetRate = Number(process.argv[2] || process.env.KAFKA_BENCHMARK_RATE || 10);
 const durationSeconds = Number(process.argv[3] || process.env.KAFKA_BENCHMARK_DURATION_SECONDS || 30);
 
@@ -115,6 +117,28 @@ await Promise.all(pendingRequests);
 clearInterval(progressTimer);
 logProgress();
 
+const dbConfirmTimeoutMs = Number(process.env.KAFKA_DB_CONFIRM_TIMEOUT_MS || 60000);
+const dbConfirmStartedAt = Date.now();
+let databasePersisted = 0;
+try {
+  do {
+    const { rows: [result] } = await pool.query(
+      `SELECT COUNT(*)::int AS count
+       FROM transactions
+       WHERE benchmark_run_id = $1`,
+      [runId]
+    );
+    databasePersisted = result.count;
+    if (databasePersisted >= accepted || Date.now() - dbConfirmStartedAt >= dbConfirmTimeoutMs) break;
+    await new Promise(resolve => setTimeout(resolve, 500));
+  } while (true);
+} catch (error) {
+  console.error(JSON.stringify({ type: 'kafka_benchmark_db_check_failed', runId, message: error.message }));
+  process.exitCode = 1;
+} finally {
+  await pool.end();
+}
+
 latencies.sort((left, right) => left - right);
 const elapsedSeconds = (Date.now() - startedAt) / 1000;
 const percentile95 = latencies.length
@@ -127,6 +151,7 @@ console.log(JSON.stringify({
   targetEvents: totalTarget,
   requestsStarted,
   accepted,
+  databasePersisted,
   failed,
   elapsedSeconds: Number(elapsedSeconds.toFixed(2)),
   acceptedPerSecond: Number((accepted / elapsedSeconds).toFixed(2)),
@@ -136,4 +161,9 @@ console.log(JSON.stringify({
   p95LatencyMs: Number(percentile95.toFixed(2)),
 }));
 
-if (failed > 0 || accepted !== totalTarget) process.exitCode = 1;
+if (failed > 0 || accepted !== totalTarget || databasePersisted !== accepted) {
+  if (databasePersisted !== accepted) {
+    console.error(`Database persisted ${databasePersisted}/${accepted} accepted events for run ${runId}.`);
+  }
+  process.exitCode = 1;
+}
