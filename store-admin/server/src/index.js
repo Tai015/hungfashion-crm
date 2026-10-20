@@ -14,7 +14,10 @@ import { pool } from './db.js';
 import { runMigrations } from './migrations.js';
 import { kafkaMetrics } from './kafka-metrics.js';
 import { startOutboxRelay } from './outbox-relay.js';
+import { allowRoles, requireAuth } from './auth.js';
+import authRouter       from './routes/auth.js';
 import accountRouter   from './routes/account.js';
+import employeeRouter  from './routes/employee.js';
 import customerRouter  from './routes/customer.js';
 import productRouter   from './routes/product.js';
 import inventoryRouter from './routes/inventory.js';
@@ -23,6 +26,7 @@ import promotionRouter from './routes/promotion.js';
 import feedbackRouter  from './routes/feedback.js';
 import surveyRouter    from './routes/survey.js';
 import reportRouter    from './routes/report.js';
+import settingsRouter  from './routes/settings.js';
 
 const app  = express();
 const PORT = Number(process.env.PORT || 5000);
@@ -44,19 +48,46 @@ app.get('/api/health', (_req, res) => {
 });
 
 // ── Hung Fashion API Routes ───────────────────────────────
-app.use('/api/accounts',   accountRouter);
-app.use('/api/customers',  customerRouter);
-app.use('/api/products',   productRouter);
-app.use('/api/inventory',  inventoryRouter);
-app.use('/api/orders',     orderRouter);
-app.use('/api/promotions', promotionRouter);
-app.use('/api/feedbacks',  feedbackRouter);
-app.use('/api/surveys',    surveyRouter);
-app.use('/api/reports',    reportRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/accounts', requireAuth, allowRoles('ADMIN'), accountRouter);
+app.use('/api/employees', requireAuth, allowRoles('ADMIN', 'QL_NHAN_SU'), employeeRouter);
+app.use('/api/customers', requireAuth, allowRoles('ADMIN', 'QL_KHACH_HANG'), customerRouter);
+app.use('/api/products', (req, res, next) => {
+  if (req.method === 'GET') return next();
+  return requireAuth(req, res, () => allowRoles('ADMIN', 'QL_KHO')(req, res, next));
+}, productRouter);
+app.use('/api/inventory', requireAuth, allowRoles('ADMIN', 'QL_KHO'), inventoryRouter);
+app.use('/api/orders', requireAuth, allowRoles('ADMIN', 'QL_BAN_HANG'), orderRouter);
+app.use('/api/promotions', requireAuth, allowRoles('ADMIN', 'QL_BAN_HANG', 'QL_KHACH_HANG'), promotionRouter);
+app.use('/api/feedbacks', requireAuth, (req, res, next) => {
+  const roles = req.method === 'POST'
+    ? ['KHACH_HANG']
+    : ['ADMIN', 'QL_KHACH_HANG'];
+  return allowRoles(...roles)(req, res, next);
+}, feedbackRouter);
+app.use('/api/surveys', requireAuth, (req, res, next) => {
+  if (req.user.role_name === 'KHACH_HANG'
+    && ((req.method === 'GET' && req.path === '/mine')
+      || (req.method === 'GET' && /^\/\d+$/.test(req.path))
+      || (req.method === 'POST' && /^\/\d+\/respond$/.test(req.path)))) {
+    return next();
+  }
+  return allowRoles('ADMIN', 'QL_KHACH_HANG')(req, res, next);
+}, surveyRouter);
+app.use('/api/reports', requireAuth, allowRoles('ADMIN', 'QL_KHACH_HANG', 'QL_NHAN_SU', 'QL_KHO', 'QL_BAN_HANG'), reportRouter);
+app.use('/api/settings', requireAuth, allowRoles('ADMIN'), settingsRouter);
 
-// ── Database Browser (tuỳ chọn, bật qua .env) ────────────
-function requireDatabaseBrowser(_req, res, next) {
-  if (!databaseBrowserEnabled) { res.sendStatus(404); return; }
+// ── Database Browser (chỉ cho phép truy cập từ máy local) ─
+function requireDatabaseBrowser(req, res, next) {
+  if (!databaseBrowserEnabled) return res.sendStatus(404);
+
+  const address = req.socket.remoteAddress?.toLowerCase() || '';
+  const isLoopback = address === '::1'
+    || address === '127.0.0.1'
+    || address.startsWith('127.')
+    || address.startsWith('::ffff:127.');
+  if (!isLoopback) return res.sendStatus(403);
+
   next();
 }
 

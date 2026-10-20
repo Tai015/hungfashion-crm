@@ -158,9 +158,10 @@ router.get('/customer-segments', async (_req, res) => {
 router.get('/interests', async (_req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT interest, COUNT(*)::int AS count
-      FROM customer_interest
-      GROUP BY interest
+      SELECT i.interest_name AS interest, COUNT(*)::int AS count
+      FROM customer_interest ci
+      JOIN interest i ON i.interest_id = ci.interest_id
+      GROUP BY i.interest_name
       ORDER BY count DESC
     `);
     res.json(rows);

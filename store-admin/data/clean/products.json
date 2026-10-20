@@ -1,0 +1,2526 @@
+{
+  "source": "https://fashion-studio.dicoding.dev",
+  "cleanedAt": "2026-10-20T08:58:46.487646+00:00",
+  "products": [
+    {
+      "sourceId": 2,
+      "productName": "T-shirt 2",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1405000,
+      "sellingPrice": 2554000,
+      "imageUrl": "https://picsum.photos/280/350?random=2",
+      "images": [
+        "https://picsum.photos/280/350?random=2"
+      ],
+      "skuPrefix": "FS-2"
+    },
+    {
+      "sourceId": 3,
+      "productName": "Hoodie 3",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6832000,
+      "sellingPrice": 12422000,
+      "imageUrl": "https://picsum.photos/280/350?random=3",
+      "images": [
+        "https://picsum.photos/280/350?random=3"
+      ],
+      "skuPrefix": "FS-3"
+    },
+    {
+      "sourceId": 4,
+      "productName": "Pants 4",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 6426000,
+      "sellingPrice": 11683000,
+      "imageUrl": "https://picsum.photos/280/350?random=4",
+      "images": [
+        "https://picsum.photos/280/350?random=4"
+      ],
+      "skuPrefix": "FS-4"
+    },
+    {
+      "sourceId": 5,
+      "productName": "Outerwear 5",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4422000,
+      "sellingPrice": 8040000,
+      "imageUrl": "https://picsum.photos/280/350?random=5",
+      "images": [
+        "https://picsum.photos/280/350?random=5"
+      ],
+      "skuPrefix": "FS-5"
+    },
+    {
+      "sourceId": 6,
+      "productName": "Jacket 6",
+      "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 2109000,
+      "sellingPrice": 3834000,
+      "imageUrl": "https://picsum.photos/280/350?random=6",
+      "images": [
+        "https://picsum.photos/280/350?random=6"
+      ],
+      "skuPrefix": "FS-6"
+    },
+    {
+      "sourceId": 7,
+      "productName": "Crewneck 7",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5923000,
+      "sellingPrice": 10769000,
+      "imageUrl": "https://picsum.photos/280/350?random=7",
+      "images": [
+        "https://picsum.photos/280/350?random=7"
+      ],
+      "skuPrefix": "FS-7"
+    },
+    {
+      "sourceId": 8,
+      "productName": "T-shirt 8",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6706000,
+      "sellingPrice": 12192000,
+      "imageUrl": "https://picsum.photos/280/350?random=8",
+      "images": [
+        "https://picsum.photos/280/350?random=8"
+      ],
+      "skuPrefix": "FS-8"
+    },
+    {
+      "sourceId": 9,
+      "productName": "Hoodie 9",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 3413000,
+      "sellingPrice": 6206000,
+      "imageUrl": "https://picsum.photos/280/350?random=9",
+      "images": [
+        "https://picsum.photos/280/350?random=9"
+      ],
+      "skuPrefix": "FS-9"
+    },
+    {
+      "sourceId": 10,
+      "productName": "Pants 10",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 2664000,
+      "sellingPrice": 4844000,
+      "imageUrl": "https://picsum.photos/280/350?random=10",
+      "images": [
+        "https://picsum.photos/280/350?random=10"
+      ],
+      "skuPrefix": "FS-10"
+    },
+    {
+      "sourceId": 12,
+      "productName": "Jacket 12",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 7329000,
+      "sellingPrice": 13325000,
+      "imageUrl": "https://picsum.photos/280/350?random=12",
+      "images": [
+        "https://picsum.photos/280/350?random=12"
+      ],
+      "skuPrefix": "FS-12"
+    },
+    {
+      "sourceId": 13,
+      "productName": "Crewneck 13",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 4681000,
+      "sellingPrice": 8511000,
+      "imageUrl": "https://picsum.photos/280/350?random=13",
+      "images": [
+        "https://picsum.photos/280/350?random=13"
+      ],
+      "skuPrefix": "FS-13"
+    },
+    {
+      "sourceId": 14,
+      "productName": "T-shirt 14",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2792000,
+      "sellingPrice": 5076000,
+      "imageUrl": "https://picsum.photos/280/350?random=14",
+      "images": [
+        "https://picsum.photos/280/350?random=14"
+      ],
+      "skuPrefix": "FS-14"
+    },
+    {
+      "sourceId": 15,
+      "productName": "Hoodie 15",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1877000,
+      "sellingPrice": 3413000,
+      "imageUrl": "https://picsum.photos/280/350?random=15",
+      "images": [
+        "https://picsum.photos/280/350?random=15"
+      ],
+      "skuPrefix": "FS-15"
+    },
+    {
+      "sourceId": 17,
+      "productName": "Outerwear 17",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 723000,
+      "sellingPrice": 1315000,
+      "imageUrl": "https://picsum.photos/280/350?random=17",
+      "images": [
+        "https://picsum.photos/280/350?random=17"
+      ],
+      "skuPrefix": "FS-17"
+    },
+    {
+      "sourceId": 18,
+      "productName": "Jacket 18",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4727000,
+      "sellingPrice": 8594000,
+      "imageUrl": "https://picsum.photos/280/350?random=18",
+      "images": [
+        "https://picsum.photos/280/350?random=18"
+      ],
+      "skuPrefix": "FS-18"
+    },
+    {
+      "sourceId": 19,
+      "productName": "Crewneck 19",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1125000,
+      "sellingPrice": 2045000,
+      "imageUrl": "https://picsum.photos/280/350?random=19",
+      "images": [
+        "https://picsum.photos/280/350?random=19"
+      ],
+      "skuPrefix": "FS-19"
+    },
+    {
+      "sourceId": 20,
+      "productName": "T-shirt 20",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1139000,
+      "sellingPrice": 2071000,
+      "imageUrl": "https://picsum.photos/280/350?random=20",
+      "images": [
+        "https://picsum.photos/280/350?random=20"
+      ],
+      "skuPrefix": "FS-20"
+    },
+    {
+      "sourceId": 22,
+      "productName": "Pants 22",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 3713000,
+      "sellingPrice": 6750000,
+      "imageUrl": "https://picsum.photos/280/350?random=22",
+      "images": [
+        "https://picsum.photos/280/350?random=22"
+      ],
+      "skuPrefix": "FS-22"
+    },
+    {
+      "sourceId": 23,
+      "productName": "Outerwear 23",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4001000,
+      "sellingPrice": 7275000,
+      "imageUrl": "https://picsum.photos/280/350?random=23",
+      "images": [
+        "https://picsum.photos/280/350?random=23"
+      ],
+      "skuPrefix": "FS-23"
+    },
+    {
+      "sourceId": 24,
+      "productName": "Jacket 24",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 7067000,
+      "sellingPrice": 12849000,
+      "imageUrl": "https://picsum.photos/280/350?random=24",
+      "images": [
+        "https://picsum.photos/280/350?random=24"
+      ],
+      "skuPrefix": "FS-24"
+    },
+    {
+      "sourceId": 25,
+      "productName": "Crewneck 25",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 7152000,
+      "sellingPrice": 13004000,
+      "imageUrl": "https://picsum.photos/280/350?random=25",
+      "images": [
+        "https://picsum.photos/280/350?random=25"
+      ],
+      "skuPrefix": "FS-25"
+    },
+    {
+      "sourceId": 26,
+      "productName": "T-shirt 26",
+      "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6267000,
+      "sellingPrice": 11394000,
+      "imageUrl": "https://picsum.photos/280/350?random=26",
+      "images": [
+        "https://picsum.photos/280/350?random=26"
+      ],
+      "skuPrefix": "FS-26"
+    },
+    {
+      "sourceId": 27,
+      "productName": "Hoodie 27",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 3053000,
+      "sellingPrice": 5550000,
+      "imageUrl": "https://picsum.photos/280/350?random=27",
+      "images": [
+        "https://picsum.photos/280/350?random=27"
+      ],
+      "skuPrefix": "FS-27"
+    },
+    {
+      "sourceId": 28,
+      "productName": "Pants 28",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 4482000,
+      "sellingPrice": 8150000,
+      "imageUrl": "https://picsum.photos/280/350?random=28",
+      "images": [
+        "https://picsum.photos/280/350?random=28"
+      ],
+      "skuPrefix": "FS-28"
+    },
+    {
+      "sourceId": 29,
+      "productName": "Outerwear 29",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 740000,
+      "sellingPrice": 1346000,
+      "imageUrl": "https://picsum.photos/280/350?random=29",
+      "images": [
+        "https://picsum.photos/280/350?random=29"
+      ],
+      "skuPrefix": "FS-29"
+    },
+    {
+      "sourceId": 30,
+      "productName": "Jacket 30",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 7400000,
+      "sellingPrice": 13454000,
+      "imageUrl": "https://picsum.photos/280/350?random=30",
+      "images": [
+        "https://picsum.photos/280/350?random=30"
+      ],
+      "skuPrefix": "FS-30"
+    },
+    {
+      "sourceId": 32,
+      "productName": "T-shirt 32",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5722000,
+      "sellingPrice": 10403000,
+      "imageUrl": "https://picsum.photos/280/350?random=32",
+      "images": [
+        "https://picsum.photos/280/350?random=32"
+      ],
+      "skuPrefix": "FS-32"
+    },
+    {
+      "sourceId": 33,
+      "productName": "Hoodie 33",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6229000,
+      "sellingPrice": 11325000,
+      "imageUrl": "https://picsum.photos/280/350?random=33",
+      "images": [
+        "https://picsum.photos/280/350?random=33"
+      ],
+      "skuPrefix": "FS-33"
+    },
+    {
+      "sourceId": 34,
+      "productName": "Pants 34",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 7187000,
+      "sellingPrice": 13067000,
+      "imageUrl": "https://picsum.photos/280/350?random=34",
+      "images": [
+        "https://picsum.photos/280/350?random=34"
+      ],
+      "skuPrefix": "FS-34"
+    },
+    {
+      "sourceId": 35,
+      "productName": "Outerwear 35",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 1165000,
+      "sellingPrice": 2119000,
+      "imageUrl": "https://picsum.photos/280/350?random=35",
+      "images": [
+        "https://picsum.photos/280/350?random=35"
+      ],
+      "skuPrefix": "FS-35"
+    },
+    {
+      "sourceId": 36,
+      "productName": "Jacket 36",
+      "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 6230000,
+      "sellingPrice": 11327000,
+      "imageUrl": "https://picsum.photos/280/350?random=36",
+      "images": [
+        "https://picsum.photos/280/350?random=36"
+      ],
+      "skuPrefix": "FS-36"
+    },
+    {
+      "sourceId": 37,
+      "productName": "Crewneck 37",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5161000,
+      "sellingPrice": 9384000,
+      "imageUrl": "https://picsum.photos/280/350?random=37",
+      "images": [
+        "https://picsum.photos/280/350?random=37"
+      ],
+      "skuPrefix": "FS-37"
+    },
+    {
+      "sourceId": 38,
+      "productName": "T-shirt 38",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 4182000,
+      "sellingPrice": 7603000,
+      "imageUrl": "https://picsum.photos/280/350?random=38",
+      "images": [
+        "https://picsum.photos/280/350?random=38"
+      ],
+      "skuPrefix": "FS-38"
+    },
+    {
+      "sourceId": 39,
+      "productName": "Hoodie 39",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5527000,
+      "sellingPrice": 10049000,
+      "imageUrl": "https://picsum.photos/280/350?random=39",
+      "images": [
+        "https://picsum.photos/280/350?random=39"
+      ],
+      "skuPrefix": "FS-39"
+    },
+    {
+      "sourceId": 40,
+      "productName": "Pants 40",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 5030000,
+      "sellingPrice": 9146000,
+      "imageUrl": "https://picsum.photos/280/350?random=40",
+      "images": [
+        "https://picsum.photos/280/350?random=40"
+      ],
+      "skuPrefix": "FS-40"
+    },
+    {
+      "sourceId": 42,
+      "productName": "Jacket 42",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 5796000,
+      "sellingPrice": 10538000,
+      "imageUrl": "https://picsum.photos/280/350?random=42",
+      "images": [
+        "https://picsum.photos/280/350?random=42"
+      ],
+      "skuPrefix": "FS-42"
+    },
+    {
+      "sourceId": 43,
+      "productName": "Crewneck 43",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2500000,
+      "sellingPrice": 4546000,
+      "imageUrl": "https://picsum.photos/280/350?random=43",
+      "images": [
+        "https://picsum.photos/280/350?random=43"
+      ],
+      "skuPrefix": "FS-43"
+    },
+    {
+      "sourceId": 44,
+      "productName": "T-shirt 44",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2847000,
+      "sellingPrice": 5176000,
+      "imageUrl": "https://picsum.photos/280/350?random=44",
+      "images": [
+        "https://picsum.photos/280/350?random=44"
+      ],
+      "skuPrefix": "FS-44"
+    },
+    {
+      "sourceId": 45,
+      "productName": "Hoodie 45",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 7471000,
+      "sellingPrice": 13583000,
+      "imageUrl": "https://picsum.photos/280/350?random=45",
+      "images": [
+        "https://picsum.photos/280/350?random=45"
+      ],
+      "skuPrefix": "FS-45"
+    },
+    {
+      "sourceId": 47,
+      "productName": "Outerwear 47",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 5470000,
+      "sellingPrice": 9945000,
+      "imageUrl": "https://picsum.photos/280/350?random=47",
+      "images": [
+        "https://picsum.photos/280/350?random=47"
+      ],
+      "skuPrefix": "FS-47"
+    },
+    {
+      "sourceId": 48,
+      "productName": "Jacket 48",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4292000,
+      "sellingPrice": 7804000,
+      "imageUrl": "https://picsum.photos/280/350?random=48",
+      "images": [
+        "https://picsum.photos/280/350?random=48"
+      ],
+      "skuPrefix": "FS-48"
+    },
+    {
+      "sourceId": 49,
+      "productName": "Crewneck 49",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 921000,
+      "sellingPrice": 1674000,
+      "imageUrl": "https://picsum.photos/280/350?random=49",
+      "images": [
+        "https://picsum.photos/280/350?random=49"
+      ],
+      "skuPrefix": "FS-49"
+    },
+    {
+      "sourceId": 50,
+      "productName": "T-shirt 50",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5098000,
+      "sellingPrice": 9270000,
+      "imageUrl": "https://picsum.photos/280/350?random=50",
+      "images": [
+        "https://picsum.photos/280/350?random=50"
+      ],
+      "skuPrefix": "FS-50"
+    },
+    {
+      "sourceId": 52,
+      "productName": "Pants 52",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 1372000,
+      "sellingPrice": 2494000,
+      "imageUrl": "https://picsum.photos/280/350?random=52",
+      "images": [
+        "https://picsum.photos/280/350?random=52"
+      ],
+      "skuPrefix": "FS-52"
+    },
+    {
+      "sourceId": 53,
+      "productName": "Outerwear 53",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 3842000,
+      "sellingPrice": 6986000,
+      "imageUrl": "https://picsum.photos/280/350?random=53",
+      "images": [
+        "https://picsum.photos/280/350?random=53"
+      ],
+      "skuPrefix": "FS-53"
+    },
+    {
+      "sourceId": 54,
+      "productName": "Jacket 54",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 734000,
+      "sellingPrice": 1335000,
+      "imageUrl": "https://picsum.photos/280/350?random=54",
+      "images": [
+        "https://picsum.photos/280/350?random=54"
+      ],
+      "skuPrefix": "FS-54"
+    },
+    {
+      "sourceId": 55,
+      "productName": "Crewneck 55",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1542000,
+      "sellingPrice": 2803000,
+      "imageUrl": "https://picsum.photos/280/350?random=55",
+      "images": [
+        "https://picsum.photos/280/350?random=55"
+      ],
+      "skuPrefix": "FS-55"
+    },
+    {
+      "sourceId": 56,
+      "productName": "T-shirt 56",
+      "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 3990000,
+      "sellingPrice": 7255000,
+      "imageUrl": "https://picsum.photos/280/350?random=56",
+      "images": [
+        "https://picsum.photos/280/350?random=56"
+      ],
+      "skuPrefix": "FS-56"
+    },
+    {
+      "sourceId": 57,
+      "productName": "Hoodie 57",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2712000,
+      "sellingPrice": 4930000,
+      "imageUrl": "https://picsum.photos/280/350?random=57",
+      "images": [
+        "https://picsum.photos/280/350?random=57"
+      ],
+      "skuPrefix": "FS-57"
+    },
+    {
+      "sourceId": 58,
+      "productName": "Pants 58",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 1407000,
+      "sellingPrice": 2559000,
+      "imageUrl": "https://picsum.photos/280/350?random=58",
+      "images": [
+        "https://picsum.photos/280/350?random=58"
+      ],
+      "skuPrefix": "FS-58"
+    },
+    {
+      "sourceId": 59,
+      "productName": "Outerwear 59",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 1937000,
+      "sellingPrice": 3522000,
+      "imageUrl": "https://picsum.photos/280/350?random=59",
+      "images": [
+        "https://picsum.photos/280/350?random=59"
+      ],
+      "skuPrefix": "FS-59"
+    },
+    {
+      "sourceId": 60,
+      "productName": "Jacket 60",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 2901000,
+      "sellingPrice": 5274000,
+      "imageUrl": "https://picsum.photos/280/350?random=60",
+      "images": [
+        "https://picsum.photos/280/350?random=60"
+      ],
+      "skuPrefix": "FS-60"
+    },
+    {
+      "sourceId": 62,
+      "productName": "T-shirt 62",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1183000,
+      "sellingPrice": 2151000,
+      "imageUrl": "https://picsum.photos/280/350?random=62",
+      "images": [
+        "https://picsum.photos/280/350?random=62"
+      ],
+      "skuPrefix": "FS-62"
+    },
+    {
+      "sourceId": 63,
+      "productName": "Hoodie 63",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5568000,
+      "sellingPrice": 10124000,
+      "imageUrl": "https://picsum.photos/280/350?random=63",
+      "images": [
+        "https://picsum.photos/280/350?random=63"
+      ],
+      "skuPrefix": "FS-63"
+    },
+    {
+      "sourceId": 64,
+      "productName": "Pants 64",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 6642000,
+      "sellingPrice": 12076000,
+      "imageUrl": "https://picsum.photos/280/350?random=64",
+      "images": [
+        "https://picsum.photos/280/350?random=64"
+      ],
+      "skuPrefix": "FS-64"
+    },
+    {
+      "sourceId": 65,
+      "productName": "Outerwear 65",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 2050000,
+      "sellingPrice": 3728000,
+      "imageUrl": "https://picsum.photos/280/350?random=65",
+      "images": [
+        "https://picsum.photos/280/350?random=65"
+      ],
+      "skuPrefix": "FS-65"
+    },
+    {
+      "sourceId": 66,
+      "productName": "Jacket 66",
+      "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 3741000,
+      "sellingPrice": 6802000,
+      "imageUrl": "https://picsum.photos/280/350?random=66",
+      "images": [
+        "https://picsum.photos/280/350?random=66"
+      ],
+      "skuPrefix": "FS-66"
+    },
+    {
+      "sourceId": 67,
+      "productName": "Crewneck 67",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 7279000,
+      "sellingPrice": 13235000,
+      "imageUrl": "https://picsum.photos/280/350?random=67",
+      "images": [
+        "https://picsum.photos/280/350?random=67"
+      ],
+      "skuPrefix": "FS-67"
+    },
+    {
+      "sourceId": 68,
+      "productName": "T-shirt 68",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6897000,
+      "sellingPrice": 12540000,
+      "imageUrl": "https://picsum.photos/280/350?random=68",
+      "images": [
+        "https://picsum.photos/280/350?random=68"
+      ],
+      "skuPrefix": "FS-68"
+    },
+    {
+      "sourceId": 69,
+      "productName": "Hoodie 69",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 883000,
+      "sellingPrice": 1606000,
+      "imageUrl": "https://picsum.photos/280/350?random=69",
+      "images": [
+        "https://picsum.photos/280/350?random=69"
+      ],
+      "skuPrefix": "FS-69"
+    },
+    {
+      "sourceId": 70,
+      "productName": "Pants 70",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 1007000,
+      "sellingPrice": 1830000,
+      "imageUrl": "https://picsum.photos/280/350?random=70",
+      "images": [
+        "https://picsum.photos/280/350?random=70"
+      ],
+      "skuPrefix": "FS-70"
+    },
+    {
+      "sourceId": 72,
+      "productName": "Jacket 72",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 3245000,
+      "sellingPrice": 5900000,
+      "imageUrl": "https://picsum.photos/280/350?random=72",
+      "images": [
+        "https://picsum.photos/280/350?random=72"
+      ],
+      "skuPrefix": "FS-72"
+    },
+    {
+      "sourceId": 73,
+      "productName": "Crewneck 73",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2114000,
+      "sellingPrice": 3844000,
+      "imageUrl": "https://picsum.photos/280/350?random=73",
+      "images": [
+        "https://picsum.photos/280/350?random=73"
+      ],
+      "skuPrefix": "FS-73"
+    },
+    {
+      "sourceId": 74,
+      "productName": "T-shirt 74",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6621000,
+      "sellingPrice": 12039000,
+      "imageUrl": "https://picsum.photos/280/350?random=74",
+      "images": [
+        "https://picsum.photos/280/350?random=74"
+      ],
+      "skuPrefix": "FS-74"
+    },
+    {
+      "sourceId": 75,
+      "productName": "Hoodie 75",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1806000,
+      "sellingPrice": 3284000,
+      "imageUrl": "https://picsum.photos/280/350?random=75",
+      "images": [
+        "https://picsum.photos/280/350?random=75"
+      ],
+      "skuPrefix": "FS-75"
+    },
+    {
+      "sourceId": 77,
+      "productName": "Outerwear 77",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 740000,
+      "sellingPrice": 1346000,
+      "imageUrl": "https://picsum.photos/280/350?random=77",
+      "images": [
+        "https://picsum.photos/280/350?random=77"
+      ],
+      "skuPrefix": "FS-77"
+    },
+    {
+      "sourceId": 78,
+      "productName": "Jacket 78",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 2334000,
+      "sellingPrice": 4244000,
+      "imageUrl": "https://picsum.photos/280/350?random=78",
+      "images": [
+        "https://picsum.photos/280/350?random=78"
+      ],
+      "skuPrefix": "FS-78"
+    },
+    {
+      "sourceId": 79,
+      "productName": "Crewneck 79",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2844000,
+      "sellingPrice": 5171000,
+      "imageUrl": "https://picsum.photos/280/350?random=79",
+      "images": [
+        "https://picsum.photos/280/350?random=79"
+      ],
+      "skuPrefix": "FS-79"
+    },
+    {
+      "sourceId": 80,
+      "productName": "T-shirt 80",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 3591000,
+      "sellingPrice": 6529000,
+      "imageUrl": "https://picsum.photos/280/350?random=80",
+      "images": [
+        "https://picsum.photos/280/350?random=80"
+      ],
+      "skuPrefix": "FS-80"
+    },
+    {
+      "sourceId": 82,
+      "productName": "Pants 82",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 7146000,
+      "sellingPrice": 12993000,
+      "imageUrl": "https://picsum.photos/280/350?random=82",
+      "images": [
+        "https://picsum.photos/280/350?random=82"
+      ],
+      "skuPrefix": "FS-82"
+    },
+    {
+      "sourceId": 83,
+      "productName": "Outerwear 83",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 3392000,
+      "sellingPrice": 6168000,
+      "imageUrl": "https://picsum.photos/280/350?random=83",
+      "images": [
+        "https://picsum.photos/280/350?random=83"
+      ],
+      "skuPrefix": "FS-83"
+    },
+    {
+      "sourceId": 84,
+      "productName": "Jacket 84",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 2429000,
+      "sellingPrice": 4416000,
+      "imageUrl": "https://picsum.photos/280/350?random=84",
+      "images": [
+        "https://picsum.photos/280/350?random=84"
+      ],
+      "skuPrefix": "FS-84"
+    },
+    {
+      "sourceId": 85,
+      "productName": "Crewneck 85",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 3923000,
+      "sellingPrice": 7132000,
+      "imageUrl": "https://picsum.photos/280/350?random=85",
+      "images": [
+        "https://picsum.photos/280/350?random=85"
+      ],
+      "skuPrefix": "FS-85"
+    },
+    {
+      "sourceId": 86,
+      "productName": "T-shirt 86",
+      "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1436000,
+      "sellingPrice": 2611000,
+      "imageUrl": "https://picsum.photos/280/350?random=86",
+      "images": [
+        "https://picsum.photos/280/350?random=86"
+      ],
+      "skuPrefix": "FS-86"
+    },
+    {
+      "sourceId": 87,
+      "productName": "Hoodie 87",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6763000,
+      "sellingPrice": 12297000,
+      "imageUrl": "https://picsum.photos/280/350?random=87",
+      "images": [
+        "https://picsum.photos/280/350?random=87"
+      ],
+      "skuPrefix": "FS-87"
+    },
+    {
+      "sourceId": 88,
+      "productName": "Pants 88",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 6523000,
+      "sellingPrice": 11860000,
+      "imageUrl": "https://picsum.photos/280/350?random=88",
+      "images": [
+        "https://picsum.photos/280/350?random=88"
+      ],
+      "skuPrefix": "FS-88"
+    },
+    {
+      "sourceId": 89,
+      "productName": "Outerwear 89",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4173000,
+      "sellingPrice": 7588000,
+      "imageUrl": "https://picsum.photos/280/350?random=89",
+      "images": [
+        "https://picsum.photos/280/350?random=89"
+      ],
+      "skuPrefix": "FS-89"
+    },
+    {
+      "sourceId": 90,
+      "productName": "Jacket 90",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 6153000,
+      "sellingPrice": 11188000,
+      "imageUrl": "https://picsum.photos/280/350?random=90",
+      "images": [
+        "https://picsum.photos/280/350?random=90"
+      ],
+      "skuPrefix": "FS-90"
+    },
+    {
+      "sourceId": 92,
+      "productName": "T-shirt 92",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 4308000,
+      "sellingPrice": 7832000,
+      "imageUrl": "https://picsum.photos/280/350?random=92",
+      "images": [
+        "https://picsum.photos/280/350?random=92"
+      ],
+      "skuPrefix": "FS-92"
+    },
+    {
+      "sourceId": 93,
+      "productName": "Hoodie 93",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1173000,
+      "sellingPrice": 2133000,
+      "imageUrl": "https://picsum.photos/280/350?random=93",
+      "images": [
+        "https://picsum.photos/280/350?random=93"
+      ],
+      "skuPrefix": "FS-93"
+    },
+    {
+      "sourceId": 94,
+      "productName": "Pants 94",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 924000,
+      "sellingPrice": 1680000,
+      "imageUrl": "https://picsum.photos/280/350?random=94",
+      "images": [
+        "https://picsum.photos/280/350?random=94"
+      ],
+      "skuPrefix": "FS-94"
+    },
+    {
+      "sourceId": 95,
+      "productName": "Outerwear 95",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 5210000,
+      "sellingPrice": 9472000,
+      "imageUrl": "https://picsum.photos/280/350?random=95",
+      "images": [
+        "https://picsum.photos/280/350?random=95"
+      ],
+      "skuPrefix": "FS-95"
+    },
+    {
+      "sourceId": 96,
+      "productName": "Jacket 96",
+      "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 3952000,
+      "sellingPrice": 7185000,
+      "imageUrl": "https://picsum.photos/280/350?random=96",
+      "images": [
+        "https://picsum.photos/280/350?random=96"
+      ],
+      "skuPrefix": "FS-96"
+    },
+    {
+      "sourceId": 97,
+      "productName": "Crewneck 97",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5254000,
+      "sellingPrice": 9552000,
+      "imageUrl": "https://picsum.photos/280/350?random=97",
+      "images": [
+        "https://picsum.photos/280/350?random=97"
+      ],
+      "skuPrefix": "FS-97"
+    },
+    {
+      "sourceId": 98,
+      "productName": "T-shirt 98",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 7388000,
+      "sellingPrice": 13433000,
+      "imageUrl": "https://picsum.photos/280/350?random=98",
+      "images": [
+        "https://picsum.photos/280/350?random=98"
+      ],
+      "skuPrefix": "FS-98"
+    },
+    {
+      "sourceId": 99,
+      "productName": "Hoodie 99",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 4321000,
+      "sellingPrice": 7856000,
+      "imageUrl": "https://picsum.photos/280/350?random=99",
+      "images": [
+        "https://picsum.photos/280/350?random=99"
+      ],
+      "skuPrefix": "FS-99"
+    },
+    {
+      "sourceId": 100,
+      "productName": "Pants 100",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 1906000,
+      "sellingPrice": 3465000,
+      "imageUrl": "https://picsum.photos/280/350?random=100",
+      "images": [
+        "https://picsum.photos/280/350?random=100"
+      ],
+      "skuPrefix": "FS-100"
+    },
+    {
+      "sourceId": 102,
+      "productName": "Jacket 102",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 3301000,
+      "sellingPrice": 6001000,
+      "imageUrl": "https://picsum.photos/280/350?random=102",
+      "images": [
+        "https://picsum.photos/280/350?random=102"
+      ],
+      "skuPrefix": "FS-102"
+    },
+    {
+      "sourceId": 103,
+      "productName": "Crewneck 103",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2004000,
+      "sellingPrice": 3643000,
+      "imageUrl": "https://picsum.photos/280/350?random=103",
+      "images": [
+        "https://picsum.photos/280/350?random=103"
+      ],
+      "skuPrefix": "FS-103"
+    },
+    {
+      "sourceId": 104,
+      "productName": "T-shirt 104",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2041000,
+      "sellingPrice": 3710000,
+      "imageUrl": "https://picsum.photos/280/350?random=104",
+      "images": [
+        "https://picsum.photos/280/350?random=104"
+      ],
+      "skuPrefix": "FS-104"
+    },
+    {
+      "sourceId": 105,
+      "productName": "Hoodie 105",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 4314000,
+      "sellingPrice": 7844000,
+      "imageUrl": "https://picsum.photos/280/350?random=105",
+      "images": [
+        "https://picsum.photos/280/350?random=105"
+      ],
+      "skuPrefix": "FS-105"
+    },
+    {
+      "sourceId": 107,
+      "productName": "Outerwear 107",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 5694000,
+      "sellingPrice": 10352000,
+      "imageUrl": "https://picsum.photos/280/350?random=107",
+      "images": [
+        "https://picsum.photos/280/350?random=107"
+      ],
+      "skuPrefix": "FS-107"
+    },
+    {
+      "sourceId": 108,
+      "productName": "Jacket 108",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4771000,
+      "sellingPrice": 8674000,
+      "imageUrl": "https://picsum.photos/280/350?random=108",
+      "images": [
+        "https://picsum.photos/280/350?random=108"
+      ],
+      "skuPrefix": "FS-108"
+    },
+    {
+      "sourceId": 109,
+      "productName": "Crewneck 109",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5059000,
+      "sellingPrice": 9198000,
+      "imageUrl": "https://picsum.photos/280/350?random=109",
+      "images": [
+        "https://picsum.photos/280/350?random=109"
+      ],
+      "skuPrefix": "FS-109"
+    },
+    {
+      "sourceId": 110,
+      "productName": "T-shirt 110",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6185000,
+      "sellingPrice": 11246000,
+      "imageUrl": "https://picsum.photos/280/350?random=110",
+      "images": [
+        "https://picsum.photos/280/350?random=110"
+      ],
+      "skuPrefix": "FS-110"
+    },
+    {
+      "sourceId": 112,
+      "productName": "Pants 112",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 3662000,
+      "sellingPrice": 6659000,
+      "imageUrl": "https://picsum.photos/280/350?random=112",
+      "images": [
+        "https://picsum.photos/280/350?random=112"
+      ],
+      "skuPrefix": "FS-112"
+    },
+    {
+      "sourceId": 113,
+      "productName": "Outerwear 113",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 3843000,
+      "sellingPrice": 6988000,
+      "imageUrl": "https://picsum.photos/280/350?random=113",
+      "images": [
+        "https://picsum.photos/280/350?random=113"
+      ],
+      "skuPrefix": "FS-113"
+    },
+    {
+      "sourceId": 114,
+      "productName": "Jacket 114",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4629000,
+      "sellingPrice": 8416000,
+      "imageUrl": "https://picsum.photos/280/350?random=114",
+      "images": [
+        "https://picsum.photos/280/350?random=114"
+      ],
+      "skuPrefix": "FS-114"
+    },
+    {
+      "sourceId": 115,
+      "productName": "Crewneck 115",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1662000,
+      "sellingPrice": 3021000,
+      "imageUrl": "https://picsum.photos/280/350?random=115",
+      "images": [
+        "https://picsum.photos/280/350?random=115"
+      ],
+      "skuPrefix": "FS-115"
+    },
+    {
+      "sourceId": 116,
+      "productName": "T-shirt 116",
+      "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2986000,
+      "sellingPrice": 5429000,
+      "imageUrl": "https://picsum.photos/280/350?random=116",
+      "images": [
+        "https://picsum.photos/280/350?random=116"
+      ],
+      "skuPrefix": "FS-116"
+    },
+    {
+      "sourceId": 117,
+      "productName": "Hoodie 117",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2902000,
+      "sellingPrice": 5276000,
+      "imageUrl": "https://picsum.photos/280/350?random=117",
+      "images": [
+        "https://picsum.photos/280/350?random=117"
+      ],
+      "skuPrefix": "FS-117"
+    },
+    {
+      "sourceId": 118,
+      "productName": "Pants 118",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 4800000,
+      "sellingPrice": 8727000,
+      "imageUrl": "https://picsum.photos/280/350?random=118",
+      "images": [
+        "https://picsum.photos/280/350?random=118"
+      ],
+      "skuPrefix": "FS-118"
+    },
+    {
+      "sourceId": 119,
+      "productName": "Outerwear 119",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 3061000,
+      "sellingPrice": 5565000,
+      "imageUrl": "https://picsum.photos/280/350?random=119",
+      "images": [
+        "https://picsum.photos/280/350?random=119"
+      ],
+      "skuPrefix": "FS-119"
+    },
+    {
+      "sourceId": 120,
+      "productName": "Jacket 120",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 6428000,
+      "sellingPrice": 11688000,
+      "imageUrl": "https://picsum.photos/280/350?random=120",
+      "images": [
+        "https://picsum.photos/280/350?random=120"
+      ],
+      "skuPrefix": "FS-120"
+    },
+    {
+      "sourceId": 122,
+      "productName": "T-shirt 122",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1686000,
+      "sellingPrice": 3066000,
+      "imageUrl": "https://picsum.photos/280/350?random=122",
+      "images": [
+        "https://picsum.photos/280/350?random=122"
+      ],
+      "skuPrefix": "FS-122"
+    },
+    {
+      "sourceId": 123,
+      "productName": "Hoodie 123",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 3865000,
+      "sellingPrice": 7028000,
+      "imageUrl": "https://picsum.photos/280/350?random=123",
+      "images": [
+        "https://picsum.photos/280/350?random=123"
+      ],
+      "skuPrefix": "FS-123"
+    },
+    {
+      "sourceId": 124,
+      "productName": "Pants 124",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 6036000,
+      "sellingPrice": 10974000,
+      "imageUrl": "https://picsum.photos/280/350?random=124",
+      "images": [
+        "https://picsum.photos/280/350?random=124"
+      ],
+      "skuPrefix": "FS-124"
+    },
+    {
+      "sourceId": 125,
+      "productName": "Outerwear 125",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 6014000,
+      "sellingPrice": 10935000,
+      "imageUrl": "https://picsum.photos/280/350?random=125",
+      "images": [
+        "https://picsum.photos/280/350?random=125"
+      ],
+      "skuPrefix": "FS-125"
+    },
+    {
+      "sourceId": 126,
+      "productName": "Jacket 126",
+      "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 3804000,
+      "sellingPrice": 6916000,
+      "imageUrl": "https://picsum.photos/280/350?random=126",
+      "images": [
+        "https://picsum.photos/280/350?random=126"
+      ],
+      "skuPrefix": "FS-126"
+    },
+    {
+      "sourceId": 127,
+      "productName": "Crewneck 127",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 7143000,
+      "sellingPrice": 12987000,
+      "imageUrl": "https://picsum.photos/280/350?random=127",
+      "images": [
+        "https://picsum.photos/280/350?random=127"
+      ],
+      "skuPrefix": "FS-127"
+    },
+    {
+      "sourceId": 128,
+      "productName": "T-shirt 128",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 3838000,
+      "sellingPrice": 6979000,
+      "imageUrl": "https://picsum.photos/280/350?random=128",
+      "images": [
+        "https://picsum.photos/280/350?random=128"
+      ],
+      "skuPrefix": "FS-128"
+    },
+    {
+      "sourceId": 129,
+      "productName": "Hoodie 129",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2176000,
+      "sellingPrice": 3957000,
+      "imageUrl": "https://picsum.photos/280/350?random=129",
+      "images": [
+        "https://picsum.photos/280/350?random=129"
+      ],
+      "skuPrefix": "FS-129"
+    },
+    {
+      "sourceId": 130,
+      "productName": "Pants 130",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 5675000,
+      "sellingPrice": 10318000,
+      "imageUrl": "https://picsum.photos/280/350?random=130",
+      "images": [
+        "https://picsum.photos/280/350?random=130"
+      ],
+      "skuPrefix": "FS-130"
+    },
+    {
+      "sourceId": 132,
+      "productName": "Jacket 132",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 5564000,
+      "sellingPrice": 10117000,
+      "imageUrl": "https://picsum.photos/280/350?random=132",
+      "images": [
+        "https://picsum.photos/280/350?random=132"
+      ],
+      "skuPrefix": "FS-132"
+    },
+    {
+      "sourceId": 133,
+      "productName": "Crewneck 133",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1733000,
+      "sellingPrice": 3150000,
+      "imageUrl": "https://picsum.photos/280/350?random=133",
+      "images": [
+        "https://picsum.photos/280/350?random=133"
+      ],
+      "skuPrefix": "FS-133"
+    },
+    {
+      "sourceId": 134,
+      "productName": "T-shirt 134",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5102000,
+      "sellingPrice": 9277000,
+      "imageUrl": "https://picsum.photos/280/350?random=134",
+      "images": [
+        "https://picsum.photos/280/350?random=134"
+      ],
+      "skuPrefix": "FS-134"
+    },
+    {
+      "sourceId": 135,
+      "productName": "Hoodie 135",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 4418000,
+      "sellingPrice": 8033000,
+      "imageUrl": "https://picsum.photos/280/350?random=135",
+      "images": [
+        "https://picsum.photos/280/350?random=135"
+      ],
+      "skuPrefix": "FS-135"
+    },
+    {
+      "sourceId": 137,
+      "productName": "Outerwear 137",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 6005000,
+      "sellingPrice": 10919000,
+      "imageUrl": "https://picsum.photos/280/350?random=137",
+      "images": [
+        "https://picsum.photos/280/350?random=137"
+      ],
+      "skuPrefix": "FS-137"
+    },
+    {
+      "sourceId": 138,
+      "productName": "Jacket 138",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 3984000,
+      "sellingPrice": 7243000,
+      "imageUrl": "https://picsum.photos/280/350?random=138",
+      "images": [
+        "https://picsum.photos/280/350?random=138"
+      ],
+      "skuPrefix": "FS-138"
+    },
+    {
+      "sourceId": 139,
+      "productName": "Crewneck 139",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6921000,
+      "sellingPrice": 12583000,
+      "imageUrl": "https://picsum.photos/280/350?random=139",
+      "images": [
+        "https://picsum.photos/280/350?random=139"
+      ],
+      "skuPrefix": "FS-139"
+    },
+    {
+      "sourceId": 140,
+      "productName": "T-shirt 140",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5853000,
+      "sellingPrice": 10642000,
+      "imageUrl": "https://picsum.photos/280/350?random=140",
+      "images": [
+        "https://picsum.photos/280/350?random=140"
+      ],
+      "skuPrefix": "FS-140"
+    },
+    {
+      "sourceId": 142,
+      "productName": "Pants 142",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 1998000,
+      "sellingPrice": 3633000,
+      "imageUrl": "https://picsum.photos/280/350?random=142",
+      "images": [
+        "https://picsum.photos/280/350?random=142"
+      ],
+      "skuPrefix": "FS-142"
+    },
+    {
+      "sourceId": 143,
+      "productName": "Outerwear 143",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 2876000,
+      "sellingPrice": 5229000,
+      "imageUrl": "https://picsum.photos/280/350?random=143",
+      "images": [
+        "https://picsum.photos/280/350?random=143"
+      ],
+      "skuPrefix": "FS-143"
+    },
+    {
+      "sourceId": 144,
+      "productName": "Jacket 144",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4948000,
+      "sellingPrice": 8997000,
+      "imageUrl": "https://picsum.photos/280/350?random=144",
+      "images": [
+        "https://picsum.photos/280/350?random=144"
+      ],
+      "skuPrefix": "FS-144"
+    },
+    {
+      "sourceId": 145,
+      "productName": "Crewneck 145",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2984000,
+      "sellingPrice": 5426000,
+      "imageUrl": "https://picsum.photos/280/350?random=145",
+      "images": [
+        "https://picsum.photos/280/350?random=145"
+      ],
+      "skuPrefix": "FS-145"
+    },
+    {
+      "sourceId": 146,
+      "productName": "T-shirt 146",
+      "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6608000,
+      "sellingPrice": 12014000,
+      "imageUrl": "https://picsum.photos/280/350?random=146",
+      "images": [
+        "https://picsum.photos/280/350?random=146"
+      ],
+      "skuPrefix": "FS-146"
+    },
+    {
+      "sourceId": 147,
+      "productName": "Hoodie 147",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2624000,
+      "sellingPrice": 4770000,
+      "imageUrl": "https://picsum.photos/280/350?random=147",
+      "images": [
+        "https://picsum.photos/280/350?random=147"
+      ],
+      "skuPrefix": "FS-147"
+    },
+    {
+      "sourceId": 148,
+      "productName": "Pants 148",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 5185000,
+      "sellingPrice": 9427000,
+      "imageUrl": "https://picsum.photos/280/350?random=148",
+      "images": [
+        "https://picsum.photos/280/350?random=148"
+      ],
+      "skuPrefix": "FS-148"
+    },
+    {
+      "sourceId": 149,
+      "productName": "Outerwear 149",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 2669000,
+      "sellingPrice": 4853000,
+      "imageUrl": "https://picsum.photos/280/350?random=149",
+      "images": [
+        "https://picsum.photos/280/350?random=149"
+      ],
+      "skuPrefix": "FS-149"
+    },
+    {
+      "sourceId": 150,
+      "productName": "Jacket 150",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 1290000,
+      "sellingPrice": 2345000,
+      "imageUrl": "https://picsum.photos/280/350?random=150",
+      "images": [
+        "https://picsum.photos/280/350?random=150"
+      ],
+      "skuPrefix": "FS-150"
+    },
+    {
+      "sourceId": 152,
+      "productName": "T-shirt 152",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5404000,
+      "sellingPrice": 9826000,
+      "imageUrl": "https://picsum.photos/280/350?random=152",
+      "images": [
+        "https://picsum.photos/280/350?random=152"
+      ],
+      "skuPrefix": "FS-152"
+    },
+    {
+      "sourceId": 153,
+      "productName": "Hoodie 153",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2286000,
+      "sellingPrice": 4157000,
+      "imageUrl": "https://picsum.photos/280/350?random=153",
+      "images": [
+        "https://picsum.photos/280/350?random=153"
+      ],
+      "skuPrefix": "FS-153"
+    },
+    {
+      "sourceId": 154,
+      "productName": "Pants 154",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 2009000,
+      "sellingPrice": 3652000,
+      "imageUrl": "https://picsum.photos/280/350?random=154",
+      "images": [
+        "https://picsum.photos/280/350?random=154"
+      ],
+      "skuPrefix": "FS-154"
+    },
+    {
+      "sourceId": 155,
+      "productName": "Outerwear 155",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 3251000,
+      "sellingPrice": 5911000,
+      "imageUrl": "https://picsum.photos/280/350?random=155",
+      "images": [
+        "https://picsum.photos/280/350?random=155"
+      ],
+      "skuPrefix": "FS-155"
+    },
+    {
+      "sourceId": 156,
+      "productName": "Jacket 156",
+      "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 5711000,
+      "sellingPrice": 10383000,
+      "imageUrl": "https://picsum.photos/280/350?random=156",
+      "images": [
+        "https://picsum.photos/280/350?random=156"
+      ],
+      "skuPrefix": "FS-156"
+    },
+    {
+      "sourceId": 157,
+      "productName": "Crewneck 157",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 950000,
+      "sellingPrice": 1728000,
+      "imageUrl": "https://picsum.photos/280/350?random=157",
+      "images": [
+        "https://picsum.photos/280/350?random=157"
+      ],
+      "skuPrefix": "FS-157"
+    },
+    {
+      "sourceId": 158,
+      "productName": "T-shirt 158",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6291000,
+      "sellingPrice": 11439000,
+      "imageUrl": "https://picsum.photos/280/350?random=158",
+      "images": [
+        "https://picsum.photos/280/350?random=158"
+      ],
+      "skuPrefix": "FS-158"
+    },
+    {
+      "sourceId": 159,
+      "productName": "Hoodie 159",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2038000,
+      "sellingPrice": 3706000,
+      "imageUrl": "https://picsum.photos/280/350?random=159",
+      "images": [
+        "https://picsum.photos/280/350?random=159"
+      ],
+      "skuPrefix": "FS-159"
+    },
+    {
+      "sourceId": 160,
+      "productName": "Pants 160",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 2409000,
+      "sellingPrice": 4380000,
+      "imageUrl": "https://picsum.photos/280/350?random=160",
+      "images": [
+        "https://picsum.photos/280/350?random=160"
+      ],
+      "skuPrefix": "FS-160"
+    },
+    {
+      "sourceId": 162,
+      "productName": "Jacket 162",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 1327000,
+      "sellingPrice": 2412000,
+      "imageUrl": "https://picsum.photos/280/350?random=162",
+      "images": [
+        "https://picsum.photos/280/350?random=162"
+      ],
+      "skuPrefix": "FS-162"
+    },
+    {
+      "sourceId": 163,
+      "productName": "Crewneck 163",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6756000,
+      "sellingPrice": 12284000,
+      "imageUrl": "https://picsum.photos/280/350?random=163",
+      "images": [
+        "https://picsum.photos/280/350?random=163"
+      ],
+      "skuPrefix": "FS-163"
+    },
+    {
+      "sourceId": 164,
+      "productName": "T-shirt 164",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 3018000,
+      "sellingPrice": 5488000,
+      "imageUrl": "https://picsum.photos/280/350?random=164",
+      "images": [
+        "https://picsum.photos/280/350?random=164"
+      ],
+      "skuPrefix": "FS-164"
+    },
+    {
+      "sourceId": 165,
+      "productName": "Hoodie 165",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5948000,
+      "sellingPrice": 10814000,
+      "imageUrl": "https://picsum.photos/280/350?random=165",
+      "images": [
+        "https://picsum.photos/280/350?random=165"
+      ],
+      "skuPrefix": "FS-165"
+    },
+    {
+      "sourceId": 167,
+      "productName": "Outerwear 167",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 2813000,
+      "sellingPrice": 5115000,
+      "imageUrl": "https://picsum.photos/280/350?random=167",
+      "images": [
+        "https://picsum.photos/280/350?random=167"
+      ],
+      "skuPrefix": "FS-167"
+    },
+    {
+      "sourceId": 168,
+      "productName": "Jacket 168",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 748000,
+      "sellingPrice": 1360000,
+      "imageUrl": "https://picsum.photos/280/350?random=168",
+      "images": [
+        "https://picsum.photos/280/350?random=168"
+      ],
+      "skuPrefix": "FS-168"
+    },
+    {
+      "sourceId": 169,
+      "productName": "Crewneck 169",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6903000,
+      "sellingPrice": 12551000,
+      "imageUrl": "https://picsum.photos/280/350?random=169",
+      "images": [
+        "https://picsum.photos/280/350?random=169"
+      ],
+      "skuPrefix": "FS-169"
+    },
+    {
+      "sourceId": 170,
+      "productName": "T-shirt 170",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5739000,
+      "sellingPrice": 10434000,
+      "imageUrl": "https://picsum.photos/280/350?random=170",
+      "images": [
+        "https://picsum.photos/280/350?random=170"
+      ],
+      "skuPrefix": "FS-170"
+    },
+    {
+      "sourceId": 172,
+      "productName": "Pants 172",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 1346000,
+      "sellingPrice": 2447000,
+      "imageUrl": "https://picsum.photos/280/350?random=172",
+      "images": [
+        "https://picsum.photos/280/350?random=172"
+      ],
+      "skuPrefix": "FS-172"
+    },
+    {
+      "sourceId": 173,
+      "productName": "Outerwear 173",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 6046000,
+      "sellingPrice": 10992000,
+      "imageUrl": "https://picsum.photos/280/350?random=173",
+      "images": [
+        "https://picsum.photos/280/350?random=173"
+      ],
+      "skuPrefix": "FS-173"
+    },
+    {
+      "sourceId": 174,
+      "productName": "Jacket 174",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 5399000,
+      "sellingPrice": 9816000,
+      "imageUrl": "https://picsum.photos/280/350?random=174",
+      "images": [
+        "https://picsum.photos/280/350?random=174"
+      ],
+      "skuPrefix": "FS-174"
+    },
+    {
+      "sourceId": 175,
+      "productName": "Crewneck 175",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6983000,
+      "sellingPrice": 12696000,
+      "imageUrl": "https://picsum.photos/280/350?random=175",
+      "images": [
+        "https://picsum.photos/280/350?random=175"
+      ],
+      "skuPrefix": "FS-175"
+    },
+    {
+      "sourceId": 176,
+      "productName": "T-shirt 176",
+      "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5246000,
+      "sellingPrice": 9538000,
+      "imageUrl": "https://picsum.photos/280/350?random=176",
+      "images": [
+        "https://picsum.photos/280/350?random=176"
+      ],
+      "skuPrefix": "FS-176"
+    },
+    {
+      "sourceId": 177,
+      "productName": "Hoodie 177",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1625000,
+      "sellingPrice": 2954000,
+      "imageUrl": "https://picsum.photos/280/350?random=177",
+      "images": [
+        "https://picsum.photos/280/350?random=177"
+      ],
+      "skuPrefix": "FS-177"
+    },
+    {
+      "sourceId": 178,
+      "productName": "Pants 178",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 5315000,
+      "sellingPrice": 9663000,
+      "imageUrl": "https://picsum.photos/280/350?random=178",
+      "images": [
+        "https://picsum.photos/280/350?random=178"
+      ],
+      "skuPrefix": "FS-178"
+    },
+    {
+      "sourceId": 179,
+      "productName": "Outerwear 179",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4998000,
+      "sellingPrice": 9088000,
+      "imageUrl": "https://picsum.photos/280/350?random=179",
+      "images": [
+        "https://picsum.photos/280/350?random=179"
+      ],
+      "skuPrefix": "FS-179"
+    },
+    {
+      "sourceId": 180,
+      "productName": "Jacket 180",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4772000,
+      "sellingPrice": 8676000,
+      "imageUrl": "https://picsum.photos/280/350?random=180",
+      "images": [
+        "https://picsum.photos/280/350?random=180"
+      ],
+      "skuPrefix": "FS-180"
+    },
+    {
+      "sourceId": 182,
+      "productName": "T-shirt 182",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2006000,
+      "sellingPrice": 3648000,
+      "imageUrl": "https://picsum.photos/280/350?random=182",
+      "images": [
+        "https://picsum.photos/280/350?random=182"
+      ],
+      "skuPrefix": "FS-182"
+    },
+    {
+      "sourceId": 183,
+      "productName": "Hoodie 183",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 3356000,
+      "sellingPrice": 6101000,
+      "imageUrl": "https://picsum.photos/280/350?random=183",
+      "images": [
+        "https://picsum.photos/280/350?random=183"
+      ],
+      "skuPrefix": "FS-183"
+    },
+    {
+      "sourceId": 184,
+      "productName": "Pants 184",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 6668000,
+      "sellingPrice": 12124000,
+      "imageUrl": "https://picsum.photos/280/350?random=184",
+      "images": [
+        "https://picsum.photos/280/350?random=184"
+      ],
+      "skuPrefix": "FS-184"
+    },
+    {
+      "sourceId": 185,
+      "productName": "Outerwear 185",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 6723000,
+      "sellingPrice": 12223000,
+      "imageUrl": "https://picsum.photos/280/350?random=185",
+      "images": [
+        "https://picsum.photos/280/350?random=185"
+      ],
+      "skuPrefix": "FS-185"
+    },
+    {
+      "sourceId": 186,
+      "productName": "Jacket 186",
+      "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 5964000,
+      "sellingPrice": 10844000,
+      "imageUrl": "https://picsum.photos/280/350?random=186",
+      "images": [
+        "https://picsum.photos/280/350?random=186"
+      ],
+      "skuPrefix": "FS-186"
+    },
+    {
+      "sourceId": 187,
+      "productName": "Crewneck 187",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5727000,
+      "sellingPrice": 10412000,
+      "imageUrl": "https://picsum.photos/280/350?random=187",
+      "images": [
+        "https://picsum.photos/280/350?random=187"
+      ],
+      "skuPrefix": "FS-187"
+    },
+    {
+      "sourceId": 188,
+      "productName": "T-shirt 188",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 3375000,
+      "sellingPrice": 6137000,
+      "imageUrl": "https://picsum.photos/280/350?random=188",
+      "images": [
+        "https://picsum.photos/280/350?random=188"
+      ],
+      "skuPrefix": "FS-188"
+    },
+    {
+      "sourceId": 189,
+      "productName": "Hoodie 189",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 1673000,
+      "sellingPrice": 3042000,
+      "imageUrl": "https://picsum.photos/280/350?random=189",
+      "images": [
+        "https://picsum.photos/280/350?random=189"
+      ],
+      "skuPrefix": "FS-189"
+    },
+    {
+      "sourceId": 190,
+      "productName": "Pants 190",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 1909000,
+      "sellingPrice": 3470000,
+      "imageUrl": "https://picsum.photos/280/350?random=190",
+      "images": [
+        "https://picsum.photos/280/350?random=190"
+      ],
+      "skuPrefix": "FS-190"
+    },
+    {
+      "sourceId": 192,
+      "productName": "Jacket 192",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4354000,
+      "sellingPrice": 7916000,
+      "imageUrl": "https://picsum.photos/280/350?random=192",
+      "images": [
+        "https://picsum.photos/280/350?random=192"
+      ],
+      "skuPrefix": "FS-192"
+    },
+    {
+      "sourceId": 193,
+      "productName": "Crewneck 193",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6321000,
+      "sellingPrice": 11493000,
+      "imageUrl": "https://picsum.photos/280/350?random=193",
+      "images": [
+        "https://picsum.photos/280/350?random=193"
+      ],
+      "skuPrefix": "FS-193"
+    },
+    {
+      "sourceId": 194,
+      "productName": "T-shirt 194",
+      "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 2422000,
+      "sellingPrice": 4404000,
+      "imageUrl": "https://picsum.photos/280/350?random=194",
+      "images": [
+        "https://picsum.photos/280/350?random=194"
+      ],
+      "skuPrefix": "FS-194"
+    },
+    {
+      "sourceId": 195,
+      "productName": "Hoodie 195",
+      "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 6195000,
+      "sellingPrice": 11264000,
+      "imageUrl": "https://picsum.photos/280/350?random=195",
+      "images": [
+        "https://picsum.photos/280/350?random=195"
+      ],
+      "skuPrefix": "FS-195"
+    },
+    {
+      "sourceId": 197,
+      "productName": "Outerwear 197",
+      "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4883000,
+      "sellingPrice": 8878000,
+      "imageUrl": "https://picsum.photos/280/350?random=197",
+      "images": [
+        "https://picsum.photos/280/350?random=197"
+      ],
+      "skuPrefix": "FS-197"
+    },
+    {
+      "sourceId": 198,
+      "productName": "Jacket 198",
+      "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 4671000,
+      "sellingPrice": 8492000,
+      "imageUrl": "https://picsum.photos/280/350?random=198",
+      "images": [
+        "https://picsum.photos/280/350?random=198"
+      ],
+      "skuPrefix": "FS-198"
+    },
+    {
+      "sourceId": 199,
+      "productName": "Crewneck 199",
+      "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5796000,
+      "sellingPrice": 10538000,
+      "imageUrl": "https://picsum.photos/280/350?random=199",
+      "images": [
+        "https://picsum.photos/280/350?random=199"
+      ],
+      "skuPrefix": "FS-199"
+    },
+    {
+      "sourceId": 200,
+      "productName": "T-shirt 200",
+      "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5405000,
+      "sellingPrice": 9828000,
+      "imageUrl": "https://picsum.photos/280/350?random=200",
+      "images": [
+        "https://picsum.photos/280/350?random=200"
+      ],
+      "skuPrefix": "FS-200"
+    },
+    {
+      "sourceId": 202,
+      "productName": "Pants 202",
+      "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 4806000,
+      "sellingPrice": 8738000,
+      "imageUrl": "https://picsum.photos/280/350?random=202",
+      "images": [
+        "https://picsum.photos/280/350?random=202"
+      ],
+      "skuPrefix": "FS-202"
+    },
+    {
+      "sourceId": 203,
+      "productName": "Outerwear 203",
+      "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 1843000,
+      "sellingPrice": 3350000,
+      "imageUrl": "https://picsum.photos/280/350?random=203",
+      "images": [
+        "https://picsum.photos/280/350?random=203"
+      ],
+      "skuPrefix": "FS-203"
+    },
+    {
+      "sourceId": 204,
+      "productName": "Jacket 204",
+      "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo khoác",
+      "brandName": "Fashion Studio",
+      "importPrice": 5183000,
+      "sellingPrice": 9424000,
+      "imageUrl": "https://picsum.photos/280/350?random=204",
+      "images": [
+        "https://picsum.photos/280/350?random=204"
+      ],
+      "skuPrefix": "FS-204"
+    },
+    {
+      "sourceId": 205,
+      "productName": "Crewneck 205",
+      "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5530000,
+      "sellingPrice": 10054000,
+      "imageUrl": "https://picsum.photos/280/350?random=205",
+      "images": [
+        "https://picsum.photos/280/350?random=205"
+      ],
+      "skuPrefix": "FS-205"
+    },
+    {
+      "sourceId": 206,
+      "productName": "T-shirt 206",
+      "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 4017000,
+      "sellingPrice": 7304000,
+      "imageUrl": "https://picsum.photos/280/350?random=206",
+      "images": [
+        "https://picsum.photos/280/350?random=206"
+      ],
+      "skuPrefix": "FS-206"
+    },
+    {
+      "sourceId": 207,
+      "productName": "Hoodie 207",
+      "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
+      "categoryName": "Áo thun",
+      "brandName": "Fashion Studio",
+      "importPrice": 5244000,
+      "sellingPrice": 9534000,
+      "imageUrl": "https://picsum.photos/280/350?random=207",
+      "images": [
+        "https://picsum.photos/280/350?random=207"
+      ],
+      "skuPrefix": "FS-207"
+    },
+    {
+      "sourceId": 208,
+      "productName": "Pants 208",
+      "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
+      "categoryName": "Quần",
+      "brandName": "Fashion Studio",
+      "importPrice": 3985000,
+      "sellingPrice": 7246000,
+      "imageUrl": "https://picsum.photos/280/350?random=208",
+      "images": [
+        "https://picsum.photos/280/350?random=208"
+      ],
+      "skuPrefix": "FS-208"
+    }
+  ]
+}

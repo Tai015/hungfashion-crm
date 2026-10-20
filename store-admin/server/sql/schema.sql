@@ -32,6 +32,18 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE INDEX IF NOT EXISTS transactions_created_at_idx
   ON transactions (created_at DESC);
 
+CREATE TABLE IF NOT EXISTS outbox_events (
+  event_id      TEXT PRIMARY KEY,
+  topic         TEXT NOT NULL CHECK (topic IN ('user-events', 'transaction-events')),
+  partition_key TEXT,
+  payload       JSONB NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  published_at  TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS outbox_events_unpublished_idx
+  ON outbox_events (created_at, event_id)
+  WHERE published_at IS NULL;
+
 -- ─────────────────────────────────────────────
 --  ENUMS
 -- ─────────────────────────────────────────────
@@ -88,8 +100,20 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS role (
   role_id     SERIAL       PRIMARY KEY,
-  role_name   VARCHAR(50)  NOT NULL UNIQUE,   -- Admin | Manager | Employee | Customer
+  role_name   VARCHAR(50)  NOT NULL UNIQUE,
   description TEXT
+);
+
+CREATE TABLE IF NOT EXISTS permission (
+  permission_id   SERIAL       PRIMARY KEY,
+  permission_code VARCHAR(80)  NOT NULL UNIQUE,
+  description     TEXT
+);
+
+CREATE TABLE IF NOT EXISTS role_permission (
+  role_id       INT NOT NULL REFERENCES role(role_id) ON DELETE CASCADE,
+  permission_id INT NOT NULL REFERENCES permission(permission_id) ON DELETE CASCADE,
+  PRIMARY KEY (role_id, permission_id)
 );
 
 -- ─────────────────────────────────────────────
@@ -109,6 +133,8 @@ CREATE TABLE IF NOT EXISTS account (
 );
 CREATE INDEX IF NOT EXISTS account_role_idx ON account(role_id);
 CREATE INDEX IF NOT EXISTS account_status_idx ON account(status);
+CREATE INDEX IF NOT EXISTS account_created_at_idx ON account(created_at DESC);
+CREATE INDEX IF NOT EXISTS account_email_idx ON account(email);
 
 -- ─────────────────────────────────────────────
 --  3. EMPLOYEE
@@ -127,6 +153,8 @@ CREATE TABLE IF NOT EXISTS employee (
   is_active    BOOLEAN      NOT NULL DEFAULT TRUE,
   created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS employee_active_idx ON employee(is_active);
+CREATE INDEX IF NOT EXISTS employee_name_idx ON employee(full_name);
 
 -- ─────────────────────────────────────────────
 --  4. CUSTOMER
@@ -147,19 +175,40 @@ CREATE TABLE IF NOT EXISTS customer (
 );
 CREATE INDEX IF NOT EXISTS customer_tier_idx   ON customer(customer_tier);
 CREATE INDEX IF NOT EXISTS customer_phone_idx  ON customer(phone);
+CREATE INDEX IF NOT EXISTS customer_gender_idx ON customer(gender);
+CREATE INDEX IF NOT EXISTS customer_dob_idx    ON customer(date_of_birth);
+CREATE INDEX IF NOT EXISTS customer_email_idx  ON customer(email);
+CREATE INDEX IF NOT EXISTS customer_name_idx   ON customer(full_name);
 
 -- ─────────────────────────────────────────────
---  5. CUSTOMER_INTEREST  (sở thích khách hàng)
+--  5. INTEREST + CUSTOMER_INTEREST
 -- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS interest (
+  interest_id   SERIAL       PRIMARY KEY,
+  interest_name VARCHAR(100) NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS customer_interest (
-  interest_id  SERIAL       PRIMARY KEY,
-  customer_id  INT          NOT NULL REFERENCES customer(customer_id) ON DELETE CASCADE,
-  interest     VARCHAR(100) NOT NULL   -- Áo thun | Quần jean | Váy | Áo khoác ...
+  customer_id  INT NOT NULL REFERENCES customer(customer_id) ON DELETE CASCADE,
+  interest_id  INT NOT NULL REFERENCES interest(interest_id) ON DELETE CASCADE,
+  PRIMARY KEY (customer_id, interest_id)
 );
 CREATE INDEX IF NOT EXISTS customer_interest_cust_idx ON customer_interest(customer_id);
+CREATE INDEX IF NOT EXISTS customer_interest_interest_idx ON customer_interest(interest_id);
 
 -- ─────────────────────────────────────────────
---  6. CATEGORY
+--  6. BRAND
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS brand (
+  brand_id    SERIAL       PRIMARY KEY,
+  brand_name  VARCHAR(150) NOT NULL UNIQUE,
+  description TEXT,
+  is_active   BOOLEAN      NOT NULL DEFAULT TRUE
+);
+CREATE INDEX IF NOT EXISTS brand_active_idx ON brand(is_active);
+
+-- ─────────────────────────────────────────────
+--  7. CATEGORY
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS category (
   category_id   SERIAL       PRIMARY KEY,
@@ -168,13 +217,16 @@ CREATE TABLE IF NOT EXISTS category (
   parent_id     INT          REFERENCES category(category_id),  -- cho phép danh mục cha con
   is_active     BOOLEAN      NOT NULL DEFAULT TRUE
 );
+CREATE INDEX IF NOT EXISTS category_parent_idx ON category(parent_id);
+CREATE INDEX IF NOT EXISTS category_active_idx ON category(is_active);
 
 -- ─────────────────────────────────────────────
---  7. PRODUCT
+--  8. PRODUCT  (supplier_id gắn sau khi có bảng supplier)
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS product (
   product_id    SERIAL          PRIMARY KEY,
   category_id   INT             NOT NULL REFERENCES category(category_id),
+  brand_id      INT             REFERENCES brand(brand_id),
   product_name  VARCHAR(200)    NOT NULL,
   description   TEXT,
   import_price  NUMERIC(15,2)   NOT NULL CHECK (import_price >= 0),
@@ -185,6 +237,10 @@ CREATE TABLE IF NOT EXISTS product (
   updated_at    TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS product_category_idx ON product(category_id);
+CREATE INDEX IF NOT EXISTS product_brand_idx    ON product(brand_id);
+CREATE INDEX IF NOT EXISTS product_active_idx   ON product(is_active);
+CREATE INDEX IF NOT EXISTS product_price_idx    ON product(selling_price);
+CREATE INDEX IF NOT EXISTS product_created_at_idx ON product(created_at DESC);
 CREATE INDEX IF NOT EXISTS product_name_idx     ON product USING GIN (to_tsvector('simple', product_name));
 
 -- ─────────────────────────────────────────────
@@ -214,10 +270,14 @@ CREATE TABLE IF NOT EXISTS product_variant (
   color_id     INT             NOT NULL REFERENCES color(color_id),
   sku          VARCHAR(100)    UNIQUE,
   quantity     INT             NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+  selling_price NUMERIC(15,2)  CHECK (selling_price IS NULL OR selling_price >= 0),
   is_active    BOOLEAN         NOT NULL DEFAULT TRUE,
   UNIQUE (product_id, size_id, color_id)
 );
 CREATE INDEX IF NOT EXISTS variant_product_idx ON product_variant(product_id);
+CREATE INDEX IF NOT EXISTS variant_size_idx ON product_variant(size_id);
+CREATE INDEX IF NOT EXISTS variant_color_idx ON product_variant(color_id);
+CREATE INDEX IF NOT EXISTS variant_active_idx ON product_variant(is_active);
 
 -- ─────────────────────────────────────────────
 --  11. SUPPLIER
@@ -232,6 +292,20 @@ CREATE TABLE IF NOT EXISTS supplier (
   is_active     BOOLEAN       NOT NULL DEFAULT TRUE,
   created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS supplier_name_idx ON supplier(supplier_name);
+CREATE INDEX IF NOT EXISTS supplier_active_idx ON supplier(is_active);
+
+ALTER TABLE product ADD COLUMN IF NOT EXISTS supplier_id INT REFERENCES supplier(supplier_id);
+CREATE INDEX IF NOT EXISTS product_supplier_idx ON product(supplier_id);
+
+CREATE TABLE IF NOT EXISTS product_image (
+  image_id      SERIAL       PRIMARY KEY,
+  product_id    INT          NOT NULL REFERENCES product(product_id) ON DELETE CASCADE,
+  image_url     TEXT         NOT NULL,
+  is_primary    BOOLEAN      NOT NULL DEFAULT FALSE,
+  display_order SMALLINT     NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS product_image_product_idx ON product_image(product_id);
 
 -- ─────────────────────────────────────────────
 --  12. IMPORT_RECEIPT  (phiếu nhập / xuất / điều chỉnh kho)
@@ -247,6 +321,7 @@ CREATE TABLE IF NOT EXISTS import_receipt (
 );
 CREATE INDEX IF NOT EXISTS receipt_date_idx     ON import_receipt(receipt_date DESC);
 CREATE INDEX IF NOT EXISTS receipt_supplier_idx ON import_receipt(supplier_id);
+CREATE INDEX IF NOT EXISTS receipt_employee_idx ON import_receipt(employee_id);
 
 -- ─────────────────────────────────────────────
 --  13. IMPORT_DETAIL
@@ -259,6 +334,7 @@ CREATE TABLE IF NOT EXISTS import_detail (
   unit_price    NUMERIC(15,2)   NOT NULL CHECK (unit_price >= 0)
 );
 CREATE INDEX IF NOT EXISTS import_detail_receipt_idx ON import_detail(receipt_id);
+CREATE INDEX IF NOT EXISTS import_detail_variant_idx ON import_detail(variant_id);
 
 -- ─────────────────────────────────────────────
 --  14. PROMOTION  (mã / chương trình khuyến mãi)
@@ -316,6 +392,7 @@ CREATE TABLE IF NOT EXISTS "order" (
 CREATE INDEX IF NOT EXISTS order_customer_idx ON "order"(customer_id);
 CREATE INDEX IF NOT EXISTS order_status_idx   ON "order"(order_status);
 CREATE INDEX IF NOT EXISTS order_date_idx     ON "order"(ordered_at DESC);
+CREATE INDEX IF NOT EXISTS order_employee_idx ON "order"(employee_id);
 
 -- ─────────────────────────────────────────────
 --  17. ORDER_DETAIL
@@ -329,6 +406,7 @@ CREATE TABLE IF NOT EXISTS order_detail (
   subtotal     NUMERIC(15,2)  GENERATED ALWAYS AS (quantity * unit_price) STORED
 );
 CREATE INDEX IF NOT EXISTS order_detail_order_idx ON order_detail(order_id);
+CREATE INDEX IF NOT EXISTS order_detail_variant_idx ON order_detail(variant_id);
 
 -- ─────────────────────────────────────────────
 --  18. PAYMENT
@@ -366,6 +444,8 @@ CREATE TABLE IF NOT EXISTS feedback (
 CREATE INDEX IF NOT EXISTS feedback_customer_idx ON feedback(customer_id);
 CREATE INDEX IF NOT EXISTS feedback_status_idx   ON feedback(status);
 CREATE INDEX IF NOT EXISTS feedback_product_idx  ON feedback(product_id);
+CREATE INDEX IF NOT EXISTS feedback_rating_idx   ON feedback(rating);
+CREATE INDEX IF NOT EXISTS feedback_created_at_idx ON feedback(created_at DESC);
 
 -- ─────────────────────────────────────────────
 --  20. SURVEY
@@ -385,6 +465,8 @@ CREATE TABLE IF NOT EXISTS survey (
   created_at    TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS survey_status_idx ON survey(status);
+CREATE INDEX IF NOT EXISTS survey_created_at_idx ON survey(created_at DESC);
 
 -- ─────────────────────────────────────────────
 --  21. SURVEY_QUESTION
@@ -422,6 +504,19 @@ CREATE TABLE IF NOT EXISTS survey_response (
 );
 CREATE INDEX IF NOT EXISTS sr_survey_idx ON survey_response(survey_id);
 
+CREATE TABLE IF NOT EXISTS survey_invitation (
+  invitation_id SERIAL        PRIMARY KEY,
+  survey_id     INT           NOT NULL REFERENCES survey(survey_id) ON DELETE CASCADE,
+  customer_id   INT           NOT NULL REFERENCES customer(customer_id) ON DELETE CASCADE,
+  invited_by    INT           REFERENCES employee(employee_id) ON DELETE SET NULL,
+  status        VARCHAR(20)   NOT NULL DEFAULT 'Sent'
+                  CHECK (status IN ('Sent', 'Opened', 'Completed')),
+  invited_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  UNIQUE (survey_id, customer_id)
+);
+CREATE INDEX IF NOT EXISTS survey_invitation_customer_idx ON survey_invitation(customer_id);
+CREATE INDEX IF NOT EXISTS survey_invitation_survey_idx ON survey_invitation(survey_id);
+
 -- ─────────────────────────────────────────────
 --  24. SURVEY_ANSWER  (chi tiết từng câu trả lời)
 -- ─────────────────────────────────────────────
@@ -433,26 +528,53 @@ CREATE TABLE IF NOT EXISTS survey_answer (
   answer_text  TEXT                                           -- dùng cho câu hỏi dạng Text
 );
 CREATE INDEX IF NOT EXISTS sa_response_idx ON survey_answer(response_id);
+CREATE INDEX IF NOT EXISTS sa_question_idx ON survey_answer(question_id);
 
 -- ============================================================
 --  SEED DATA – dữ liệu mẫu khởi tạo
 -- ============================================================
 
--- Roles
+-- Roles theo đề đồ án
 INSERT INTO role (role_name, description) VALUES
-  ('Admin',    'Quản trị toàn bộ hệ thống'),
-  ('Manager',  'Quản lý hoạt động cửa hàng'),
-  ('Employee', 'Nhân viên bán hàng / kho'),
-  ('Customer', 'Khách hàng')
+  ('ADMIN',          'Quản trị toàn bộ hệ thống'),
+  ('QL_NHAN_SU',     'Quản lý nhân sự'),
+  ('QL_KHO',         'Quản lý kho'),
+  ('QL_BAN_HANG',    'Quản lý bán hàng'),
+  ('QL_KHACH_HANG',  'Quản lý khách hàng (CRM)'),
+  ('KHACH_HANG',     'Khách hàng')
 ON CONFLICT (role_name) DO NOTHING;
 
--- Accounts mẫu (password: Hung@2026 – đã hash bcrypt)
-INSERT INTO account (role_id, username, password_hash, email, status) VALUES
-  (1, 'admin01',    '$2b$10$KIX.placeholder.admin.hash....',   NULL, 'Active'),
-  (2, 'manager01',  '$2b$10$KIX.placeholder.manager.hash..',  NULL, 'Active'),
-  (3, 'employee01', '$2b$10$KIX.placeholder.employee.hash.',  NULL, 'Active'),
-  (4, 'customer01', '$2b$10$KIX.placeholder.customer.hash.',  NULL, 'Active')
-ON CONFLICT (username) DO NOTHING;
+INSERT INTO permission (permission_code, description) VALUES
+  ('account.manage',   'Thêm, xóa, khóa/mở và phân quyền tài khoản'),
+  ('product.manage',   'Quản lý sản phẩm, danh mục, thương hiệu'),
+  ('supplier.manage',  'Quản lý nhà cung cấp'),
+  ('inventory.manage', 'Phiếu nhập/xuất và tồn kho'),
+  ('order.manage',     'Đơn hàng và thanh toán'),
+  ('customer.manage',  'Khách hàng, phản hồi, khảo sát CRM'),
+  ('hr.manage',        'Hồ sơ nhân sự'),
+  ('report.view',      'Xem báo cáo thống kê'),
+  ('catalog.browse',   'Xem sản phẩm'),
+  ('profile.update',   'Sửa thông tin cá nhân'),
+  ('feedback.create',  'Gửi phản hồi sản phẩm'),
+  ('survey.respond',   'Nhận và trả lời khảo sát')
+ON CONFLICT (permission_code) DO NOTHING;
+
+INSERT INTO role_permission (role_id, permission_id)
+SELECT r.role_id, p.permission_id
+FROM role r
+JOIN permission p ON
+  (r.role_name = 'ADMIN')
+  OR (r.role_name = 'QL_NHAN_SU' AND p.permission_code IN ('hr.manage', 'report.view'))
+  OR (r.role_name = 'QL_KHO' AND p.permission_code IN ('inventory.manage', 'product.manage', 'supplier.manage', 'report.view'))
+  OR (r.role_name = 'QL_BAN_HANG' AND p.permission_code IN ('order.manage', 'product.manage', 'report.view'))
+  OR (r.role_name = 'QL_KHACH_HANG' AND p.permission_code IN ('customer.manage', 'report.view'))
+  OR (r.role_name = 'KHACH_HANG' AND p.permission_code IN ('catalog.browse', 'profile.update', 'feedback.create', 'survey.respond'))
+ON CONFLICT DO NOTHING;
+
+INSERT INTO interest (interest_name) VALUES
+  ('Áo thun'), ('Áo sơ mi'), ('Áo khoác'), ('Quần jean'),
+  ('Quần kaki'), ('Váy'), ('Phụ kiện'), ('Giày dép')
+ON CONFLICT (interest_name) DO NOTHING;
 
 -- Categories
 INSERT INTO category (category_name, description) VALUES
@@ -482,17 +604,6 @@ INSERT INTO color (color_name, hex_code) VALUES
   ('Be',        '#F5F5DC'),
   ('Nâu',       '#8B4513')
 ON CONFLICT (color_name) DO NOTHING;
-
--- Supplier mẫu
-INSERT INTO supplier (supplier_name)
-SELECT seed.supplier_name
-FROM (VALUES
-  ('Nhà cung cấp mẫu 01'),
-  ('Nhà cung cấp mẫu 02')
-) AS seed(supplier_name)
-WHERE NOT EXISTS (
-  SELECT 1 FROM supplier WHERE supplier.supplier_name = seed.supplier_name
-);
 
 INSERT INTO store_admin_schema_migrations (version, name)
 VALUES ('000', 'schema.sql baseline')

@@ -12,7 +12,12 @@
     "build": "npm run build --workspace client",
     "start": "npm run start --workspace server",
     "desktop": "electron desktop/main.js",
-    "benchmark:kafka": "node scripts/kafka-load-test.mjs"
+    "benchmark:kafka": "node scripts/kafka-load-test.mjs",
+    "db:backup": "node scripts/backup-db.mjs",
+    "db:restore": "node scripts/restore-db.mjs",
+    "db:reset": "node scripts/reset-db.mjs",
+    "catalog:scrape": "node scripts/scrape-catalog.mjs",
+    "seed": "node scripts/seed.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.0.1",

@@ -145,15 +145,23 @@ router.post('/receipts', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { supplier_id, employee_id, receipt_type = 'Import', note, details = [] } = req.body;
+    const { supplier_id, receipt_type = 'Import', note, details = [] } = req.body || {};
+    if (!Array.isArray(details) || details.length < 1 || details.length > 500
+      || details.some((detail) => !Number.isInteger(Number(detail.variant_id))
+        || !Number.isInteger(Number(detail.quantity)) || Number(detail.quantity) < 1
+        || !Number.isFinite(Number(detail.unit_price)) || Number(detail.unit_price) < 0)
+      || !['Import', 'Export', 'Adjustment'].includes(receipt_type)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'Loại phiếu hoặc danh sách chi tiết không hợp lệ.' });
+    }
 
     // Tính tổng tiền
-    const total_amount = details.reduce((sum, d) => sum + d.quantity * d.unit_price, 0);
+    const total_amount = details.reduce((sum, d) => sum + Number(d.quantity) * Number(d.unit_price), 0);
 
     const { rows } = await client.query(
       `INSERT INTO import_receipt (supplier_id, employee_id, receipt_type, note, total_amount)
        VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [supplier_id, employee_id, receipt_type, note, total_amount]
+      [supplier_id, req.user.employee_id || null, receipt_type, note, total_amount]
     );
     const receipt = rows[0];
 
@@ -166,17 +174,27 @@ router.post('/receipts', async (req, res) => {
 
       // Cập nhật tồn kho: Import thì +, Export thì -
       const delta = receipt_type === 'Export' ? -d.quantity : d.quantity;
-      await client.query(
-        `UPDATE product_variant SET quantity = quantity + $1 WHERE variant_id = $2`,
+      const { rowCount } = await client.query(
+        `UPDATE product_variant SET quantity = quantity + $1
+         WHERE variant_id = $2 AND quantity + $1 >= 0`,
         [delta, d.variant_id]
       );
+      if (!rowCount) {
+        const error = new Error(`Không tìm thấy biến thể hoặc tồn kho không đủ cho biến thể #${d.variant_id}.`);
+        error.statusCode = 409;
+        throw error;
+      }
     }
 
     await client.query('COMMIT');
     res.status(201).json(receipt);
   } catch (err) {
-    await client.query('ROLLBACK');
-    res.status(500).json({ message: err.message });
+    await client.query('ROLLBACK').catch(() => {});
+    if (err.statusCode) return res.status(err.statusCode).json({ message: err.message });
+    if (err.code === '22P02' || err.code === '23514' || err.code === '22007') {
+      return res.status(400).json({ message: 'Thông tin phiếu kho không hợp lệ.' });
+    }
+    return res.status(500).json({ message: 'Không thể tạo phiếu kho.' });
   } finally {
     client.release();
   }

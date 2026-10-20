@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import { pool } from '../db.js';
 
 const router = Router();
@@ -49,11 +50,22 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/accounts/roles/all – danh sách role
+router.get('/roles/all', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT role_id, role_name, description FROM role ORDER BY role_id`);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET /api/accounts/:id
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT a.*, r.role_name
+      `SELECT a.account_id, a.role_id, a.username, a.email, a.phone,
+              a.status, a.last_login, a.created_at, a.updated_at, r.role_name
        FROM account a JOIN role r ON r.role_id = a.role_id
        WHERE a.account_id = $1`,
       [req.params.id]
@@ -68,13 +80,26 @@ router.get('/:id', async (req, res) => {
 // POST /api/accounts – tạo tài khoản mới
 router.post('/', async (req, res) => {
   try {
-    const { role_id, username, password_hash, email, phone } = req.body;
+    const { role_id, username, password, email = null, phone = null } = req.body || {};
+    if (!Number.isInteger(Number(role_id)) || typeof username !== 'string'
+      || !/^[a-zA-Z0-9_.-]{3,100}$/.test(username.trim())
+      || typeof password !== 'string' || password.length < 8 || password.length > 128) {
+      return res.status(400).json({ message: 'Vai trò, tên đăng nhập hoặc mật khẩu không hợp lệ.' });
+    }
+    const passwordHash = await bcrypt.hash(password, 12);
     const { rows } = await pool.query(
       `INSERT INTO account (role_id, username, password_hash, email, phone)
        VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [role_id, username, password_hash, email, phone]
+      [role_id, username.trim(), passwordHash, email, phone]
     );
-    res.status(201).json(rows[0]);
+    res.status(201).json({
+      account_id: rows[0].account_id,
+      role_id: rows[0].role_id,
+      username: rows[0].username,
+      email: rows[0].email,
+      phone: rows[0].phone,
+      status: rows[0].status,
+    });
   } catch (err) {
     if (err.code === '23505') return res.status(409).json({ message: 'Username hoặc email đã tồn tại' });
     res.status(500).json({ message: err.message });
@@ -85,6 +110,9 @@ router.post('/', async (req, res) => {
 router.patch('/:id/status', async (req, res) => {
   try {
     const { status } = req.body; // 'Active' | 'Blocked'
+    if (!['Active', 'Blocked', 'Pending'].includes(status)) {
+      return res.status(400).json({ message: 'Trạng thái tài khoản không hợp lệ.' });
+    }
     const { rows } = await pool.query(
       `UPDATE account SET status=$1, updated_at=NOW()
        WHERE account_id=$2 RETURNING account_id, username, status`,
@@ -101,6 +129,9 @@ router.patch('/:id/status', async (req, res) => {
 router.patch('/:id/role', async (req, res) => {
   try {
     const { role_id } = req.body;
+    if (!Number.isInteger(Number(role_id)) || Number(role_id) < 1) {
+      return res.status(400).json({ message: 'Vai trò không hợp lệ.' });
+    }
     const { rows } = await pool.query(
       `UPDATE account SET role_id=$1, updated_at=NOW()
        WHERE account_id=$2 RETURNING account_id, username, role_id`,
@@ -121,16 +152,6 @@ router.delete('/:id', async (req, res) => {
     );
     if (!rowCount) return res.status(404).json({ message: 'Không tìm thấy tài khoản' });
     res.json({ message: 'Xóa tài khoản thành công' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// GET /api/accounts/roles/all – danh sách role
-router.get('/roles/all', async (_req, res) => {
-  try {
-    const { rows } = await pool.query(`SELECT * FROM role ORDER BY role_id`);
-    res.json(rows);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

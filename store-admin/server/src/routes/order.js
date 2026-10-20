@@ -1,4 +1,10 @@
 import { Router } from 'express';
+import {
+  applySale,
+  calcOrderTotals,
+  canTransitionOrderStatus,
+  isOrderStatus,
+} from '../domain/index.js';
 import { pool } from '../db.js';
 
 const router = Router();
@@ -106,69 +112,109 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     const {
-      customer_id, employee_id, promotion_id,
+      customer_id, promotion_id,
       order_channel = 'InStore', note,
-      items = [],         // [{ variant_id, quantity, unit_price }]
+      items = [],
       payment_method = 'Cash',
-    } = req.body;
+    } = req.body || {};
+    const paymentMethods = new Set(['Cash', 'BankTransfer', 'Momo', 'VNPay', 'ZaloPay']);
+    if (!Array.isArray(items) || items.length < 1 || items.length > 100
+      || items.some((item) => !Number.isInteger(Number(item.variant_id))
+        || !Number.isInteger(Number(item.quantity)) || Number(item.quantity) < 1)
+      || new Set(items.map((item) => Number(item.variant_id))).size !== items.length
+      || !['InStore', 'Website', 'Online'].includes(order_channel)
+      || !paymentMethods.has(payment_method)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'Kênh bán, phương thức thanh toán hoặc danh sách sản phẩm không hợp lệ.' });
+    }
 
-    // Tính tiền
-    const subtotal = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
-    let discount_amt = 0;
+    const pricedItems = [];
+    for (const item of items) {
+      const { rows } = await client.query(
+        `SELECT pv.variant_id, pv.quantity, p.selling_price
+         FROM product_variant pv
+         JOIN product p ON p.product_id = pv.product_id
+         WHERE pv.variant_id = $1 AND p.is_active = TRUE
+         FOR UPDATE OF pv`,
+        [item.variant_id],
+      );
+      if (!rows.length) {
+        const error = new Error(`Không tìm thấy biến thể sản phẩm #${item.variant_id}.`);
+        error.statusCode = 404;
+        throw error;
+      }
+      const pricedItem = {
+        variantId: Number(item.variant_id),
+        quantity: Number(item.quantity),
+        unitPrice: Number(rows[0].selling_price),
+        stock: Number(rows[0].quantity),
+      };
+      const sale = applySale(pricedItem.stock, pricedItem.quantity);
+      if (!sale.applied) {
+        const error = new Error(`Không đủ tồn kho cho biến thể #${item.variant_id}.`);
+        error.statusCode = 409;
+        throw error;
+      }
+      pricedItems.push({ ...pricedItem, newStock: sale.newQty });
+    }
 
+    let promotions = [];
     if (promotion_id) {
       const { rows: promo } = await client.query(
         `SELECT * FROM promotion WHERE promotion_id=$1 AND is_active=TRUE
-         AND CURRENT_DATE BETWEEN start_date AND end_date`,
+         AND CURRENT_DATE BETWEEN start_date AND end_date
+         AND (usage_limit IS NULL OR used_count < usage_limit)`,
         [promotion_id]
       );
-      if (promo.length) {
-        const p = promo[0];
-        if (subtotal >= p.min_order) {
-          discount_amt = p.promo_type === 'Percent'
-            ? subtotal * p.value / 100
-            : p.value;
-          if (p.max_discount) discount_amt = Math.min(discount_amt, p.max_discount);
-          // Cập nhật lượt dùng
-          await client.query(
-            `UPDATE promotion SET used_count = used_count + 1 WHERE promotion_id = $1`,
-            [promotion_id]
-          );
-          // Đánh dấu user_promotion đã dùng
-          if (customer_id) {
-            await client.query(
-              `UPDATE user_promotion SET status='Used', used_at=NOW()
-               WHERE customer_id=$1 AND promotion_id=$2`,
-              [customer_id, promotion_id]
-            );
-          }
-        }
+      if (!promo.length) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: 'Mã khuyến mãi không tồn tại, đã hết hạn hoặc đã hết lượt sử dụng.' });
       }
+      const p = promo[0];
+      promotions = [{
+        promoType: p.promo_type,
+        value: Number(p.value),
+        minOrder: Number(p.min_order),
+        maxDiscount: p.max_discount === null ? null : Number(p.max_discount),
+      }];
     }
 
-    const total_amount = Math.max(subtotal - discount_amt, 0);
+    const { subtotal, discountAmt: discount_amt, totalAmount: total_amount } =
+      calcOrderTotals(pricedItems, promotions);
+
+    if (promotion_id && discount_amt > 0) {
+      await client.query(
+        `UPDATE promotion SET used_count = used_count + 1 WHERE promotion_id = $1`,
+        [promotion_id]
+      );
+      if (customer_id) {
+        await client.query(
+          `UPDATE user_promotion SET status='Used', used_at=NOW()
+           WHERE customer_id=$1 AND promotion_id=$2`,
+          [customer_id, promotion_id]
+        );
+      }
+    }
 
     // Tạo đơn
     const { rows } = await client.query(
       `INSERT INTO "order" (customer_id, employee_id, promotion_id, order_channel,
                             subtotal, discount_amt, total_amount, note)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [customer_id, employee_id, promotion_id, order_channel,
+      [customer_id, req.user.employee_id || null, promotion_id, order_channel,
        subtotal, discount_amt, total_amount, note]
     );
     const order = rows[0];
 
-    // Thêm chi tiết + trừ kho
-    for (const item of items) {
+    for (const item of pricedItems) {
       await client.query(
         `INSERT INTO order_detail (order_id, variant_id, quantity, unit_price)
          VALUES ($1,$2,$3,$4)`,
-        [order.order_id, item.variant_id, item.quantity, item.unit_price]
+        [order.order_id, item.variantId, item.quantity, item.unitPrice]
       );
       await client.query(
-        `UPDATE product_variant SET quantity = quantity - $1
-         WHERE variant_id = $2 AND quantity >= $1`,
-        [item.quantity, item.variant_id]
+        `UPDATE product_variant SET quantity = $1 WHERE variant_id = $2`,
+        [item.newStock, item.variantId]
       );
     }
 
@@ -181,23 +227,45 @@ router.post('/', async (req, res) => {
     await client.query('COMMIT');
     res.status(201).json(order);
   } catch (err) {
-    await client.query('ROLLBACK');
-    res.status(500).json({ message: err.message });
+    await client.query('ROLLBACK').catch(() => {});
+    if (err.statusCode) return res.status(err.statusCode).json({ message: err.message });
+    if (err.code === '22P02' || err.code === '23514' || err.code === '22007') {
+      return res.status(400).json({ message: 'Thông tin đơn hàng không hợp lệ.' });
+    }
+    return res.status(500).json({ message: 'Không thể tạo đơn hàng.' });
   } finally {
     client.release();
   }
 });
 
-// PATCH /api/orders/:id/status – cập nhật trạng thái đơn
+// PATCH /api/orders/:id/status – cập nhật trạng thái đơn (có kiểm tra state machine)
 router.patch('/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
+    if (!isOrderStatus(status)) {
+      return res.status(400).json({ message: 'Trạng thái đơn hàng không hợp lệ' });
+    }
+
+    const { rows: currentRows } = await pool.query(
+      `SELECT order_status FROM "order" WHERE order_id = $1`,
+      [req.params.id]
+    );
+    if (!currentRows.length) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+
+    const currentStatus = currentRows[0].order_status;
+    if (!canTransitionOrderStatus(currentStatus, status)) {
+      return res.status(409).json({
+        message: `Không thể chuyển từ ${currentStatus} sang ${status}`,
+        currentStatus,
+        requestedStatus: status,
+      });
+    }
+
     const { rows } = await pool.query(
       `UPDATE "order" SET order_status=$1, updated_at=NOW()
        WHERE order_id=$2 RETURNING order_id, order_status`,
       [status, req.params.id]
     );
-    if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ message: err.message });

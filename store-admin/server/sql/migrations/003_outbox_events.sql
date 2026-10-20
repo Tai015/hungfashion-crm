@@ -1,3 +1,4 @@
+-- Bổ sung outbox bền vững và khóa chống xử lý trùng sự kiện.
 CREATE TABLE IF NOT EXISTS outbox_events (
   event_id      TEXT PRIMARY KEY,
   topic         TEXT NOT NULL CHECK (topic IN ('user-events', 'transaction-events')),

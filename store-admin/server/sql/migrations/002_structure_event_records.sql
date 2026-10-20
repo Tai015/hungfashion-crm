@@ -1,3 +1,4 @@
+-- Chuyển payload sự kiện cũ thành các cột có cấu trúc.
 ALTER TABLE user_events
   ADD COLUMN event_id TEXT,
   ADD COLUMN session_id TEXT,
