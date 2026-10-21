@@ -121,7 +121,12 @@ router.get('/:id', async (req, res) => {
       if (!rowCount) return res.status(403).json({ message: 'Khảo sát này chưa được gửi tới tài khoản của bạn.' });
     }
     const { rows: survey } = await pool.query(
-      `SELECT s.*, e.full_name AS created_by_name
+      `SELECT s.*, e.full_name AS created_by_name,
+              (SELECT COUNT(*)::int FROM survey_question sqc WHERE sqc.survey_id = s.survey_id) AS question_count,
+              (SELECT COUNT(*)::int FROM survey_response src WHERE src.survey_id = s.survey_id) AS response_count,
+              (SELECT COUNT(*)::int FROM survey_invitation sic WHERE sic.survey_id = s.survey_id) AS invitation_count,
+              (SELECT COUNT(*)::int FROM survey_invitation sic
+                WHERE sic.survey_id = s.survey_id AND sic.status = 'Completed') AS completed_count
        FROM survey s LEFT JOIN employee e ON e.employee_id = s.created_by
        WHERE s.survey_id = $1`,
       [req.params.id]
@@ -154,7 +159,14 @@ router.get('/:id', async (req, res) => {
       options: options.filter(o => o.question_id === q.question_id),
     }));
 
-    res.json({ ...survey[0], questions: questionsWithOptions });
+    const payload = { ...survey[0], questions: questionsWithOptions };
+    if (req.user.role_name === 'KHACH_HANG') {
+      delete payload.question_count;
+      delete payload.response_count;
+      delete payload.invitation_count;
+      delete payload.completed_count;
+    }
+    res.json(payload);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -170,4 +170,34 @@ router.get('/interests', async (_req, res) => {
   }
 });
 
+// GET /api/reports/audit-logs – nhật ký hoạt động người dùng (dành cho Admin)
+router.get('/audit-logs', async (req, res) => {
+  try {
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 50);
+    const offset = (page - 1) * limit;
+
+    const { rows } = await pool.query(
+      `SELECT ue.*, a.username, c.full_name
+       FROM user_events ue
+       LEFT JOIN account a ON a.account_id = ue.user_id::int
+       LEFT JOIN customer c ON c.account_id = a.account_id
+       ORDER BY ue.occurred_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    const { rows: countRows } = await pool.query('SELECT COUNT(*)::int AS total FROM user_events');
+
+    res.json({
+      data: rows,
+      total: countRows[0].total,
+      page,
+      limit
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;

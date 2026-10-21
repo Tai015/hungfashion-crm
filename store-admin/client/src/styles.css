@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #e2e8f0;
@@ -84,6 +88,34 @@ button {
 .topbar h1 {
   margin: 6px 0 0;
   font-size: 2rem;
+}
+
+/* Audit Log Table Styling */
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.audit-table th {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-weight: 500;
+}
+.audit-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+}
+.badge-event {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
 .dashboard-updated {
@@ -1295,6 +1327,79 @@ th {
 
 .survey-form h2 {
   margin: 12px 0 4px;
+}
+
+.survey-title-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.survey-title-button:hover strong {
+  color: #c7d2fe;
+  text-decoration: underline;
+}
+
+.survey-detail {
+  margin-top: 18px;
+}
+
+.survey-detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.survey-detail-heading h2 {
+  margin: 4px 0 8px;
+  color: #f8fafc;
+  overflow-wrap: anywhere;
+}
+
+.survey-detail-heading p:not(.eyebrow) {
+  margin: 0;
+  color: #94a3b8;
+  overflow-wrap: anywhere;
+}
+
+.survey-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 18px;
+  margin: 18px 0 0;
+}
+
+.survey-detail-stats div {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.survey-detail-stats dt {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.survey-detail-stats dd {
+  margin: 4px 0 0;
+  color: #e2e8f0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.survey-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.survey-detail-questions h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
 }
 
 .survey-results {

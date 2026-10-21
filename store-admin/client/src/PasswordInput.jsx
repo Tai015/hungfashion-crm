@@ -4,17 +4,21 @@ export default function PasswordInput(props) {
   const [visible, setVisible] = useState(false);
 
   return (
-    <span className="password-input-wrap">
-      <input {...props} type={visible ? 'text' : 'password'} />
+    <div className="relative w-full">
+      <input
+        {...props}
+        type={visible ? 'text' : 'password'}
+        className="w-full px-4 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors text-sm pr-10"
+      />
       <button
-        className="password-visibility-button"
         type="button"
         onClick={() => setVisible(current => !current)}
         aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
         aria-pressed={visible}
         title={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2 stroke-linecap-round stroke-linejoin-round" aria-hidden="true" focusable="false">
           {visible ? (
             <>
               <path d="M3 3l18 18" />
@@ -29,6 +33,6 @@ export default function PasswordInput(props) {
           )}
         </svg>
       </button>
-    </span>
+    </div>
   );
 }
