@@ -385,6 +385,7 @@ CREATE TABLE IF NOT EXISTS "order" (
   discount_amt   NUMERIC(15,2)   NOT NULL DEFAULT 0,
   total_amount   NUMERIC(15,2)   NOT NULL DEFAULT 0,
   note           TEXT,
+  shipping_address TEXT,
   order_channel  VARCHAR(50)     NOT NULL DEFAULT 'InStore',  -- InStore | Website | Online
   ordered_at     TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ     NOT NULL DEFAULT NOW()

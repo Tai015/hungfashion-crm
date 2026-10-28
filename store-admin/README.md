@@ -86,12 +86,17 @@ Server và các script đọc `server/.env`. File mẫu nằm tại [server/.env
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Database và tài khoản PostgreSQL |
 | `KAFKA_BROKER` | Địa chỉ Kafka, mặc định local là `localhost:9092` |
 | `KAFKA_UI_PORT` | Cổng Kafka UI, mặc định `8080` |
+| `VIETQR_BANK_ID` | BIN ngân hàng VietQR gồm 6 chữ số (Agribank: `970405`) |
+| `VIETQR_ACCOUNT_NUMBER` | Số tài khoản nhận chuyển khoản QR |
+| `VIETQR_ACCOUNT_NAME` | Tên chủ tài khoản nhận tiền |
 | `ENABLE_DATABASE_BROWSER` | Bật/tắt API xem bảng database |
 | `ENABLE_DATABASE_RESTORE` | Bật/tắt API phục hồi database |
 | `PYTHON_EXECUTABLE` | Lệnh hoặc đường dẫn đến Python |
 | `PG_DUMP_PATH`, `PG_RESTORE_PATH` | Đường dẫn đến công cụ sao lưu/phục hồi PostgreSQL |
 
 Các giá trị trong `.env.example` dành cho môi trường phát triển local. Hãy thay đổi thông tin xác thực trước khi triển khai.
+
+Để khách thanh toán QR, hãy điền đúng ba biến `VIETQR_*` trong `server/.env`. Không đưa số tài khoản thật vào source hoặc commit. Mã QR được tạo qua dịch vụ ảnh VietQR; nội dung chuyển khoản gồm mã đơn để đối soát. Trạng thái thanh toán hiện chưa được xác nhận tự động từ ngân hàng, cần nhân viên xác nhận sau khi nhận tiền. Phương thức khách hàng hiện hỗ trợ là tiền mặt khi nhận hàng và chuyển khoản QR.
 
 ## Database và migration
 

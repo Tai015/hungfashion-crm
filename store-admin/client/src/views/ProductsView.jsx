@@ -1,128 +1,243 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Package, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { apiFetch } from '../api';
 import Spinner from '../components/Spinner';
+import { confirmDestructiveAction } from '../utils/confirmAction';
 import { fmtVND } from '../utils/formatters';
 
+const LIMIT = 15;
+const INPUT  = 'w-full h-10 px-3 bg-white/[0.07] border border-white/[0.12] rounded-xl text-[#f5f0eb] text-sm placeholder-white/22 outline-none focus:border-orange-500/50 focus:bg-white/10 focus:ring-2 focus:ring-orange-500/[0.12] transition-all dark-input';
+const SELECT = INPUT + ' cursor-pointer';
+const BTN_PRIMARY = 'inline-flex items-center gap-1.5 h-9 px-4 bg-gradient-to-br from-orange-500 to-orange-600 border border-orange-500/50 text-white text-sm font-semibold rounded-xl shadow-[0_8px_20px_rgba(249,115,22,0.3)] hover:shadow-[0_10px_26px_rgba(249,115,22,0.45)] hover:-translate-y-px transition-all disabled:opacity-55 disabled:cursor-not-allowed cursor-pointer';
+const BTN_GHOST   = 'inline-flex items-center gap-1.5 h-9 px-4 bg-white/[0.07] border border-white/15 text-white/65 text-sm font-medium rounded-xl transition-all hover:bg-white/[0.12] hover:text-white/90 cursor-pointer';
+const PANEL  = 'flex flex-col gap-5 p-6 bg-white/[0.06] border border-white/10 rounded-2xl backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.35)] text-[#f5f0eb]';
+const TH     = 'px-3.5 py-2.5 text-left text-[0.72rem] font-semibold tracking-[0.05em] uppercase text-white/38 border-b border-white/[0.08] whitespace-nowrap';
+const TD     = 'px-3.5 py-3 border-b border-white/[0.05] text-white/78 align-middle';
+const ICON_BTN = 'grid w-8 h-8 place-items-center border border-white/10 rounded-[9px] bg-white/[0.06] text-white/55 cursor-pointer transition-all hover:bg-white/[0.12] hover:text-white/90 hover:border-white/22';
+
+function Field({ label, children }) {
+  return <label className="flex flex-col gap-1.5 text-white/65 text-sm font-medium">{label&&<span>{label}</span>}{children}</label>;
+}
+
+function ProductModal({ product, categories, suppliers, onClose, onSaved }) {
+  const isEdit = Boolean(product);
+  const [form, setForm] = useState(product ? {
+    product_name: product.product_name||'', category_id: product.category_id||'',
+    supplier_id: product.supplier_id||'', import_price: product.import_price||'',
+    selling_price: product.selling_price||'', description: product.description||'',
+  } : { product_name:'', category_id:'', supplier_id:'', import_price:'', selling_price:'', description:'' });
+  const [busy, setBusy]   = useState(false);
+  const [error, setError] = useState('');
+
+  const save = async e => {
+    e.preventDefault(); setBusy(true); setError('');
+    try {
+      const body = { ...form, import_price:Number(form.import_price), selling_price:Number(form.selling_price), category_id:Number(form.category_id)||null, supplier_id:Number(form.supplier_id)||null };
+      if (isEdit) await apiFetch(`/api/products/${product.product_id}`, { method:'PATCH', body });
+      else        await apiFetch('/api/products', { method:'POST', body });
+      onSaved();
+    } catch(err) { setError(err.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-md p-5" onClick={onClose}>
+      <motion.div initial={{ scale:0.94, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.94, opacity:0 }} transition={{ duration:0.18 }}
+        className="w-full max-w-[520px] p-7 border border-white/[0.12] rounded-3xl bg-[rgba(26,20,16,0.96)] shadow-[0_32px_80px_rgba(0,0,0,0.65)] text-[#f5f0eb]"
+        onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-white/[0.08]">
+          <h2 className="m-0 text-[1.1rem] font-bold">{isEdit ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</h2>
+          <button className="grid w-[34px] h-[34px] place-items-center border border-white/12 rounded-[9px] bg-white/[0.05] text-white/50 cursor-pointer transition-all hover:bg-red-500/15 hover:border-red-500/30 hover:text-red-400" onClick={onClose}><X size={16}/></button>
+        </div>
+        <form onSubmit={save} className="flex flex-col gap-5">
+          <div className="grid grid-cols-2 gap-3.5">
+            <div className="col-span-2">
+              <Field label="Tên sản phẩm *">
+                <input required maxLength={200} placeholder="Áo thun..." className={INPUT} value={form.product_name} onChange={e => setForm({...form, product_name:e.target.value})} />
+              </Field>
+            </div>
+            <Field label="Danh mục">
+              <select className={SELECT} value={form.category_id} onChange={e => setForm({...form, category_id:e.target.value})}>
+                <option value="">-- Chọn danh mục --</option>
+                {categories.map(c => <option key={c.category_id} value={c.category_id}>{c.category_name}</option>)}
+              </select>
+            </Field>
+            <Field label="Nhà cung cấp">
+              <select className={SELECT} value={form.supplier_id} onChange={e => setForm({...form, supplier_id:e.target.value})}>
+                <option value="">-- Chọn nhà cung cấp --</option>
+                {suppliers.map(s => <option key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</option>)}
+              </select>
+            </Field>
+            <Field label="Giá nhập (đ)"><input type="number" min="0" placeholder="0" className={INPUT} value={form.import_price} onChange={e => setForm({...form, import_price:e.target.value})} /></Field>
+            <Field label="Giá bán (đ)"><input type="number" min="0" placeholder="0" className={INPUT} value={form.selling_price} onChange={e => setForm({...form, selling_price:e.target.value})} /></Field>
+            <div className="col-span-2">
+              <Field label="Mô tả">
+                <textarea rows={3} maxLength={2000} className={`${INPUT} h-auto py-2.5 resize-y min-h-[70px]`} value={form.description} onChange={e => setForm({...form, description:e.target.value})} />
+              </Field>
+            </div>
+          </div>
+          {error && <p className="m-0 text-red-400 text-sm">{error}</p>}
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-white/[0.08]">
+            <button type="button" className={BTN_GHOST} onClick={onClose}>Hủy</button>
+            <button type="submit" className={BTN_PRIMARY} disabled={busy}>{busy ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : 'Thêm sản phẩm'}</button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function ProductsView() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts]     = useState([]);
   const [categories, setCategories] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [search, setSearch] = useState('');
+  const [suppliers, setSuppliers]   = useState([]);
+  const [total, setTotal]           = useState(0);
+  const [search, setSearch]         = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [supplierId, setSupplierId] = useState('');
-  const [sort, setSort] = useState('created_at');
-  const [order, setOrder] = useState('desc');
-  const [suppliers, setSuppliers] = useState([]);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const LIMIT = 15;
+  const [sort, setSort]             = useState('created_at');
+  const [order, setOrder]           = useState('desc');
+  const [page, setPage]             = useState(1);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState('');
+  const [refresh, setRefresh]       = useState(0);
+  const [modal, setModal]           = useState(null);
 
   useEffect(() => {
     Promise.all([apiFetch('/api/products/categories'), apiFetch('/api/inventory/suppliers')])
-      .then(([rows, supplierRows]) => {
+      .then(([cats, supps]) => {
         const seen = new Set();
-        setCategories(rows.filter(category => {
-          if (seen.has(category.category_name)) return false;
-          seen.add(category.category_name);
-          return true;
-        }));
-        setSuppliers(supplierRows || []);
-      })
-      .catch(requestError => setError(requestError.message));
+        setCategories(cats.filter(c => { if(seen.has(c.category_name)) return false; seen.add(c.category_name); return true; }));
+        setSuppliers(supps||[]);
+      }).catch(e => setError(e.message));
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    setError('');
-    const params = new URLSearchParams({ page, limit: LIMIT });
-    if (search) params.set('search', search);
-    if (categoryId) params.set('category_id', categoryId);
-    if (supplierId) params.set('supplier_id', supplierId);
-    params.set('sort', sort);
-    params.set('order', order);
-    apiFetch(`/api/products?${params}`)
-      .then(d => { setProducts(d.data || []); setTotal(d.total || 0); })
-      .catch(requestError => setError(requestError.message))
+    setLoading(true); setError('');
+    const p = new URLSearchParams({ page, limit:LIMIT, sort, order });
+    if (search)     p.set('search', search);
+    if (categoryId) p.set('category_id', categoryId);
+    if (supplierId) p.set('supplier_id', supplierId);
+    apiFetch(`/api/products?${p}`)
+      .then(d => { setProducts(d.data||[]); setTotal(d.total||0); })
+      .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, [search, categoryId, supplierId, page, sort, order]);
+  }, [search, categoryId, supplierId, page, sort, order, refresh]);
+
+  const deleteProduct = async p => {
+    const confirmed = await confirmDestructiveAction({
+      title: 'Xóa sản phẩm?',
+      text: `Bạn có chắc muốn xóa "${p.product_name}" không?`,
+      confirmText: 'Xóa sản phẩm',
+    });
+    if (!confirmed) return;
+    try { await apiFetch(`/api/products/${p.product_id}`, { method:'DELETE' }); setRefresh(v => v+1); }
+    catch(err) { setError(err.message); }
+  };
+
+  const stockColor = n => n<=5 ? '#ef4444' : n<=20 ? '#f59e0b' : '#10b981';
+  const totalPages = Math.ceil(total/LIMIT)||1;
 
   return (
-    <>
-      <header className="topbar">
-        <div><p className="eyebrow">Kho hàng</p><h1>Quản lý sản phẩm</h1></div>
-      </header>
-      <div className="filter-toolbar">
-        <label className="filter-field search-field">
-          <span>Tìm sản phẩm</span>
-          <input className="search-input" type="search" placeholder="Tên sản phẩm"
+    <div className="flex flex-col gap-5 text-[#f5f0eb]">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="m-0 text-white/40 text-xs font-semibold tracking-[0.08em] uppercase">Kho hàng</p>
+          <h1 className="m-0 mt-1 text-[clamp(1.5rem,2.5vw,2rem)] font-bold tracking-tight">Quản lý sản phẩm</h1>
+        </div>
+        <button className={BTN_PRIMARY} onClick={() => setModal('add')}><Plus size={15}/> Thêm sản phẩm</button>
+      </div>
+
+      {/* Filter bar */}
+      <div className="flex items-center flex-wrap gap-2.5 px-4 py-3 bg-white/[0.06] border border-white/10 rounded-2xl backdrop-blur-xl">
+        <div className="relative flex items-center flex-1">
+          <Search size={14} className="absolute left-3 text-white/30 pointer-events-none"/>
+          <input className={`${INPUT} pl-9`} placeholder="Tên sản phẩm..."
             value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
-        </label>
-        <label className="filter-field">
-          <span>Danh mục</span>
-          <select className="filter-select" value={categoryId}
-            onChange={e => { setCategoryId(e.target.value); setPage(1); }}>
-            <option value="">Tất cả danh mục</option>
-            {categories.map(category => (
-              <option key={category.category_id} value={category.category_id}>{category.category_name}</option>
-            ))}
-          </select>
-        </label>
-        <label className="filter-field">
-          <span>Nhà cung cấp</span>
-          <select className="filter-select" value={supplierId} onChange={e => { setSupplierId(e.target.value); setPage(1); }}>
-            <option value="">Tất cả nhà cung cấp</option>
-            {suppliers.map(supplier => <option key={supplier.supplier_id} value={supplier.supplier_id}>{supplier.supplier_name}</option>)}
-          </select>
-        </label>
-        <label className="filter-field">
-          <span>Sắp xếp</span>
-          <select className="filter-select" value={`${sort}-${order}`} onChange={e => { const [nextSort, nextOrder] = e.target.value.split('-'); setSort(nextSort); setOrder(nextOrder); }}>
-            <option value="created_at-desc">Mới nhất</option><option value="name-asc">Tên A–Z</option><option value="price-asc">Giá thấp đến cao</option><option value="price-desc">Giá cao đến thấp</option>
-          </select>
-        </label>
-        {(search || categoryId || supplierId) && (
-          <button className="filter-clear" type="button" onClick={() => { setSearch(''); setCategoryId(''); setSupplierId(''); setPage(1); }}>
-            Xóa lọc
-          </button>
+        </div>
+        <select className={`${SELECT} w-auto`} value={categoryId} onChange={e => { setCategoryId(e.target.value); setPage(1); }}>
+          <option value="">Tất cả danh mục</option>
+          {categories.map(c => <option key={c.category_id} value={c.category_id}>{c.category_name}</option>)}
+        </select>
+        <select className={`${SELECT} w-auto`} value={supplierId} onChange={e => { setSupplierId(e.target.value); setPage(1); }}>
+          <option value="">Tất cả nhà CC</option>
+          {suppliers.map(s => <option key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</option>)}
+        </select>
+        <select className={`${SELECT} w-auto`} value={`${sort}-${order}`} onChange={e => { const [s,o]=e.target.value.split('-'); setSort(s); setOrder(o); }}>
+          <option value="created_at-desc">Mới nhất</option>
+          <option value="product_name-asc">Tên A–Z</option>
+          <option value="selling_price-asc">Giá thấp → cao</option>
+          <option value="selling_price-desc">Giá cao → thấp</option>
+        </select>
+        {(search||categoryId||supplierId) && (
+          <button className={BTN_GHOST} onClick={() => { setSearch(''); setCategoryId(''); setSupplierId(''); setPage(1); }}><X size={13}/> Xóa lọc</button>
         )}
       </div>
-      {error && <p className="form-error" role="alert">{error}</p>}
-      <div className="panel">
-        <div className="panel-header"><h3>Sản phẩm ({total.toLocaleString('vi-VN')})</h3></div>
+
+      {error && <p className="p-3 px-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">{error}</p>}
+
+      <div className={PANEL}>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="flex items-center gap-2.5 m-0 text-[1.05rem] font-semibold">
+            Sản phẩm
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/25 text-orange-500 text-xs font-semibold">{total.toLocaleString('vi-VN')}</span>
+          </h2>
+        </div>
         {loading ? <Spinner /> : (
-          <table>
-            <thead>
-              <tr><th>#</th><th>Tên sản phẩm</th><th>Danh mục</th><th>Giá nhập</th><th>Giá bán</th><th>Tồn kho</th></tr>
-            </thead>
-            <tbody>
-              {products.length ? products.map(p => (
-                <tr key={p.product_id}>
-                  <td>{p.product_id}</td>
-                  <td><strong>{p.product_name}</strong></td>
-                  <td>{p.category_name}</td>
-                  <td>{fmtVND(p.import_price)}</td>
-                  <td>{fmtVND(p.selling_price)}</td>
-                  <td>
-                    <span style={{ color: p.total_stock <= 5 ? '#ef4444' : '#10b981', fontWeight: 600 }}>
-                      {p.total_stock}
-                    </span>
-                  </td>
-                </tr>
-              )) : (
-                <tr><td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>Chưa có sản phẩm</td></tr>
-              )}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr>{['#','Tên sản phẩm','Danh mục','Giá nhập','Giá bán','Tồn kho','Thao tác'].map(h => <th key={h} className={TH}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {products.length ? products.map(p => (
+                  <tr key={p.product_id} className="hover:bg-white/[0.04] transition-colors">
+                    <td className={`${TD} text-white/28 text-xs tabular-nums w-10`}>{p.product_id}</td>
+                    <td className={TD}>
+                      <div className="flex items-center gap-2">
+                        <div className="grid w-8 h-8 place-items-center rounded-[10px] bg-white/[0.07] text-white/45 shrink-0"><Package size={13}/></div>
+                        <strong className="text-[#f5f0eb] font-semibold">{p.product_name}</strong>
+                      </div>
+                    </td>
+                    <td className={TD}><span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-white/[0.07] text-white/55 text-xs font-medium">{p.category_name}</span></td>
+                    <td className={TD}>{fmtVND(p.import_price)}</td>
+                    <td className={TD}><strong className="text-[#f5f0eb]">{fmtVND(p.selling_price)}</strong></td>
+                    <td className={TD}>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums" style={{ color:stockColor(p.total_stock), background:`${stockColor(p.total_stock)}18` }}>{p.total_stock}</span>
+                    </td>
+                    <td className={TD}>
+                      <div className="flex items-center gap-1.5">
+                        <button className={ICON_BTN} title="Chỉnh sửa" onClick={() => setModal(p)}><Pencil size={14}/></button>
+                        <button className={`${ICON_BTN} border-red-500/20 text-red-500/65 hover:bg-red-500/15 hover:border-red-500/40 hover:text-red-400`} title="Xóa" onClick={() => deleteProduct(p)}><Trash2 size={14}/></button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : <tr><td colSpan={7} className="py-10 text-center text-white/25 text-sm">Chưa có sản phẩm</td></tr>}
+              </tbody>
+            </table>
+          </div>
         )}
-        {total > LIMIT && (
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 0' }}>
-            <button className="event-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>← Trước</button>
-            <span style={{ lineHeight: '32px', fontSize: 13, color: '#94a3b8' }}>Trang {page} / {Math.ceil(total / LIMIT)}</span>
-            <button className="event-btn" disabled={page >= Math.ceil(total / LIMIT)} onClick={() => setPage(p => p + 1)}>Sau →</button>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 pt-4 border-t border-white/[0.06]">
+            <button className="grid w-9 h-9 place-items-center border border-white/10 rounded-xl bg-white/[0.06] text-white/55 cursor-pointer transition-all hover:bg-white/[0.12] hover:text-[#f5f0eb] disabled:opacity-30 disabled:cursor-not-allowed"
+              disabled={page<=1} onClick={() => setPage(p => p-1)}><ChevronLeft size={15}/></button>
+            <span className="text-white/40 text-sm tabular-nums">Trang {page} / {totalPages}</span>
+            <button className="grid w-9 h-9 place-items-center border border-white/10 rounded-xl bg-white/[0.06] text-white/55 cursor-pointer transition-all hover:bg-white/[0.12] hover:text-[#f5f0eb] disabled:opacity-30 disabled:cursor-not-allowed"
+              disabled={page>=totalPages} onClick={() => setPage(p => p+1)}><ChevronRight size={15}/></button>
           </div>
         )}
       </div>
-    </>
+
+      <AnimatePresence>
+        {modal && (
+          <ProductModal
+            product={modal==='add'?null:modal}
+            categories={categories} suppliers={suppliers}
+            onClose={() => setModal(null)}
+            onSaved={() => { setModal(null); setRefresh(v => v+1); }}
+          />
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

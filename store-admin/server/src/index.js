@@ -27,6 +27,7 @@ import feedbackRouter  from './routes/feedback.js';
 import surveyRouter    from './routes/survey.js';
 import reportRouter    from './routes/report.js';
 import settingsRouter  from './routes/settings.js';
+import chatRouter      from './routes/chat.js';
 
 const app  = express();
 const PORT = Number(process.env.PORT || 5000);
@@ -57,7 +58,17 @@ app.use('/api/products', (req, res, next) => {
   return requireAuth(req, res, () => allowRoles('ADMIN', 'QL_KHO')(req, res, next));
 }, productRouter);
 app.use('/api/inventory', requireAuth, allowRoles('ADMIN', 'QL_KHO'), inventoryRouter);
-app.use('/api/orders', requireAuth, allowRoles('ADMIN', 'QL_BAN_HANG'), orderRouter);
+app.use('/api/orders', requireAuth, (req, res, next) => {
+  if (req.user.role_name === 'KHACH_HANG') {
+    // Khách hàng chỉ được xật GET /mine*, POST / (tạo đơn), PATCH /:id/status (hủy)
+    const isGetMine  = req.method === 'GET'   && req.path.startsWith('/mine');
+    const isPost     = req.method === 'POST'  && req.path === '/';
+    const isCancel   = req.method === 'PATCH' && /^\/\d+\/status$/.test(req.path);
+    if (isGetMine || isPost || isCancel) return next();
+    return res.status(403).json({ message: 'Bạn không có quyền thực hiện thao tác này.' });
+  }
+  return allowRoles('ADMIN', 'QL_BAN_HANG')(req, res, next);
+}, orderRouter);
 app.use('/api/promotions', requireAuth, allowRoles('ADMIN', 'QL_BAN_HANG', 'QL_KHACH_HANG'), promotionRouter);
 app.use('/api/feedbacks', requireAuth, (req, res, next) => {
   const roles = req.method === 'POST'
@@ -76,6 +87,7 @@ app.use('/api/surveys', requireAuth, (req, res, next) => {
 }, surveyRouter);
 app.use('/api/reports', requireAuth, allowRoles('ADMIN', 'QL_KHACH_HANG', 'QL_NHAN_SU', 'QL_KHO', 'QL_BAN_HANG'), reportRouter);
 app.use('/api/settings', requireAuth, allowRoles('ADMIN'), settingsRouter);
+app.use('/api/chat',    requireAuth, chatRouter);
 
 // ── Database Browser (chỉ cho phép truy cập từ máy local) ─
 function requireDatabaseBrowser(req, res, next) {

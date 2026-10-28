@@ -1,24 +1,20 @@
 import { useState } from 'react';
 
+const INPUT_CLS = 'w-full h-11 pl-3 pr-11 bg-white/70 border border-stone-400 rounded-xl text-stone-900 text-sm placeholder-stone-500 outline-none focus:border-sky-700 focus:ring-2 focus:ring-sky-700/30 transition-all disabled:bg-stone-100 disabled:text-stone-500 disabled:cursor-not-allowed';
+
 export default function PasswordInput(props) {
   const [visible, setVisible] = useState(false);
-
   return (
     <div className="relative w-full">
-      <input
-        {...props}
-        type={visible ? 'text' : 'password'}
-        className="w-full px-4 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors text-sm pr-10"
-      />
+      <input {...props} type={visible ? 'text' : 'password'} className={INPUT_CLS} />
       <button
         type="button"
-        onClick={() => setVisible(current => !current)}
+        onClick={() => setVisible(v => !v)}
         aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
         aria-pressed={visible}
-        title={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-700 rounded transition-colors p-1 cursor-pointer"
       >
-        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2 stroke-linecap-round stroke-linejoin-round" aria-hidden="true" focusable="false">
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2" style={{ strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden="true" focusable="false">
           {visible ? (
             <>
               <path d="M3 3l18 18" />

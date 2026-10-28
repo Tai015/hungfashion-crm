@@ -1,399 +1,350 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
-} from 'recharts';
+import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { apiFetch } from '../api';
 import Spinner from '../components/Spinner';
 
-const STATUS_LABEL = { Draft: '🔘 Nháp', Active: '🟢 Đang chạy', Closed: '⛔ Đã đóng' };
-const QUESTION_TYPE_LABELS = {
-  SingleChoice: 'Chọn một đáp án',
-  MultiChoice: 'Chọn nhiều đáp án',
-  Text: 'Trả lời tự luận',
-  Rating: 'Đánh giá 1–5 sao',
+const STATUS_LABEL = { Draft: 'Nháp', Active: 'Đang chạy', Closed: 'Đã đóng' };
+const STATUS_COLOR = { Draft: 'bg-slate-500/15 text-slate-400 border-slate-500/20', Active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25', Closed: 'bg-red-500/15 text-red-400 border-red-500/20' };
+const QUESTION_TYPE_LABELS = { SingleChoice:'Chọn một đáp án', MultiChoice:'Chọn nhiều đáp án', Text:'Trả lời tự luận', Rating:'Đánh giá 1–5 sao' };
+const GENDER_LABEL = { Male:'Nam', Female:'Nữ', Other:'Khác' };
+const TOOLTIP_STYLE = { background:'rgba(20,18,16,0.92)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, color:'#f5f5f4' };
+
+const INPUT    = 'w-full h-10 px-3 bg-white/[0.07] border border-white/[0.12] rounded-xl text-[#f5f0eb] text-sm placeholder-white/22 outline-none focus:border-orange-500/50 focus:bg-white/10 focus:ring-2 focus:ring-orange-500/[0.12] transition-all dark-input';
+const TEXTAREA = 'w-full px-3 py-2.5 bg-white/[0.07] border border-white/[0.12] rounded-xl text-[#f5f0eb] text-sm placeholder-white/22 outline-none focus:border-orange-500/50 focus:bg-white/10 focus:ring-2 focus:ring-orange-500/[0.12] transition-all resize-y dark-input';
+const SELECT   = INPUT + ' cursor-pointer';
+const BTN_PRIMARY = 'inline-flex items-center gap-1.5 h-9 px-4 bg-gradient-to-br from-orange-500 to-orange-600 border border-orange-500/50 text-white text-sm font-semibold rounded-xl shadow-[0_8px_20px_rgba(249,115,22,0.3)] hover:shadow-[0_10px_26px_rgba(249,115,22,0.45)] hover:-translate-y-px transition-all disabled:opacity-55 disabled:cursor-not-allowed cursor-pointer';
+const BTN_GHOST   = 'inline-flex items-center gap-1.5 h-9 px-4 bg-white/[0.07] border border-white/15 text-white/65 text-sm font-medium rounded-xl transition-all hover:bg-white/[0.12] hover:text-white/90 cursor-pointer disabled:opacity-50';
+const BTN_GREEN   = 'inline-flex items-center gap-1.5 h-9 px-4 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm font-medium rounded-xl transition-all hover:bg-emerald-500/25 cursor-pointer disabled:opacity-50';
+const BTN_INDIGO  = 'inline-flex items-center gap-1.5 h-9 px-4 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-sm font-medium rounded-xl transition-all hover:bg-indigo-500/25 cursor-pointer disabled:opacity-50';
+const PANEL    = 'flex flex-col gap-5 p-6 bg-white/[0.06] border border-white/10 rounded-2xl backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.35)] text-[#f5f0eb]';
+const TH       = 'px-3.5 py-2.5 text-left text-[0.72rem] font-semibold tracking-[0.05em] uppercase text-white/38 border-b border-white/[0.08] whitespace-nowrap';
+const TD       = 'px-3.5 py-3 border-b border-white/[0.05] text-white/78 align-middle';
+
+const fmtDate = v => v ? new Date(v).toLocaleDateString('vi-VN') : '—';
+const fmtDT   = v => v ? new Date(v).toLocaleString('vi-VN') : '—';
+const audienceLabel = s => {
+  const p = [];
+  if (s.target_gender) p.push(GENDER_LABEL[s.target_gender]||s.target_gender);
+  if (s.target_tier)   p.push(`Hạng ${s.target_tier}`);
+  if (s.min_age!=null||s.max_age!=null) p.push(`Tuổi ${s.min_age??'…'}–${s.max_age??'…'}`);
+  return p.length ? p.join(' · ') : 'Tất cả khách hàng';
 };
-const GENDER_LABEL = { Male: 'Nam', Female: 'Nữ', Other: 'Khác' };
 
-function formatDate(value) {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString('vi-VN');
-}
-
-function formatDateTime(value) {
-  if (!value) return '—';
-  return new Date(value).toLocaleString('vi-VN');
-}
-
-function audienceLabel(survey) {
-  const parts = [];
-  if (survey.target_gender) parts.push(GENDER_LABEL[survey.target_gender] || survey.target_gender);
-  if (survey.target_tier) parts.push(`Hạng ${survey.target_tier}`);
-  if (survey.min_age != null || survey.max_age != null) {
-    parts.push(`Tuổi ${survey.min_age ?? '…'}–${survey.max_age ?? '…'}`);
-  }
-  return parts.length ? parts.join(' · ') : 'Tất cả khách hàng';
+function Field({ label, hint, children }) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      {label && <span className="text-white/60 text-sm font-medium">{label}</span>}
+      {children}
+      {hint && <small className="text-white/35 text-xs">{hint}</small>}
+    </label>
+  );
 }
 
 export default function SurveysView() {
   const [surveys, setSurveys] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError]     = useState('');
   const [refresh, setRefresh] = useState(0);
-  const [title, setTitle] = useState('');
+  const [title, setTitle]     = useState('');
   const [description, setDescription] = useState('');
   const [questions, setQuestions] = useState([]);
-  const [editingSurveyId, setEditingSurveyId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy]       = useState(false);
   const [results, setResults] = useState(null);
-  const [detail, setDetail] = useState(null);
+  const [detail, setDetail]   = useState(null);
   const [message, setMessage] = useState('');
-  const formRef = useRef(null);
+  const formRef   = useRef(null);
   const detailRef = useRef(null);
 
   useEffect(() => {
-    setError('');
-    setLoading(true);
+    setLoading(true); setError('');
     apiFetch('/api/surveys')
       .then(d => setSurveys(Array.isArray(d) ? d : []))
-      .catch(requestError => setError(requestError.message))
+      .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, [refresh]);
 
-  const createQuestion = () => ({
-    key: window.crypto.randomUUID(),
-    question_text: '',
-    question_type: 'SingleChoice',
-    is_required: true,
-    options: ['Rất hài lòng', 'Hài lòng', 'Bình thường', 'Chưa hài lòng'],
-  });
-  const openCreateForm = () => {
-    setEditingSurveyId(null);
-    setTitle('');
-    setDescription('');
-    setQuestions([createQuestion()]);
-    setError('');
-    setMessage('');
-    setDetail(null);
-    setFormOpen(true);
-    window.setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
-  };
-  const openEditForm = async id => {
-    setBusy(true);
-    setError('');
-    setMessage('');
+  const newQ = () => ({ key: crypto.randomUUID(), question_text:'', question_type:'SingleChoice', is_required:true, options:['Rất hài lòng','Hài lòng','Bình thường','Chưa hài lòng'] });
+
+  const openCreate = () => { setEditingId(null); setTitle(''); setDescription(''); setQuestions([newQ()]); setError(''); setMessage(''); setDetail(null); setFormOpen(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior:'smooth', block:'start' }), 0); };
+  const openEdit = async id => {
+    setBusy(true); setError(''); setMessage('');
     try {
-      const survey = await apiFetch(`/api/surveys/${id}`);
-      setEditingSurveyId(id);
-      setTitle(survey.title || '');
-      setDescription(survey.description || '');
-      setQuestions(survey.questions.map(question => ({
-        key: window.crypto.randomUUID(),
-        question_text: question.question_text,
-        question_type: question.question_type,
-        is_required: question.is_required,
-        options: question.options.map(option => option.option_text),
-      })));
-      setDetail(null);
-      setFormOpen(true);
-      window.setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
-    } catch (requestError) { setError(requestError.message); }
-    finally { setBusy(false); }
+      const s = await apiFetch(`/api/surveys/${id}`);
+      setEditingId(id); setTitle(s.title||''); setDescription(s.description||'');
+      setQuestions(s.questions.map(q => ({ key:crypto.randomUUID(), question_text:q.question_text, question_type:q.question_type, is_required:q.is_required, options:q.options.map(o => o.option_text) })));
+      setDetail(null); setFormOpen(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior:'smooth', block:'start' }), 0);
+    } catch(e) { setError(e.message); } finally { setBusy(false); }
   };
-  const closeForm = () => {
-    setFormOpen(false);
-    setEditingSurveyId(null);
-    setError('');
-  };
-  const updateQuestion = (key, update) => {
-    setQuestions(current => current.map(question => question.key === key
-      ? { ...question, ...update }
-      : question));
-  };
-  const updateQuestionType = (question, question_type) => {
-    updateQuestion(question.key, {
-      question_type,
-      options: ['SingleChoice', 'MultiChoice'].includes(question_type)
-        ? question.options.length >= 2 ? question.options : ['', '']
-        : [],
-    });
-  };
-  const updateOption = (questionKey, optionIndex, value) => {
-    setQuestions(current => current.map(question => question.key === questionKey
-      ? { ...question, options: question.options.map((option, index) => index === optionIndex ? value : option) }
-      : question));
-  };
-  const addOption = questionKey => {
-    setQuestions(current => current.map(question => question.key === questionKey
-      ? { ...question, options: [...question.options, ''] }
-      : question));
-  };
-  const removeOption = (questionKey, optionIndex) => {
-    setQuestions(current => current.map(question => question.key === questionKey
-      ? { ...question, options: question.options.filter((_, index) => index !== optionIndex) }
-      : question));
-  };
-  const saveSurvey = async event => {
-    event.preventDefault();
-    setBusy(true);
-    setError('');
+  const closeForm = () => { setFormOpen(false); setEditingId(null); setError(''); };
+  const updateQ   = (key, upd) => setQuestions(qs => qs.map(q => q.key===key ? {...q,...upd} : q));
+  const updateQType = (q, qt) => updateQ(q.key, { question_type:qt, options:['SingleChoice','MultiChoice'].includes(qt) ? (q.options.length>=2 ? q.options : ['','']) : [] });
+
+  const saveSurvey = async e => {
+    e.preventDefault(); setBusy(true); setError('');
     try {
-      const payload = {
-        title,
-        description,
-        questions: questions.map((question, index) => ({
-          question_text: question.question_text,
-          question_type: question.question_type,
-          display_order: index + 1,
-          is_required: question.is_required,
-          options: question.options.map((option, optionIndex) => ({
-            option_text: option,
-            display_order: optionIndex + 1,
-          })),
-        })),
-      };
-      await apiFetch(editingSurveyId ? `/api/surveys/${editingSurveyId}` : '/api/surveys', {
-        method: editingSurveyId ? 'PATCH' : 'POST',
-        body: payload,
+      await apiFetch(editingId ? `/api/surveys/${editingId}` : '/api/surveys', {
+        method: editingId ? 'PATCH' : 'POST',
+        body: { title, description, questions: questions.map((q,i) => ({ question_text:q.question_text, question_type:q.question_type, display_order:i+1, is_required:q.is_required, options:q.options.map((o,j) => ({ option_text:o, display_order:j+1 })) })) },
       });
-      setFormOpen(false);
-      setEditingSurveyId(null);
-      setMessage(editingSurveyId
-        ? 'Đã cập nhật khảo sát nháp.'
-        : 'Đã tạo khảo sát nháp. Bạn có thể gửi khảo sát từ danh sách bên dưới.');
-      setRefresh(value => value + 1);
-    } catch (requestError) { setError(requestError.message); }
-    finally { setBusy(false); }
+      setFormOpen(false); setEditingId(null);
+      setMessage(editingId ? 'Đã cập nhật khảo sát nháp.' : 'Đã tạo khảo sát nháp.');
+      setRefresh(v => v+1);
+    } catch(e) { setError(e.message); } finally { setBusy(false); }
   };
   const sendSurvey = async id => {
-    setBusy(true);
-    setError('');
-    setMessage('');
-    try {
-      const result = await apiFetch(`/api/surveys/${id}/send`, { method: 'POST', body: {} });
-      setMessage(result.message);
-      setRefresh(value => value + 1);
-      if (detail?.survey_id === id) {
-        setDetail(await apiFetch(`/api/surveys/${id}`));
-      }
-    } catch (requestError) { setError(requestError.message); }
-    finally { setBusy(false); }
+    setBusy(true); setError(''); setMessage('');
+    try { const r = await apiFetch(`/api/surveys/${id}/send`, { method:'POST', body:{} }); setMessage(r.message); setRefresh(v => v+1); if (detail?.survey_id===id) setDetail(await apiFetch(`/api/surveys/${id}`)); }
+    catch(e) { setError(e.message); } finally { setBusy(false); }
   };
-  const loadResults = async id => {
-    setError('');
-    try { setResults(await apiFetch(`/api/surveys/${id}/results`)); }
-    catch (requestError) { setError(requestError.message); }
-  };
-  const openDetail = async id => {
-    setBusy(true);
-    setError('');
-    setFormOpen(false);
-    try {
-      const survey = await apiFetch(`/api/surveys/${id}`);
-      setDetail(survey);
-      window.setTimeout(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
-    } catch (requestError) { setError(requestError.message); }
-    finally { setBusy(false); }
-  };
-  const closeDetail = () => {
-    setDetail(null);
-    setResults(null);
+  const loadResults = async id => { setError(''); try { setResults(await apiFetch(`/api/surveys/${id}/results`)); } catch(e) { setError(e.message); } };
+  const openDetail  = async id => {
+    setBusy(true); setError(''); setFormOpen(false);
+    try { setDetail(await apiFetch(`/api/surveys/${id}`)); setTimeout(() => detailRef.current?.scrollIntoView({ behavior:'smooth', block:'start' }), 0); }
+    catch(e) { setError(e.message); } finally { setBusy(false); }
   };
 
   return (
-    <>
-      <header className="topbar">
-        <div><p className="eyebrow">CRM</p><h1>Khảo sát khách hàng</h1></div>
-        <button className="primary-btn survey-open-form" type="button" onClick={openCreateForm}>＋ Tạo khảo sát</button>
-      </header>
-      {error && <p className="settings-message settings-error" role="alert">{error}</p>}
-      {message && <p className="settings-message settings-success" role="status">{message}</p>}
-      {formOpen && <form ref={formRef} className="panel survey-create-form" onSubmit={saveSurvey}>
-        <div className="survey-create-heading">
-          <div className="survey-create-icon" aria-hidden="true">✦</div>
-          <div>
-            <h2>{editingSurveyId ? 'Chỉnh sửa khảo sát' : 'Tạo khảo sát mới'}</h2>
-            <p>Thêm nhiều câu hỏi, chọn kiểu trả lời và xem trước nội dung trước khi lưu.</p>
-          </div>
-          <button className="survey-close-form" type="button" onClick={closeForm} aria-label="Đóng biểu mẫu">×</button>
+    <div className="flex flex-col gap-5 text-[#f5f0eb]">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="m-0 text-white/40 text-xs font-semibold tracking-[0.08em] uppercase">CRM</p>
+          <h1 className="m-0 mt-1 text-[clamp(1.5rem,2.5vw,2rem)] font-bold tracking-tight">Khảo sát khách hàng</h1>
         </div>
-        <div className="survey-create-layout">
-          <div className="survey-create-fields">
-            <label className="survey-field">
-              <span>Tên khảo sát <b>*</b></span>
-              <input required maxLength={300} value={title} onChange={e => setTitle(e.target.value)} placeholder="Ví dụ: Khảo sát trải nghiệm mua sắm" />
-              <small>Tên ngắn gọn giúp khách hàng nhận biết nội dung khảo sát.</small>
-            </label>
-            <label className="survey-field">
-              <span>Mô tả <small>Không bắt buộc</small></span>
-              <textarea maxLength={2000} rows={3} value={description} onChange={e => setDescription(e.target.value)} placeholder="Cho khách hàng biết mục đích và thời gian hoàn thành khảo sát." />
-            </label>
-            <div className="survey-question-builder">
-              <div className="survey-question-builder-heading">
-                <div><h3>Câu hỏi</h3><p>Tạo tối đa 50 câu hỏi cho một khảo sát.</p></div>
-                <button className="survey-add-question" type="button" disabled={questions.length >= 50} onClick={() => setQuestions(current => [...current, createQuestion()])}>＋ Thêm câu hỏi</button>
-              </div>
-              {questions.map((question, index) => (
-                <section className="survey-question-editor" key={question.key}>
-                  <div className="survey-question-editor-heading">
-                    <span className="survey-question-number">{String(index + 1).padStart(2, '0')}</span>
-                    <strong>Câu hỏi {index + 1}</strong>
-                    <button className="survey-remove-question" type="button" disabled={questions.length === 1} onClick={() => setQuestions(current => current.filter(item => item.key !== question.key))}>Xóa câu hỏi</button>
-                  </div>
-                  <label className="survey-field">
-                    <span>Nội dung câu hỏi <b>*</b></span>
-                    <textarea required maxLength={1000} rows={2} value={question.question_text} onChange={e => updateQuestion(question.key, { question_text: e.target.value })} placeholder="Nhập nội dung câu hỏi..." />
-                  </label>
-                  <div className="survey-question-settings">
-                    <label className="survey-field">
-                      <span>Kiểu trả lời</span>
-                      <select value={question.question_type} onChange={e => updateQuestionType(question, e.target.value)}>
-                        {Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                      </select>
-                    </label>
-                    <label className="survey-required-toggle">
-                      <input type="checkbox" checked={question.is_required} onChange={e => updateQuestion(question.key, { is_required: e.target.checked })} />
-                      Bắt buộc trả lời
-                    </label>
-                  </div>
-                  {['SingleChoice', 'MultiChoice'].includes(question.question_type) && (
-                    <div className="survey-option-editor">
-                      <div className="survey-option-heading"><strong>Các lựa chọn</strong><small>Cần ít nhất 2 lựa chọn</small></div>
-                      {question.options.map((option, optionIndex) => (
-                        <div className="survey-option-input" key={`${question.key}-option-${optionIndex}`}>
-                          <i>{String.fromCharCode(65 + (optionIndex % 26))}</i>
-                          <input required maxLength={300} aria-label={`Lựa chọn ${optionIndex + 1} cho câu ${index + 1}`} value={option} onChange={e => updateOption(question.key, optionIndex, e.target.value)} placeholder={`Lựa chọn ${optionIndex + 1}`} />
-                          <button type="button" aria-label={`Xóa lựa chọn ${optionIndex + 1}`} disabled={question.options.length <= 2} onClick={() => removeOption(question.key, optionIndex)}>×</button>
-                        </div>
-                      ))}
-                      <button className="survey-add-option" type="button" disabled={question.options.length >= 100} onClick={() => addOption(question.key)}>＋ Thêm lựa chọn</button>
-                    </div>
-                  )}
-                  {question.question_type === 'Rating' && <p className="survey-field-hint">Khách hàng sẽ đánh giá theo thang điểm từ 1 đến 5 sao.</p>}
-                  {question.question_type === 'Text' && <p className="survey-field-hint">Khách hàng sẽ nhập câu trả lời dạng văn bản.</p>}
-                </section>
-              ))}
-            </div>
-            <div className="survey-create-actions">
-              <span><i aria-hidden="true">●</i> Khảo sát được lưu ở trạng thái nháp</span>
-              <div>
-                <button className="survey-cancel-button" type="button" onClick={closeForm}>Hủy</button>
-                <button className="primary-btn" disabled={busy}>{busy ? 'Đang lưu...' : editingSurveyId ? 'Lưu thay đổi' : 'Tạo khảo sát nháp'}</button>
-              </div>
-            </div>
-          </div>
-          <aside className="survey-preview" aria-label="Xem trước khảo sát">
-            <div className="survey-preview-top"><span>✦</span><small>XEM TRƯỚC</small></div>
-            <p className="eyebrow">HUNG FASHION · KHẢO SÁT</p>
-            <h3>{title.trim() || 'Tên khảo sát của bạn'}</h3>
-            <p className="survey-preview-description">{description.trim() || 'Mô tả khảo sát sẽ hiển thị ở đây để khách hàng hiểu mục đích.'}</p>
-            {questions.map((question, index) => (
-              <div className="survey-preview-question" key={question.key}>
-                <span>{String(index + 1).padStart(2, '0')} <b>{question.is_required ? 'CÂU HỎI BẮT BUỘC' : 'CÂU HỎI KHÔNG BẮT BUỘC'}</b></span>
-                <p>{question.question_text.trim() || `Câu hỏi ${index + 1} sẽ hiển thị ở đây.`}</p>
-                {question.question_type === 'Rating'
-                  ? <div className="survey-preview-rating" aria-label="Thang điểm từ 1 đến 5">★ ★ ★ ★ ★</div>
-                  : question.question_type === 'Text'
-                    ? <div className="survey-preview-text">Câu trả lời của khách hàng...</div>
-                    : question.options.map((option, optionIndex) => (
-                      <div className="survey-preview-option" key={`${question.key}-preview-${optionIndex}`}><i>{question.question_type === 'MultiChoice' ? '✓' : String.fromCharCode(65 + (optionIndex % 26))}</i>{option.trim() || `Lựa chọn ${optionIndex + 1}`}</div>
-                    ))}
-              </div>
-            ))}
-          </aside>
-        </div>
-      </form>}
-      <div className="panel">
-        <div className="panel-header"><h3>Danh sách khảo sát</h3></div>
-        {loading ? <Spinner /> : (
-          <table>
-            <thead>
-              <tr><th>#</th><th>Tiêu đề</th><th>Câu hỏi</th><th>Phản hồi</th><th>Ngày kết thúc</th><th>Trạng thái</th><th>Thao tác</th></tr>
-            </thead>
-            <tbody>
-              {surveys.length ? surveys.map(s => (
-                <tr key={s.survey_id}>
-                  <td>{s.survey_id}</td>
-                  <td>
-                    <button className="survey-title-button" type="button" disabled={busy} onClick={() => openDetail(s.survey_id)}>
-                      <strong>{s.title}</strong>
-                    </button>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>{s.question_count}</td>
-                  <td style={{ textAlign: 'center' }}>{s.response_count}</td>
-                  <td>{formatDate(s.end_date)}</td>
-                  <td>{STATUS_LABEL[s.status] || s.status}</td>
-                  <td className="action-cell">
-                    <button className="text-button" type="button" disabled={busy} onClick={() => openDetail(s.survey_id)}>Chi tiết</button>
-                    {s.status === 'Draft' && <button className="survey-edit-button" type="button" disabled={busy} onClick={() => openEditForm(s.survey_id)}>Sửa</button>}
-                    {s.status !== 'Closed' && <button className="event-btn" type="button" disabled={busy} onClick={() => sendSurvey(s.survey_id)}>Gửi khảo sát</button>}
-                    <button className="text-button" type="button" onClick={() => loadResults(s.survey_id)}>Kết quả</button>
-                  </td>
-                </tr>
-              )) : (
-                <tr><td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8' }}>Chưa có khảo sát</td></tr>
-              )}
-            </tbody>
-          </table>
-        )}
+        <button className={BTN_PRIMARY} type="button" onClick={openCreate}><Plus size={15}/> Tạo khảo sát</button>
       </div>
-      {detail && <article ref={detailRef} className="panel survey-detail">
-        <div className="survey-detail-heading">
-          <div>
-            <p className="eyebrow">Chi tiết khảo sát #{detail.survey_id}</p>
-            <h2>{detail.title}</h2>
-            <p>{detail.description || 'Không có mô tả.'}</p>
+
+      {error   && <p className="p-3 px-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm" role="alert">{error}</p>}
+      {message && <p className="p-3 px-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-sm" role="status">{message}</p>}
+
+      {/* Create / edit form */}
+      {formOpen && (
+        <form ref={formRef} className={PANEL} onSubmit={saveSurvey}>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="m-0 text-lg font-bold">{editingId ? 'Chỉnh sửa khảo sát' : 'Tạo khảo sát mới'}</h2>
+              <p className="m-0 mt-1 text-white/40 text-sm">Thêm câu hỏi, chọn kiểu trả lời và xem trước trước khi lưu.</p>
+            </div>
+            <button type="button" className="grid w-9 h-9 place-items-center border border-white/12 rounded-xl bg-white/[0.05] text-white/50 cursor-pointer transition-all hover:bg-red-500/15 hover:border-red-500/30 hover:text-red-400 shrink-0" onClick={closeForm}><X size={16}/></button>
           </div>
-          <button className="survey-close-form" type="button" onClick={closeDetail} aria-label="Đóng chi tiết">×</button>
-        </div>
-        <dl className="survey-detail-stats">
-          <div><dt>Trạng thái</dt><dd>{STATUS_LABEL[detail.status] || detail.status}</dd></div>
-          <div><dt>Người tạo</dt><dd>{detail.created_by_name || '—'}</dd></div>
-          <div><dt>Ngày tạo</dt><dd>{formatDateTime(detail.created_at)}</dd></div>
-          <div><dt>Bắt đầu</dt><dd>{formatDate(detail.start_date)}</dd></div>
-          <div><dt>Kết thúc</dt><dd>{formatDate(detail.end_date)}</dd></div>
-          <div><dt>Đối tượng</dt><dd>{audienceLabel(detail)}</dd></div>
-          <div><dt>Câu hỏi</dt><dd>{detail.question_count ?? detail.questions?.length ?? 0}</dd></div>
-          <div><dt>Lời mời</dt><dd>{detail.invitation_count ?? 0}</dd></div>
-          <div><dt>Đã trả lời</dt><dd>{detail.response_count ?? 0}{detail.invitation_count ? ` / ${detail.invitation_count}` : ''}</dd></div>
-          <div><dt>Hoàn thành lời mời</dt><dd>{detail.completed_count ?? 0}</dd></div>
-        </dl>
-        <div className="survey-detail-actions">
-          {detail.status === 'Draft' && <button className="survey-edit-button" type="button" disabled={busy} onClick={() => openEditForm(detail.survey_id)}>Sửa khảo sát</button>}
-          {detail.status !== 'Closed' && <button className="event-btn" type="button" disabled={busy} onClick={() => sendSurvey(detail.survey_id)}>Gửi khảo sát</button>}
-          <button className="text-button" type="button" disabled={busy} onClick={() => loadResults(detail.survey_id)}>Xem kết quả</button>
-        </div>
-        <div className="survey-detail-questions">
-          <h3>Nội dung câu hỏi</h3>
-          {(detail.questions || []).map((question, index) => (
-            <section className="survey-preview-question" key={question.question_id}>
-              <span>{String(index + 1).padStart(2, '0')} <b>{question.is_required ? 'CÂU HỎI BẮT BUỘC' : 'CÂU HỎI KHÔNG BẮT BUỘC'}</b> · {QUESTION_TYPE_LABELS[question.question_type] || question.question_type}</span>
-              <p>{question.question_text}</p>
-              {question.question_type === 'Rating'
-                ? <div className="survey-preview-rating" aria-label="Thang điểm từ 1 đến 5">★ ★ ★ ★ ★</div>
-                : question.question_type === 'Text'
-                  ? <div className="survey-preview-text">Câu trả lời tự luận của khách hàng</div>
-                  : (question.options || []).map((option, optionIndex) => (
-                    <div className="survey-preview-option" key={option.option_id}>
-                      <i>{question.question_type === 'MultiChoice' ? '✓' : String.fromCharCode(65 + (optionIndex % 26))}</i>
-                      {option.option_text}
+
+          <div className="grid grid-cols-[1fr_380px] gap-5">
+            {/* Fields */}
+            <div className="flex flex-col gap-4">
+              <Field label="Tên khảo sát *" hint="Tên ngắn gọn giúp khách hàng nhận biết nội dung.">
+                <input required maxLength={300} className={INPUT} value={title} onChange={e => setTitle(e.target.value)} placeholder="Ví dụ: Khảo sát trải nghiệm mua sắm" />
+              </Field>
+              <Field label={<>Mô tả <small className="text-white/30 font-normal">Không bắt buộc</small></>}>
+                <textarea maxLength={2000} rows={3} className={TEXTAREA} value={description} onChange={e => setDescription(e.target.value)} placeholder="Cho khách hàng biết mục đích và thời gian hoàn thành." />
+              </Field>
+
+              {/* Question builder */}
+              <div className="flex flex-col gap-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="m-0 text-sm font-semibold">Câu hỏi</h3>
+                    <p className="m-0 text-white/35 text-xs">Tối đa 50 câu hỏi.</p>
+                  </div>
+                  <button type="button" className={BTN_GHOST} disabled={questions.length>=50} onClick={() => setQuestions(qs => [...qs, newQ()])}><Plus size={14}/> Thêm câu hỏi</button>
+                </div>
+                {questions.map((q, idx) => (
+                  <div key={q.key} className="p-4 border border-white/[0.09] rounded-2xl bg-white/[0.04] flex flex-col gap-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-orange-500/70 text-xs font-bold tabular-nums">{String(idx+1).padStart(2,'0')}</span>
+                      <strong className="text-sm text-white/70 flex-1">Câu hỏi {idx+1}</strong>
+                      <button type="button" className="text-xs text-red-400/70 hover:text-red-400 cursor-pointer transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        disabled={questions.length===1} onClick={() => setQuestions(qs => qs.filter(x => x.key!==q.key))}>Xóa câu hỏi</button>
+                    </div>
+                    <Field>
+                      <textarea required maxLength={1000} rows={2} className={TEXTAREA} value={q.question_text} onChange={e => updateQ(q.key,{question_text:e.target.value})} placeholder="Nhập nội dung câu hỏi..." />
+                    </Field>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <select className={`${SELECT} w-auto flex-1`} value={q.question_type} onChange={e => updateQType(q, e.target.value)}>
+                        {Object.entries(QUESTION_TYPE_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                      </select>
+                      <label className="flex items-center gap-2 text-sm text-white/55 cursor-pointer">
+                        <input type="checkbox" checked={q.is_required} onChange={e => updateQ(q.key,{is_required:e.target.checked})} className="w-4 h-4 accent-orange-500" />
+                        Bắt buộc
+                      </label>
+                    </div>
+                    {['SingleChoice','MultiChoice'].includes(q.question_type) && (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-white/45">Các lựa chọn</span>
+                          <button type="button" className="text-xs text-orange-500/70 hover:text-orange-500 cursor-pointer transition-colors disabled:opacity-30" disabled={q.options.length>=100} onClick={() => updateQ(q.key,{options:[...q.options,'']})}>+ Thêm</button>
+                        </div>
+                        {q.options.map((opt, oi) => (
+                          <div key={`${q.key}-o${oi}`} className="flex items-center gap-2">
+                            <span className="w-6 text-center text-white/30 text-xs font-bold shrink-0">{String.fromCharCode(65+(oi%26))}</span>
+                            <input required maxLength={300} className={`${INPUT} flex-1`} value={opt} onChange={e => setQuestions(qs => qs.map(x => x.key===q.key ? {...x, options:x.options.map((o,i) => i===oi?e.target.value:o)} : x))} placeholder={`Lựa chọn ${oi+1}`} />
+                            <button type="button" className="grid w-7 h-7 place-items-center text-white/35 hover:text-red-400 cursor-pointer transition-colors disabled:opacity-20" disabled={q.options.length<=2} onClick={() => updateQ(q.key,{options:q.options.filter((_,i)=>i!==oi)})}><X size={13}/></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {q.question_type==='Rating' && <p className="m-0 text-white/35 text-xs">Khách hàng đánh giá theo thang điểm từ 1 đến 5 sao.</p>}
+                    {q.question_type==='Text'   && <p className="m-0 text-white/35 text-xs">Khách hàng nhập câu trả lời dạng văn bản.</p>}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <span className="text-white/35 text-xs">● Khảo sát lưu ở trạng thái nháp</span>
+                <div className="flex gap-2">
+                  <button type="button" className={BTN_GHOST} onClick={closeForm}>Hủy</button>
+                  <button type="submit" className={BTN_PRIMARY} disabled={busy}>{busy ? 'Đang lưu...' : editingId ? 'Lưu thay đổi' : 'Tạo khảo sát nháp'}</button>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <aside className="flex flex-col gap-4 p-5 border border-white/[0.09] rounded-2xl bg-white/[0.03]">
+              <div className="flex items-center gap-2">
+                <span className="text-orange-500">✦</span>
+                <small className="text-white/35 text-[0.65rem] font-bold tracking-widest uppercase">Xem trước</small>
+              </div>
+              <p className="m-0 text-orange-500/70 text-[0.68rem] font-bold tracking-widest uppercase">HUNG FASHION · KHẢO SÁT</p>
+              <h3 className="m-0 text-base font-bold">{title.trim()||'Tên khảo sát của bạn'}</h3>
+              <p className="m-0 text-white/40 text-sm">{description.trim()||'Mô tả khảo sát sẽ hiển thị ở đây.'}</p>
+              {questions.map((q, idx) => (
+                <div key={q.key} className="p-3.5 border border-white/[0.07] rounded-xl bg-white/[0.03] flex flex-col gap-2">
+                  <span className="text-white/30 text-[0.68rem] font-bold uppercase tracking-wider">{String(idx+1).padStart(2,'0')} {q.is_required ? 'BẮT BUỘC' : 'KHÔNG BẮT BUỘC'}</span>
+                  <p className="m-0 text-white/75 text-sm">{q.question_text.trim()||`Câu hỏi ${idx+1} sẽ hiển thị ở đây.`}</p>
+                  {q.question_type==='Rating' && <div className="text-yellow-400 tracking-widest text-base">★ ★ ★ ★ ★</div>}
+                  {q.question_type==='Text'   && <div className="h-10 rounded-lg border border-white/[0.08] bg-white/[0.04] text-white/20 text-xs px-3 flex items-center">Câu trả lời...</div>}
+                  {['SingleChoice','MultiChoice'].includes(q.question_type) && q.options.map((o,oi) => (
+                    <div key={oi} className="flex items-center gap-2 text-sm text-white/55">
+                      <span className="w-5 h-5 grid place-items-center border border-white/20 rounded-full text-[0.65rem] font-bold shrink-0">{q.question_type==='MultiChoice'?'✓':String.fromCharCode(65+(oi%26))}</span>
+                      {o.trim()||`Lựa chọn ${oi+1}`}
                     </div>
                   ))}
+                </div>
+              ))}
+            </aside>
+          </div>
+        </form>
+      )}
+
+      {/* Survey list */}
+      <div className={PANEL}>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="flex items-center gap-2.5 m-0 text-[1.05rem] font-semibold">
+            Danh sách khảo sát
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/25 text-orange-500 text-xs font-semibold">{surveys.length}</span>
+          </h2>
+        </div>
+        {loading ? <Spinner /> : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr>{['#','Tiêu đề','Câu hỏi','Phản hồi','Ngày kết thúc','Trạng thái','Thao tác'].map(h => <th key={h} className={TH}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {surveys.length ? surveys.map(s => (
+                  <tr key={s.survey_id} className="hover:bg-white/[0.04] transition-colors">
+                    <td className={`${TD} text-white/28 text-xs tabular-nums w-10`}>{s.survey_id}</td>
+                    <td className={TD}>
+                      <button type="button" disabled={busy} onClick={() => openDetail(s.survey_id)} className="text-left font-semibold text-[#f5f0eb] hover:text-orange-400 transition-colors cursor-pointer disabled:opacity-50">{s.title}</button>
+                    </td>
+                    <td className={`${TD} text-center tabular-nums`}>{s.question_count}</td>
+                    <td className={`${TD} text-center tabular-nums`}>{s.response_count}</td>
+                    <td className={TD}>{fmtDate(s.end_date)}</td>
+                    <td className={TD}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${STATUS_COLOR[s.status]||'bg-slate-500/15 text-slate-400 border-slate-500/20'}`}>{STATUS_LABEL[s.status]||s.status}</span>
+                    </td>
+                    <td className={TD}>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button type="button" disabled={busy} onClick={() => openDetail(s.survey_id)} className={BTN_GHOST} style={{height:30,padding:'0 10px',fontSize:'0.75rem'}}>Chi tiết</button>
+                        {s.status==='Draft' && <button type="button" disabled={busy} onClick={() => openEdit(s.survey_id)} className={BTN_INDIGO} style={{height:30,padding:'0 10px',fontSize:'0.75rem'}}>Sửa</button>}
+                        {s.status!=='Closed' && <button type="button" disabled={busy} onClick={() => sendSurvey(s.survey_id)} className={BTN_GREEN} style={{height:30,padding:'0 10px',fontSize:'0.75rem'}}>Gửi</button>}
+                        <button type="button" onClick={() => loadResults(s.survey_id)} className={BTN_GHOST} style={{height:30,padding:'0 10px',fontSize:'0.75rem'}}>Kết quả</button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={7} className="py-10 text-center text-white/25 text-sm">Chưa có khảo sát</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Detail panel */}
+      {detail && (
+        <article ref={detailRef} className={PANEL}>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="m-0 text-white/40 text-xs font-semibold tracking-widest uppercase">Chi tiết khảo sát #{detail.survey_id}</p>
+              <h2 className="m-0 mt-1 text-xl font-bold">{detail.title}</h2>
+              <p className="m-0 mt-1 text-white/45 text-sm">{detail.description||'Không có mô tả.'}</p>
+            </div>
+            <button type="button" className="grid w-9 h-9 place-items-center border border-white/12 rounded-xl bg-white/[0.05] text-white/50 cursor-pointer transition-all hover:bg-red-500/15 hover:border-red-500/30 hover:text-red-400 shrink-0" onClick={() => { setDetail(null); setResults(null); }}><X size={16}/></button>
+          </div>
+
+          <dl className="grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-3 md:grid-cols-5 p-4 bg-white/[0.04] border border-white/[0.07] rounded-xl">
+            {[['Trạng thái', STATUS_LABEL[detail.status]||detail.status], ['Người tạo', detail.created_by_name||'—'], ['Ngày tạo', fmtDT(detail.created_at)], ['Bắt đầu', fmtDate(detail.start_date)], ['Kết thúc', fmtDate(detail.end_date)], ['Đối tượng', audienceLabel(detail)], ['Câu hỏi', detail.question_count??detail.questions?.length??0], ['Lời mời', detail.invitation_count??0], ['Đã trả lời', `${detail.response_count??0}${detail.invitation_count?` / ${detail.invitation_count}`:''}`], ['Hoàn thành', detail.completed_count??0]].map(([k,v]) => (
+              <div key={k}><dt className="text-white/35 text-xs mb-0.5">{k}</dt><dd className="m-0 text-[#f5f0eb] text-sm font-medium">{v}</dd></div>
+            ))}
+          </dl>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {detail.status==='Draft'   && <button type="button" disabled={busy} onClick={() => openEdit(detail.survey_id)} className={BTN_INDIGO}>Sửa khảo sát</button>}
+            {detail.status!=='Closed'  && <button type="button" disabled={busy} onClick={() => sendSurvey(detail.survey_id)} className={BTN_GREEN}>Gửi khảo sát</button>}
+            <button type="button" disabled={busy} onClick={() => loadResults(detail.survey_id)} className={BTN_GHOST}>Xem kết quả</button>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <h3 className="m-0 text-sm font-semibold text-white/60">Nội dung câu hỏi</h3>
+            {(detail.questions||[]).map((q,idx) => (
+              <div key={q.question_id} className="p-4 border border-white/[0.07] rounded-xl bg-white/[0.03] flex flex-col gap-2">
+                <span className="text-white/30 text-[0.68rem] font-bold uppercase tracking-wider">{String(idx+1).padStart(2,'0')} {q.is_required?'BẮT BUỘC':'KHÔNG BẮT BUỘC'} · {QUESTION_TYPE_LABELS[q.question_type]||q.question_type}</span>
+                <p className="m-0 text-white/80 text-sm font-medium">{q.question_text}</p>
+                {q.question_type==='Rating' && <div className="text-yellow-400 tracking-widest">★ ★ ★ ★ ★</div>}
+                {q.question_type==='Text'   && <div className="text-white/30 text-sm italic">Câu trả lời tự luận của khách hàng</div>}
+                {['SingleChoice','MultiChoice'].includes(q.question_type) && (q.options||[]).map((o,oi) => (
+                  <div key={o.option_id} className="flex items-center gap-2 text-sm text-white/55">
+                    <span className="w-5 h-5 grid place-items-center border border-white/20 rounded-full text-[0.65rem] font-bold shrink-0">{q.question_type==='MultiChoice'?'✓':String.fromCharCode(65+(oi%26))}</span>
+                    {o.option_text}
+                  </div>
+                ))}
+              </div>
+            ))}
+            {!detail.questions?.length && <p className="text-white/30 text-sm">Khảo sát này chưa có câu hỏi.</p>}
+          </div>
+        </article>
+      )}
+
+      {/* Results panel */}
+      {results && (
+        <div className={PANEL}>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="m-0 text-[1.05rem] font-semibold">Kết quả: {results.title} <span className="text-white/40 font-normal text-sm">({results.total_responses} lượt trả lời)</span></h2>
+            <button type="button" className={BTN_GHOST} onClick={() => setResults(null)}>Đóng</button>
+          </div>
+          {results.questions.map(item => (
+            <section key={item.question_id} className="flex flex-col gap-2">
+              <h4 className="m-0 text-sm font-semibold text-white/70">{item.question_text}</h4>
+              {item.options.length ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={item.options}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="option_text" tick={{ fontSize:11, fill:'rgba(255,255,255,0.45)' }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize:11, fill:'rgba(255,255,255,0.45)' }} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Bar dataKey="vote_count" name={item.question_type==='Rating'?'Lượt đánh giá':'Lượt chọn'} fill="#6366f1" radius={[6,6,0,0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <small className="text-white/35 text-xs">{item.question_type==='Rating' ? 'Chưa có lượt đánh giá.' : `Câu hỏi tự luận: ${results.total_responses} lượt trả lời.`}</small>
+              )}
             </section>
           ))}
-          {!detail.questions?.length && <p className="survey-field-hint">Khảo sát này chưa có câu hỏi.</p>}
         </div>
-      </article>}
-      {results && <div className="panel survey-results">
-        <div className="panel-header"><h3>Kết quả: {results.title} ({results.total_responses} lượt trả lời)</h3><button className="text-button" type="button" onClick={() => setResults(null)}>Đóng</button></div>
-        {results.questions.map(item => <section key={item.question_id}>
-          <h4>{item.question_text}</h4>
-          {item.options.length ? <ResponsiveContainer width="100%" height={200}><BarChart data={item.options}>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.2} /><XAxis dataKey="option_text" tick={{ fontSize: 11 }} /><YAxis allowDecimals={false} />
-            <Tooltip /><Bar dataKey="vote_count" name={item.question_type === 'Rating' ? 'Lượt đánh giá' : 'Lượt chọn'} fill="#4f46e5" radius={[6, 6, 0, 0]} />
-          </BarChart></ResponsiveContainer> : <small>{item.question_type === 'Rating' ? 'Chưa có lượt đánh giá.' : `Câu hỏi tự luận: ${results.total_responses} lượt trả lời.`}</small>}
-        </section>)}
-      </div>}
-    </>
+      )}
+    </div>
   );
 }

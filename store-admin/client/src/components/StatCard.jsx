@@ -1,13 +1,33 @@
-export default function StatCard({ label, value, sub, accent }) {
+import { motion } from 'framer-motion';
+import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
+
+export default function StatCard({ label, value, sub, change, icon: Icon, tone = 'glass' }) {
+  const changeNumber = Number(change);
+  const hasChange = Number.isFinite(changeNumber);
+  const up = hasChange && changeNumber >= 0;
+
   return (
-    <div className={`p-5 rounded-2xl border transition-all ${
-      accent
-        ? 'bg-gradient-to-br from-indigo-950/60 to-slate-900 border-indigo-500/30 shadow-lg shadow-indigo-950/30'
-        : 'bg-slate-900/60 border-slate-800'
-    }`}>
-      <span className="block text-xs uppercase font-medium tracking-wider text-slate-400 mb-1">{label}</span>
-      <strong className="block text-2xl font-bold text-white tracking-tight">{value}</strong>
-      {sub && <small className="block text-xs text-slate-400 mt-1">{sub}</small>}
-    </div>
+    <motion.article
+      whileHover={{ y: -5 }}
+      className={`stat-card glass-card tone-${tone}`}
+    >
+      <div className="stat-card-row">
+        <div>
+          <p className="stat-card-label">{label}</p>
+          <h2 className="stat-card-value">{value}</h2>
+          {(hasChange || sub) && (
+            <p className={`stat-card-change${hasChange ? (up ? ' up' : ' down') : ''}`}>
+              {hasChange && (up ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />)}
+              {hasChange ? `${up ? '+' : ''}${changeNumber}%` : sub}
+            </p>
+          )}
+        </div>
+        {Icon && (
+          <span className="stat-card-icon" aria-hidden="true">
+            <Icon size={22} />
+          </span>
+        )}
+      </div>
+    </motion.article>
   );
 }

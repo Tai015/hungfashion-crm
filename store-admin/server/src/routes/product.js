@@ -193,23 +193,25 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /api/products/:id – cập nhật sản phẩm
-router.put('/:id', async (req, res) => {
+// PUT/PATCH /api/products/:id – cập nhật sản phẩm (PATCH là alias cho PUT)
+async function updateProduct(req, res) {
   try {
-    const { category_id, product_name, description, import_price, selling_price, image_url } = req.body;
+    const { category_id, supplier_id, product_name, description, import_price, selling_price, image_url } = req.body;
     const { rows } = await pool.query(
       `UPDATE product
-       SET category_id=$1, product_name=$2, description=$3,
-           import_price=$4, selling_price=$5, image_url=$6, updated_at=NOW()
-       WHERE product_id=$7 RETURNING *`,
-      [category_id, product_name, description, import_price, selling_price, image_url, req.params.id]
+       SET category_id=$1, supplier_id=$2, product_name=$3, description=$4,
+           import_price=$5, selling_price=$6, image_url=$7, updated_at=NOW()
+       WHERE product_id=$8 RETURNING *`,
+      [category_id||null, supplier_id||null, product_name, description, import_price, selling_price, image_url||null, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-});
+}
+router.put('/:id', updateProduct);
+router.patch('/:id', updateProduct);
 
 // DELETE /api/products/:id – soft delete
 router.delete('/:id', async (req, res) => {

@@ -1,6 +1,3 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
 /**
  * orderData: {
  *   order_id,
@@ -10,7 +7,11 @@ import 'jspdf-autotable';
  *   details: [{ product_name, size_name, color_name, quantity, unit_price }]
  * }
  */
-export const generateInvoicePDF = (orderData) => {
+export const generateInvoicePDF = async (orderData) => {
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ]);
   const doc = new jsPDF();
 
   // Header
@@ -32,7 +33,7 @@ export const generateInvoicePDF = (orderData) => {
   ]);
 
   // Table body
-  doc.autoTable({
+  autoTable(doc, {
     startY: 55,
     head: [tableHeaders],
     body: tableRows,

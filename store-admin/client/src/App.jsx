@@ -1,24 +1,35 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { apiFetch, authHeaders, TOKEN_KEY } from './api';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { apiFetch, checkRuntimeServices, TOKEN_KEY } from './api';
 import AuthScreen from './AuthScreen';
-import CustomerPortal from './CustomerPortal';
-import PasswordInput from './PasswordInput';
+const CustomerPortal = lazy(() => import('./CustomerPortal'));
 
-import StatusBadge from './components/StatusBadge';
-import NavItem from './components/NavItem';
+import AppShell from './components/AppShell';
 import Spinner from './components/Spinner';
 
 import { publishTelemetry } from './utils/telemetry';
 
-import DashboardView from './views/DashboardView';
-import CustomersView from './views/CustomersView';
-import ProductsView from './views/ProductsView';
-import FeedbacksView from './views/FeedbacksView';
-import SurveysView from './views/SurveysView';
-import SettingsView from './views/SettingsView';
-import AccountsView from './views/AccountsView';
-import OperationsView from './views/OperationsView';
-import AuditLogView from './views/AuditLogView';
+const DashboardView = lazy(() => import('./views/DashboardView'));
+const CustomersView = lazy(() => import('./views/CustomersView'));
+const ProductsView = lazy(() => import('./views/ProductsView'));
+const FeedbacksView = lazy(() => import('./views/FeedbacksView'));
+const SurveysView = lazy(() => import('./views/SurveysView'));
+const SettingsView = lazy(() => import('./views/SettingsView'));
+const AccountsView = lazy(() => import('./views/AccountsView'));
+const OperationsView = lazy(() => import('./views/OperationsView'));
+const AuditLogView = lazy(() => import('./views/AuditLogView'));
+
+const showBackendWarning = async () => {
+  const { default: Swal } = await import('sweetalert2');
+  return Swal.fire({
+    icon: 'warning',
+    title: 'Không kết nối được máy chủ',
+    text: 'Không nhận được phản hồi từ API. Hãy kiểm tra Docker, PostgreSQL và máy chủ backend rồi thử lại.',
+    confirmButtonText: 'Kiểm tra lại',
+    showCancelButton: true,
+    cancelButtonText: 'Đóng',
+    reverseButtons: true,
+  });
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  CONSTANTS & HELPERS
@@ -73,6 +84,27 @@ function App() {
   const pageViewTracked = useRef(false);
 
   useEffect(() => {
+    let active = true;
+
+    const inspectServices = async () => {
+      try {
+        const status = await checkRuntimeServices();
+        if (!active || status.apiReady) return;
+
+        const result = await showBackendWarning();
+        if (active && result.isConfirmed) await inspectServices();
+      } catch {
+        if (!active) return;
+        const result = await showBackendWarning();
+        if (active && result.isConfirmed) await inspectServices();
+      }
+    };
+
+    inspectServices();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
     if (!pageViewTracked.current) {
       pageViewTracked.current = true;
       publishTelemetry('user', { eventType: 'page_view' }).catch(() => {});
@@ -124,7 +156,7 @@ function App() {
     window.location.hash = '';
   };
 
-  if (authLoading) return <main className="auth-page"><p>Đang kiểm tra phiên đăng nhập...</p></main>;
+  if (authLoading) return <main className="grid min-h-screen place-items-center"><Spinner /></main>;
   if (!user) return <AuthScreen onAuthenticated={authenticatedUser => {
     setUser(authenticatedUser);
     setView(authenticatedUser.role === 'KHACH_HANG' ? 'catalog' : 'dashboard');
@@ -132,11 +164,11 @@ function App() {
       ? '#/khach-hang/catalog'
       : roleRoute(authenticatedUser.role, 'dashboard');
   }} />;
-  if (role === 'KHACH_HANG') return <CustomerPortal user={user} onUserUpdated={setUser} onLogout={logout} />;
+  if (role === 'KHACH_HANG') return <Suspense fallback={<main className="grid min-h-screen place-items-center"><Spinner /></main>}><CustomerPortal user={user} onUserUpdated={setUser} onLogout={logout} /></Suspense>;
 
   const renderView = () => {
     switch (view) {
-      case 'dashboard': return <DashboardView userRole={role} />;
+      case 'dashboard': return <DashboardView userRole={role} userName={user.full_name || user.username} />;
       case 'customers': return <CustomersView userRole={role} />;
       case 'products': return <ProductsView />;
       case 'feedbacks': return <FeedbacksView />;
@@ -149,26 +181,24 @@ function App() {
       case 'receipts': return <OperationsView type="receipts" />;
       case 'orders': return <OperationsView type="orders" />;
       case 'promotions': return <OperationsView type="promotions" />;
-      default: return <DashboardView userRole={role} />;
+      default: return <DashboardView userRole={role} userName={user.full_name || user.username} />;
     }
   };
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">Hung Fashion</div>
-        <p className="sidebar-user">{user.full_name || user.username}<br /><small>{ROLE_LABELS[role] || role}</small></p>
-        <nav>
-          {navItems.map(([key, label]) => (
-            <NavItem key={key} label={label} active={view === key} onClick={() => recordNavigation(key)} />
-          ))}
-        </nav>
-        <button className="nav-item logout-link" onClick={logout}>Đăng xuất</button>
-      </aside>
-      <main className="content">
+    <AppShell
+      brand="Hung Fashion"
+      userName={user.full_name || user.username}
+      roleLabel={ROLE_LABELS[role] || role}
+      navItems={navItems}
+      active={view}
+      onNav={recordNavigation}
+      onLogout={logout}
+    >
+      <Suspense fallback={<div className="grid min-h-64 place-items-center"><Spinner /></div>}>
         {renderView()}
-      </main>
-    </div>
+      </Suspense>
+    </AppShell>
   );
 }
 
