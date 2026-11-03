@@ -20,6 +20,18 @@ router.get('/categories', async (_req, res) => {
   }
 });
 
+// GET /api/products/brands – danh sách thương hiệu dùng cho bộ lọc sản phẩm
+router.get('/brands', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT brand_id, brand_name FROM brand WHERE is_active=TRUE ORDER BY brand_name`,
+    );
+    return res.json(rows);
+  } catch {
+    return res.status(500).json({ message: 'Không thể tải danh sách thương hiệu.' });
+  }
+});
+
 // POST /api/products/categories
 router.post('/categories', async (req, res) => {
   try {
@@ -65,6 +77,7 @@ router.get('/', async (req, res) => {
       created_at: 'p.created_at',
       name: 'p.product_name',
       price: 'p.selling_price',
+      category: 'c.category_name',
     };
     if (!Number.isInteger(pageNumber) || pageNumber < 1
       || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100

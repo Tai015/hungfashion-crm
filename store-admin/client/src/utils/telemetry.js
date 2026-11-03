@@ -1,3 +1,5 @@
+import { authHeaders } from '../api';
+
 const sessionStorageKey = 'store-admin-telemetry-session';
 
 export function getTelemetrySessionId() {
@@ -12,12 +14,12 @@ export function getTelemetrySessionId() {
 export async function publishTelemetry(eventPath, event) {
   const response = await fetch(`/api/events/${eventPath}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: authHeaders({ 'content-type': 'application/json' }),
     body: JSON.stringify({
       eventId: window.crypto.randomUUID(),
       sessionId: getTelemetrySessionId(),
       occurredAt: new Date().toISOString(),
-      page: window.location.pathname,
+      page: `${window.location.pathname}${window.location.hash}`,
       ...event,
     }),
   });

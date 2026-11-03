@@ -15,7 +15,7 @@ RAW_PATH = ROOT / "data" / "raw" / "fashion-studio-products.json"
 CLEAN_PATH = ROOT / "data" / "clean" / "products.json"
 MIN_PRODUCTS = 80
 MAX_PRODUCTS = 180
-USD_TO_VND = 25_000
+USD_TO_VND = 1_000
 
 
 def map_category(title: str) -> str:

@@ -1,7 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle, ChevronLeft, CreditCard, Tag, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { useModalEffects } from '../hooks/useModalEffects';
 import { apiFetch } from '../api';
 import { useCart } from '../context/CartContext';
+import { useSweetAlertMessages } from '../utils/notifications';
+import PaymentCountdown from '../components/PaymentCountdown';
+import QRCode from 'qrcode';
 
 const fmtVND = n => Number(n).toLocaleString('vi-VN') + 'đ';
 
@@ -14,43 +19,85 @@ const FIELD  = 'flex flex-col gap-1.5 text-white/65 text-sm font-medium';
 
 const PAYMENT_METHODS = [
   { value:'Cash',         label:'Tiền mặt (nhận hàng)',         icon:'💵' },
-  { value:'BankTransfer', label:'Chuyển khoản ngân hàng / QR',  icon:'🏦' },
+  { value:'BankTransfer', label:'Thanh toán bằng QR',  icon:'▦' },
 ];
 
 function QRModal({ order, onClose, onViewOrders }) {
   const [qrError, setQrError] = useState('');
+  const [demoQr, setDemoQr] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState(order.payment?.status || 'Pending');
+  const isDemo = Boolean(order.payment_instructions?.demo_url);
+  const isZeroTotal = Number(order.total_amount) === 0;
+  useModalEffects(true, onClose);
   const instructions = order.payment_instructions;
   const needsQR = order.payment_method === 'BankTransfer';
+  useSweetAlertMessages({ error: qrError, warning: needsQR && !isZeroTotal && !instructions ? 'Máy chủ chưa trả thông tin chuyển khoản. Vui lòng liên hệ cửa hàng trước khi thanh toán.' : '' });
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-5">
-      <div className="w-full max-w-md flex flex-col items-center gap-5 p-7 border border-white/[0.12] rounded-3xl bg-[rgba(26,20,16,0.97)] shadow-[0_32px_80px_rgba(0,0,0,0.7)] text-[#f5f0eb]">
-        <CheckCircle size={48} className="text-emerald-400"/>
+  useEffect(() => {
+    if (!isDemo || !instructions?.demo_url) return undefined;
+    let active = true;
+    QRCode.toDataURL(instructions.demo_url, { width: 280, margin: 2, errorCorrectionLevel: 'M' })
+      .then(dataUrl => { if (active) setDemoQr(dataUrl); })
+      .catch(() => { if (active) setQrError('Không tạo được mã QR thanh toán.'); });
+    return () => { active = false; };
+  }, [isDemo, instructions?.demo_url]);
+
+  useEffect(() => {
+    if (!needsQR || paymentStatus === 'Paid') return undefined;
+    const startedAt = Date.now();
+    const poll = async () => {
+      try {
+        const current = await apiFetch(`/api/orders/mine/${order.order_id}`);
+        const status = current.payment?.status;
+        if (status) setPaymentStatus(status);
+      } catch { /* Keep the checkout open; the next poll can recover from transient errors. */ }
+    };
+    const timer = window.setInterval(() => {
+      if (Date.now() - startedAt >= 15 * 60_000) window.clearInterval(timer);
+      else poll();
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [needsQR, order.order_id, paymentStatus]);
+
+  return createPortal((
+    <div className="customer-portal-modal fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-5">
+      <div className="customer-portal-modal-surface w-full max-w-md flex flex-col items-center gap-5 p-7 border border-white/[0.12] rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.7)] text-[#f5f0eb]">
+        <CheckCircle size={48} className={paymentStatus === 'Paid' ? 'text-emerald-400' : 'text-orange-400'}/>
         <div className="text-center">
-          <h2 className="m-0 text-xl font-bold">Đặt hàng thành công!</h2>
+          <h2 className="m-0 text-xl font-bold">{isZeroTotal ? 'Đặt hàng thành công!' : paymentStatus === 'Paid' ? 'Thanh toán thành công' : 'Đặt hàng thành công!'}</h2>
           <p className="m-0 mt-1 text-white/45 text-sm">Mã đơn: <strong className="text-orange-400">#{order.order_id}</strong></p>
           <p className="m-0 mt-0.5 text-white/40 text-xs">Tổng tiền: <strong className="text-[#f5f0eb]">{fmtVND(order.total_amount)}</strong></p>
         </div>
 
-        {needsQR && (
+        {needsQR && paymentStatus !== 'Paid' && (
           <>
             <p className="m-0 text-white/50 text-sm text-center">Quét mã QR để thanh toán:</p>
+            {isDemo && <span className="px-2.5 py-1 rounded-full bg-orange-500/15 border border-orange-400/30 text-orange-300 text-xs font-semibold">Thanh toán mô phỏng · không phát sinh giao dịch thật</span>}
+            <PaymentCountdown expiresAt={order.payment_expires_at} actionLabel="xác nhận thanh toán" />
             {instructions ? (
               <>
                 <div className="p-3 bg-white rounded-2xl">
-                  {qrError
-                    ? <p className="w-56 h-56 grid place-items-center text-center text-red-700 text-sm" role="alert">{qrError}</p>
+                  {isDemo
+                    ? demoQr ? <img src={demoQr} alt="Mã QR thanh toán" className="w-56 h-56 object-contain" /> : <div className="w-56 h-56 grid place-items-center text-slate-500 text-sm">Đang tạo mã QR…</div>
+                    : qrError
+                    ? <div className="w-56 h-56" aria-hidden="true" />
                     : <img src={instructions.qr_url} alt="QR thanh toán" className="w-56 h-56 object-contain"
                         onError={() => setQrError('Không tải được mã QR. Vui lòng kiểm tra kết nối hoặc dùng thông tin chuyển khoản bên dưới.')} />}
                 </div>
-                <div className="text-center text-white/40 text-xs">
+                {!isDemo && <div className="text-center text-white/40 text-xs">
                   <p className="m-0">{instructions.bank_id} · {instructions.account_number}</p>
                   <p className="m-0">{instructions.account_name}</p>
                   <p className="m-0 text-orange-400 font-semibold mt-1">Nội dung: {instructions.transfer_content}</p>
-                </div>
+                </div>}
               </>
-            ) : <p className="m-0 text-red-300 text-sm" role="alert">Máy chủ chưa trả thông tin chuyển khoản. Vui lòng liên hệ cửa hàng trước khi thanh toán.</p>}
+            ) : <p className="m-0 text-white/55 text-sm">Thông tin chuyển khoản chưa sẵn sàng. Vui lòng liên hệ cửa hàng.</p>}
           </>
+        )}
+        {isZeroTotal && (
+          <p className="m-0 text-center text-emerald-300 text-sm">Đơn hàng 0đ, không cần thanh toán.</p>
+        )}
+        {needsQR && !isZeroTotal && paymentStatus === 'Paid' && (
+          <p className="m-0 text-center text-emerald-300 text-sm">Đơn hàng đã được xác nhận thanh toán. Cảm ơn bạn!</p>
         )}
 
         <div className="flex flex-col gap-2 w-full mt-2">
@@ -63,7 +110,7 @@ function QRModal({ order, onClose, onViewOrders }) {
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }
 
 export default function CheckoutView({ onBack, onOrderSuccess }) {
@@ -71,12 +118,24 @@ export default function CheckoutView({ onBack, onOrderSuccess }) {
   const [address, setAddress]           = useState('');
   const [payMethod, setPayMethod]       = useState('Cash');
   const [promoCode, setPromoCode]       = useState('');
+  const [walletPromos, setWalletPromos] = useState([]);
   const [promo, setPromo]               = useState(null);
   const [promoError, setPromoError]     = useState('');
+  const [loyaltyBalance, setLoyaltyBalance] = useState(0);
+  const [loyaltyLoadError, setLoyaltyLoadError] = useState('');
+  const [pointsToRedeem, setPointsToRedeem] = useState('0');
   const [validatingPromo, setValidatingPromo] = useState(false);
   const [busy, setBusy]                 = useState(false);
   const [error, setError]               = useState('');
+  useSweetAlertMessages({ error, warning: promoError });
   const [order, setOrder]               = useState(null);
+
+  useEffect(() => {
+    apiFetch('/api/promotions/mine').then(rows => setWalletPromos(rows.filter(row => row.status === 'Available' && row.end_date >= new Date().toISOString().slice(0, 10))))
+      .catch(e => setPromoError(e.message));
+    apiFetch('/api/loyalty/me').then(result => setLoyaltyBalance(Number(result.balance) || 0))
+      .catch(e => setLoyaltyLoadError(e.message));
+  }, []);
 
   const discount = promo
     ? Math.min(
@@ -87,6 +146,13 @@ export default function CheckoutView({ onBack, onOrderSuccess }) {
     )
     : 0;
   const finalTotal = Math.max(0, totalAmount - discount);
+  const maxRedeemablePoints = Math.max(0, Math.min(
+    Math.floor(Math.max(0, loyaltyBalance) / 10) * 10,
+    Math.floor(finalTotal / 1_000) * 10,
+  ));
+  const redeemedPoints = Math.min(Math.max(0, Number(pointsToRedeem) || 0), maxRedeemablePoints);
+  const loyaltyDiscount = Math.floor(redeemedPoints / 10) * 1_000;
+  const payableTotal = Math.max(0, finalTotal - loyaltyDiscount);
 
   const validatePromo = async () => {
     if (!promoCode.trim()) return;
@@ -114,9 +180,13 @@ export default function CheckoutView({ onBack, onOrderSuccess }) {
           shipping_address: address.trim(),
           payment_method:   payMethod,
           promotion_id:     promo?.promotion_id || null,
+          loyalty_points_to_redeem: redeemedPoints,
           items: items.map(i => ({ variant_id: i.variant_id, quantity: i.quantity })),
         },
       });
+      if (created.payment_method === 'BankTransfer') {
+        localStorage.setItem(`pending-transfer-order:${created.order_id}`, '1');
+      }
       clearCart();
       setOrder(created);
     } catch(e) { setError(e.message); }
@@ -143,7 +213,6 @@ export default function CheckoutView({ onBack, onOrderSuccess }) {
         </div>
       </div>
 
-      {error && <p className="p-3 px-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">{error}</p>}
 
       <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 items-start">
         <div className="flex flex-col gap-4">
@@ -177,6 +246,7 @@ export default function CheckoutView({ onBack, onOrderSuccess }) {
           {/* Mã giảm giá */}
           <div className={PANEL}>
             <h2 className="m-0 text-[1.05rem] font-semibold"><Tag size={16} className="inline mr-2"/>Mã giảm giá</h2>
+            {walletPromos.length > 0 && <select className={SELECT} value="" onChange={e => { const selected = walletPromos.find(item => String(item.promotion_id) === e.target.value); if (selected) { setPromoCode(selected.code); setPromo(null); setPromoError(''); } }}><option value="">Chọn mã trong ví ưu đãi...</option>{walletPromos.map(item => <option key={item.promotion_id} value={item.promotion_id}>{item.code} — {item.name}</option>)}</select>}
             <div className="flex gap-2">
               <input className={`${INPUT} flex-1`} placeholder="Nhập mã khuyến mãi..."
                 value={promoCode} onChange={e => { setPromoCode(e.target.value); setPromo(null); setPromoError(''); }} />
@@ -184,13 +254,26 @@ export default function CheckoutView({ onBack, onOrderSuccess }) {
                 {validatingPromo?'...':'Áp dụng'}
               </button>
             </div>
-            {promoError && <p className="m-0 text-red-400 text-sm">{promoError}</p>}
             {promo && (
               <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-300 text-sm">
                 <span>✓ Áp dụng: <strong>{promo.name}</strong> — giảm {fmtVND(discount)}</span>
                 <button type="button" onClick={() => { setPromo(null); setPromoCode(''); }} className="ml-auto text-white/40 hover:text-red-400 cursor-pointer"><X size={14}/></button>
               </div>
             )}
+          </div>
+
+          {/* Điểm thưởng */}
+          <div className={PANEL}>
+            <h2 className="m-0 text-[1.05rem] font-semibold"><span className="mr-2 text-orange-300">★</span>Dùng điểm thưởng</h2>
+            <p className="m-0 -mt-3 text-sm text-white/55">Số dư: {loyaltyBalance.toLocaleString('vi-VN')} điểm · 10 điểm đổi 1.000đ</p>
+            {loyaltyLoadError && <p className="m-0 -mt-2 text-xs text-amber-200">Chưa tải được số dư điểm; bạn vẫn có thể đặt hàng và thanh toán bình thường.</p>}
+            <label className={FIELD}>
+              <span>Số điểm muốn dùng (tối đa {maxRedeemablePoints.toLocaleString('vi-VN')})</span>
+              <input type="number" min="0" max={maxRedeemablePoints} step="10" className={INPUT}
+                value={pointsToRedeem}
+                onChange={e => setPointsToRedeem(String(Math.min(maxRedeemablePoints, Math.max(0, Math.floor(Number(e.target.value || 0) / 10) * 10))))} />
+            </label>
+            {loyaltyDiscount > 0 && <p className="m-0 text-sm text-emerald-300">Dùng {redeemedPoints} điểm, giảm {fmtVND(loyaltyDiscount)}.</p>}
           </div>
         </div>
 
@@ -216,9 +299,15 @@ export default function CheckoutView({ onBack, onOrderSuccess }) {
                 <span>-{fmtVND(discount)}</span>
               </div>
             )}
+            {loyaltyDiscount > 0 && (
+              <div className="flex justify-between text-sm text-emerald-400">
+                <span>Đổi {redeemedPoints} điểm</span>
+                <span>-{fmtVND(loyaltyDiscount)}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center pt-2 border-t border-white/[0.06]">
               <strong>Tổng thanh toán</strong>
-              <strong className="text-xl text-orange-400 tabular-nums">{fmtVND(finalTotal)}</strong>
+              <strong className="text-xl text-orange-400 tabular-nums">{fmtVND(payableTotal)}</strong>
             </div>
           </div>
           <button type="submit" className={BTN_PRIMARY} disabled={busy || !items.length}>

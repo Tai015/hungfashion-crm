@@ -3,6 +3,13 @@ import { pool } from '../db.js';
 
 const router = Router();
 
+function validateEmployeeContact({ phone, email, address }) {
+  if (phone != null && (typeof phone !== 'string' || phone.trim().length > 20)) return 'Số điện thoại tối đa 20 ký tự.';
+  if (email != null && (typeof email !== 'string' || email.length > 150 || (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))) return 'Email nhân viên không hợp lệ.';
+  if (address != null && (typeof address !== 'string' || address.length > 500)) return 'Địa chỉ tối đa 500 ký tự.';
+  return null;
+}
+
 router.get('/', async (req, res) => {
   try {
     const { search = '', page = '1', limit = '20' } = req.query;
@@ -46,6 +53,8 @@ router.post('/', async (req, res) => {
   if (typeof position !== 'string' || !position.trim() || position.trim().length > 100) {
     return res.status(400).json({ message: 'Chức vụ là bắt buộc và tối đa 100 ký tự.' });
   }
+  const contactError = validateEmployeeContact({ phone, email, address });
+  if (contactError) return res.status(400).json({ message: contactError });
   try {
     const { rows } = await pool.query(
       `INSERT INTO employee (full_name, gender, date_of_birth, phone, email, address, position)
@@ -65,6 +74,11 @@ router.put('/:id', async (req, res) => {
     return res.status(400).json({ message: 'Họ tên là bắt buộc và tối đa 150 ký tự.' });
   }
   if (typeof is_active !== 'boolean') return res.status(400).json({ message: 'Trạng thái nhân viên không hợp lệ.' });
+  if (typeof position !== 'string' || !position.trim() || position.trim().length > 100) {
+    return res.status(400).json({ message: 'Chức vụ là bắt buộc và tối đa 100 ký tự.' });
+  }
+  const contactError = validateEmployeeContact({ phone, email, address });
+  if (contactError) return res.status(400).json({ message: contactError });
   try {
     const { rows } = await pool.query(
       `UPDATE employee SET full_name=$1, gender=$2::gender_type, date_of_birth=$3,

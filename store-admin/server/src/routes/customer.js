@@ -54,6 +54,51 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/customers/stats/overview – thống kê CRM (đặt trước route động /:id)
+router.get('/stats/overview', async (_req, res) => {
+  try {
+    const [tierStats, genderStats, ageStats] = await Promise.all([
+      pool.query(
+        `SELECT customer_tier, COUNT(*)::int AS count
+         FROM customer GROUP BY customer_tier ORDER BY count DESC`
+      ),
+      pool.query(
+        `SELECT gender, COUNT(*)::int AS count
+         FROM customer GROUP BY gender`
+      ),
+      pool.query(
+        `WITH customer_ages AS (
+           SELECT CASE
+             WHEN date_of_birth IS NULL THEN 'Chưa rõ'
+             WHEN age < 18 THEN 'Dưới 18'
+             WHEN age <= 24 THEN '18–24'
+             WHEN age <= 34 THEN '25–34'
+             WHEN age <= 44 THEN '35–44'
+             ELSE 'Từ 45'
+           END AS age_group
+           FROM (
+             SELECT date_of_birth, EXTRACT(YEAR FROM AGE(date_of_birth))::int AS age
+             FROM customer
+           ) all_customers
+         ), total AS (
+           SELECT COUNT(*)::numeric AS customer_count FROM customer
+         )
+         SELECT customer_ages.age_group,
+                COUNT(*)::int AS count,
+                COALESCE(ROUND(COUNT(*) * 100.0 / NULLIF(total.customer_count, 0), 1), 0)::float AS percent
+         FROM customer_ages CROSS JOIN total
+         GROUP BY customer_ages.age_group, total.customer_count
+         ORDER BY CASE customer_ages.age_group
+           WHEN 'Dưới 18' THEN 1 WHEN '18–24' THEN 2 WHEN '25–34' THEN 3
+           WHEN '35–44' THEN 4 WHEN 'Từ 45' THEN 5 ELSE 6 END`
+      ),
+    ]);
+    res.json({ byTier: tierStats.rows, byGender: genderStats.rows, byAge: ageStats.rows });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET /api/customers/:id
 router.get('/:id', async (req, res) => {
   try {
@@ -175,12 +220,20 @@ router.put('/:id', async (req, res) => {
 
 // PATCH /api/customers/:id/tier – cập nhật hạng khách hàng
 router.patch('/:id/tier', async (req, res) => {
+  const customerId = Number(req.params.id);
+  const validTiers = ['New', 'Regular', 'Silver', 'Gold', 'VIP'];
+  if (!Number.isSafeInteger(customerId) || customerId < 1) {
+    return res.status(400).json({ message: 'Mã khách hàng không hợp lệ.' });
+  }
+  const tier = req.body?.tier;
+  if (!validTiers.includes(tier)) {
+    return res.status(400).json({ message: 'Hạng khách hàng không hợp lệ.' });
+  }
   try {
-    const { tier } = req.body;
     const { rows } = await pool.query(
       `UPDATE customer SET customer_tier=$1, updated_at=NOW()
        WHERE customer_id=$2 RETURNING customer_id, full_name, customer_tier`,
-      [tier, req.params.id]
+      [tier, customerId]
     );
     if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy khách hàng' });
     res.json(rows[0]);
@@ -189,25 +242,95 @@ router.patch('/:id/tier', async (req, res) => {
   }
 });
 
-// DELETE /api/customers/:id – soft delete qua account status
-router.delete('/:id', async (req, res) => {
+// PATCH /api/customers/:id/account-status – khóa/mở khóa tài khoản khách hàng
+router.patch('/:id/account-status', async (req, res) => {
+  const { status } = req.body || {};
+  if (!['Active', 'Blocked'].includes(status)) {
+    return res.status(400).json({ message: 'Trạng thái tài khoản chỉ có thể là Active hoặc Blocked.' });
+  }
   try {
     const { rows } = await pool.query(
-      `SELECT account_id FROM customer WHERE customer_id=$1`, [req.params.id]
+      `UPDATE account a
+       SET status=$1, updated_at=NOW()
+       FROM customer c
+       WHERE c.customer_id=$2 AND c.account_id=a.account_id
+       RETURNING c.customer_id, a.account_id, a.status AS account_status`,
+      [status, req.params.id],
     );
-    if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy khách hàng' });
-
-    if (rows[0].account_id) {
-      await pool.query(
-        `UPDATE account SET status='Blocked', updated_at=NOW() WHERE account_id=$1`,
-        [rows[0].account_id]
-      );
-    } else {
-      await pool.query('DELETE FROM customer WHERE customer_id=$1', [req.params.id]);
+    if (!rows.length) {
+      const { rowCount } = await pool.query('SELECT 1 FROM customer WHERE customer_id=$1', [req.params.id]);
+      if (!rowCount) return res.status(404).json({ message: 'Không tìm thấy khách hàng.' });
+      return res.status(409).json({ message: 'Hồ sơ này chưa liên kết tài khoản đăng nhập nên không thể khóa/mở khóa.' });
     }
-    res.json({ message: rows[0].account_id ? 'Đã khóa tài khoản khách hàng' : 'Đã xóa hồ sơ khách hàng' });
+    return res.json({ ...rows[0], message: status === 'Blocked' ? 'Đã khóa tài khoản khách hàng.' : 'Đã mở khóa tài khoản khách hàng.' });
+  } catch {
+    return res.status(500).json({ message: 'Không thể cập nhật trạng thái tài khoản khách hàng.' });
+  }
+});
+
+// DELETE /api/customers/:id – chỉ xóa hồ sơ không có tài khoản hoặc dữ liệu lịch sử
+router.delete('/:id', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: customerRows } = await client.query(
+      `SELECT customer_id, account_id FROM customer WHERE customer_id=$1 FOR UPDATE`, [req.params.id]
+    );
+    if (!customerRows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Không tìm thấy khách hàng.' });
+    }
+
+    if (customerRows[0].account_id) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        message: 'Không thể xóa hồ sơ đang liên kết tài khoản đăng nhập. Hãy dùng thao tác “Khóa tài khoản” riêng nếu cần ngừng quyền truy cập.',
+      });
+    }
+
+    const { rows: [references] } = await client.query(
+      `SELECT
+         (SELECT COUNT(*)::int FROM "order" WHERE customer_id=$1) AS orders,
+         (SELECT COUNT(*)::int FROM feedback WHERE customer_id=$1) AS feedbacks,
+         (SELECT COUNT(*)::int FROM survey_response WHERE customer_id=$1) AS survey_responses,
+         (SELECT COUNT(*)::int FROM survey_invitation WHERE customer_id=$1) AS survey_invitations,
+         (SELECT COUNT(*)::int FROM user_promotion WHERE customer_id=$1) AS promotions,
+         (SELECT COUNT(*)::int FROM conversation WHERE customer_id=$1) AS conversations,
+         (SELECT COUNT(*)::int FROM loyalty_point_transaction WHERE customer_id=$1) AS loyalty_transactions`,
+      [req.params.id],
+    );
+    const blockers = [
+      ['orders', 'đơn hàng'],
+      ['feedbacks', 'phản hồi'],
+      ['survey_responses', 'kết quả khảo sát'],
+      ['survey_invitations', 'lời mời khảo sát'],
+      ['promotions', 'mã ưu đãi đã cấp'],
+      ['conversations', 'hội thoại hỗ trợ'],
+      ['loyalty_transactions', 'lịch sử điểm thưởng'],
+    ].filter(([key]) => references[key] > 0)
+      .map(([key, label]) => `${references[key]} ${label}`);
+
+    if (blockers.length) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        message: `Không thể xóa hồ sơ vì còn dữ liệu liên quan: ${blockers.join(', ')}. Hãy giữ hồ sơ để bảo toàn lịch sử.`,
+        blockers: references,
+      });
+    }
+
+    await client.query('DELETE FROM customer WHERE customer_id=$1', [req.params.id]);
+    await client.query('COMMIT');
+    return res.json({ message: 'Đã xóa hồ sơ khách hàng.' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23503') {
+      return res.status(409).json({
+        message: 'Không thể xóa hồ sơ vì vừa phát sinh dữ liệu liên quan. Hãy tải lại danh sách rồi thử lại.',
+      });
+    }
+    return res.status(500).json({ message: 'Không thể xóa hồ sơ khách hàng.' });
+  } finally {
+    client.release();
   }
 });
 
@@ -225,46 +348,6 @@ router.get('/:id/orders', async (req, res) => {
       [req.params.id]
     );
     res.json(rows);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// GET /api/customers/stats/overview – thống kê CRM
-router.get('/stats/overview', async (_req, res) => {
-  try {
-    const [tierStats, genderStats, ageStats] = await Promise.all([
-      pool.query(
-        `SELECT customer_tier, COUNT(*)::int AS count
-         FROM customer GROUP BY customer_tier ORDER BY count DESC`
-      ),
-      pool.query(
-        `SELECT gender, COUNT(*)::int AS count
-         FROM customer GROUP BY gender`
-      ),
-      pool.query(
-        `SELECT
-           CASE
-             WHEN age < 18            THEN 'Dưới 18'
-             WHEN age BETWEEN 18 AND 22 THEN '18-22'
-             WHEN age BETWEEN 23 AND 30 THEN '23-30'
-             WHEN age BETWEEN 31 AND 40 THEN '31-40'
-             ELSE 'Trên 40'
-           END AS age_group,
-           COUNT(*)::int AS count
-         FROM (
-           SELECT EXTRACT(YEAR FROM AGE(date_of_birth))::int AS age
-           FROM customer WHERE date_of_birth IS NOT NULL
-         ) t
-         GROUP BY age_group ORDER BY age_group`
-      ),
-    ]);
-
-    res.json({
-      byTier:   tierStats.rows,
-      byGender: genderStats.rows,
-      byAge:    ageStats.rows,
-    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

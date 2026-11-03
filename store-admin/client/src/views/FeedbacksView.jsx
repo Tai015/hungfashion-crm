@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, MessageSquare, Search, Send, Star, X } from 'lucide-react';
 import { apiFetch } from '../api';
+import { useSweetAlertMessages } from '../utils/notifications';
 import Spinner from '../components/Spinner';
+import FilterPopover from '../components/FilterPopover';
+import FeedbackMedia from '../components/FeedbackMedia';
 
 const STATUS_COLOR = {
-  Pending:  { color:'#f59e0b', bg:'rgba(245,158,11,0.12)' },
+  New:      { color:'#f59e0b', bg:'rgba(245,158,11,0.12)' },
+  Processing:{ color:'#38bdf8', bg:'rgba(56,189,248,0.12)' },
   Resolved: { color:'#10b981', bg:'rgba(16,185,129,0.12)' },
   Rejected: { color:'#f43f5e', bg:'rgba(244,63,94,0.12)' },
 };
@@ -26,7 +30,7 @@ function StarRating({ rating }) {
 
 function StatusPill({ status }) {
   const { color, bg } = STATUS_COLOR[status] || { color:'#94a3b8', bg:'rgba(148,163,184,0.12)' };
-  const labels = { Pending:'Chờ xử lý', Resolved:'Đã giải quyết', Rejected:'Từ chối' };
+  const labels = { New:'Mới', Processing:'Đang xử lý', Pending:'Chờ xử lý', Resolved:'Đã giải quyết', Rejected:'Từ chối' };
   return (
     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ color, background:bg }}>
       {labels[status]||status}
@@ -38,6 +42,7 @@ function ReplyForm({ feedback, onSaved }) {
   const [reply, setReply] = useState(feedback.reply||'');
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
+  useSweetAlertMessages({ error });
   const submit = async e => {
     e.preventDefault(); setBusy(true); setError('');
     try { await apiFetch(`/api/feedbacks/${feedback.feedback_id}/reply`, { method:'PATCH', body:{ reply } }); onSaved(); }
@@ -47,7 +52,6 @@ function ReplyForm({ feedback, onSaved }) {
     <form className="flex items-start gap-2.5 mt-3 ml-[52px] flex-wrap" onSubmit={submit}>
       <textarea className="flex-1 min-w-[200px] min-h-[60px] px-3 py-2.5 bg-white/[0.07] border border-white/12 rounded-xl text-[#f5f0eb] text-sm placeholder-white/22 outline-none focus:border-orange-500/50 focus:bg-white/10 focus:ring-2 focus:ring-orange-500/[0.12] transition-all resize-y dark-input"
         rows={2} required maxLength={5000} value={reply} onChange={e => setReply(e.target.value)} placeholder="Nhập nội dung trả lời..." />
-      {error && <small className="w-full text-red-400 text-xs">{error}</small>}
       <button className={BTN_PRIMARY} style={{ height:32, padding:'0 14px', fontSize:'0.8rem', alignSelf:'flex-start' }} type="submit" disabled={busy}>
         <Send size={13}/> {busy ? 'Đang gửi...' : 'Gửi trả lời'}
       </button>
@@ -75,6 +79,9 @@ function FeedbackCard({ f, onRefresh }) {
         </div>
       </div>
       <p className="ml-[52px] mt-3 text-white/62 text-[0.87rem] leading-[1.65] break-words">{f.content}</p>
+      {!!f.attachments?.length && <div className="ml-[52px] mt-3 flex flex-wrap gap-3">
+        {f.attachments.map(media => <FeedbackMedia key={media.attachment_id} media={media} />)}
+      </div>}
       {f.reply && (
         <div className="ml-[52px] mt-2.5 p-[10px_14px] rounded-[10px] border-l-[3px] border-emerald-500/50 bg-emerald-500/[0.08] text-white/60 text-[0.82rem] leading-[1.5]">
           <small className="block text-emerald-400 text-[0.7rem] font-bold mb-1 uppercase tracking-[0.06em]">Đã trả lời</small>
@@ -86,7 +93,7 @@ function FeedbackCard({ f, onRefresh }) {
   );
 }
 
-const LIMIT = 10;
+const LIMIT = 20;
 
 export default function FeedbacksView() {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -96,6 +103,7 @@ export default function FeedbacksView() {
   const [page, setPage]           = useState(1);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
+  useSweetAlertMessages({ error });
   const [stats, setStats]         = useState({});
 
   const load = () => {
@@ -147,17 +155,12 @@ export default function FeedbacksView() {
           <input className="w-full h-9 pl-9 pr-3 bg-white/[0.06] border border-white/10 rounded-xl text-[#f5f0eb] text-sm placeholder-white/25 outline-none focus:border-orange-500/50 focus:bg-white/10 dark-input transition-all"
             placeholder="Tìm tên khách hàng hoặc nội dung..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {FILTERS.map(([v,l]) => (
-            <button key={v} type="button" onClick={() => { setStatus(v); setPage(1); }}
-              className={`h-8 px-3.5 rounded-full border text-sm font-medium cursor-pointer transition-all ${status===v ? 'bg-orange-500/[0.18] border-orange-500/40 text-orange-500 font-semibold' : 'border-white/12 bg-white/[0.06] text-white/55 hover:bg-white/11 hover:text-white/85'}`}>
-              {l}
-            </button>
-          ))}
-        </div>
+        <FilterPopover title="Lọc phản hồi" activeCount={[status, search].filter(Boolean).length}
+          onClear={() => { setStatus(''); setSearch(''); setPage(1); }}>
+          <label className="flex flex-col gap-1.5 text-xs text-white/65">Trạng thái<select className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-sm text-white outline-none focus:border-orange-400/50 dark-input" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}>{FILTERS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        </FilterPopover>
       </div>
 
-      {error && <p className="p-3 px-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">{error}</p>}
 
       {/* List */}
       <div className={PANEL}>

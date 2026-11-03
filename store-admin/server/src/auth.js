@@ -19,11 +19,12 @@ function base64url(value) {
   return Buffer.from(value).toString('base64url');
 }
 
-export function createAccessToken(accountId) {
+export function createAccessToken(accountId, sessionId) {
   const now = Math.floor(Date.now() / 1000);
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = base64url(JSON.stringify({
     sub: String(accountId),
+    jti: sessionId,
     iat: now,
     exp: now + TOKEN_LIFETIME_SECONDS,
   }));
@@ -51,7 +52,8 @@ function verifyAccessToken(token) {
   try {
     const header = JSON.parse(Buffer.from(headerPart, 'base64url').toString('utf8'));
     const payload = JSON.parse(Buffer.from(payloadPart, 'base64url').toString('utf8'));
-    if (header.alg !== 'HS256' || !payload.sub || !Number.isInteger(payload.exp) || payload.exp <= Date.now() / 1000) {
+    if (header.alg !== 'HS256' || !payload.sub || !payload.jti
+      || !Number.isInteger(payload.exp) || payload.exp <= Date.now() / 1000) {
       return null;
     }
     return payload;
@@ -79,15 +81,19 @@ export async function requireAuth(req, res, next) {
               c.customer_id, e.employee_id
        FROM account a
        JOIN role r ON r.role_id = a.role_id
+       JOIN account_sessions s ON s.account_id = a.account_id
        LEFT JOIN customer c ON c.account_id = a.account_id
        LEFT JOIN employee e ON e.account_id = a.account_id
-       WHERE a.account_id = $1`,
-      [token.sub],
+       WHERE a.account_id = $1 AND s.session_id = $2
+         AND s.revoked_at IS NULL AND s.expires_at > NOW()`,
+      [token.sub, token.jti],
     );
     if (!rows.length || rows[0].status !== 'Active') {
       return res.status(401).json({ message: 'Tài khoản không tồn tại hoặc đã bị khóa.' });
     }
     req.user = rows[0];
+    req.sessionId = token.jti;
+    req.authExpiresAt = token.exp * 1000;
     return next();
   } catch (error) {
     return res.status(500).json({ message: 'Không thể xác thực tài khoản.' });

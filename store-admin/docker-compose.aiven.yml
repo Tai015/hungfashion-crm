@@ -1,0 +1,18 @@
+services:
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:v1.5.0
+    container_name: store-kafka-ui-aiven
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${KAFKA_UI_PORT:?Set KAFKA_UI_PORT in server/.env}:8080'
+    environment:
+      KAFKA_CLUSTERS_0_NAME: store-aiven
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${KAFKA_BROKERS:?Set KAFKA_BROKERS in server/.env}
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SSL
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_TYPE: PEM
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_LOCATION: /certs/ca.pem
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_LOCATION: /certs/client.keystore.p12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_PASSWORD: changeit
+    volumes:
+      - ./certs:/certs:ro

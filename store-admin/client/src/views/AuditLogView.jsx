@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Activity } from 'lucide-react';
 import { apiFetch } from '../api';
 import Spinner from '../components/Spinner';
+import FilterPopover from '../components/FilterPopover';
+import { useSweetAlertMessages } from '../utils/notifications';
 
-const LIMIT = 50;
+const LIMIT = 20;
 const TH    = 'px-3.5 py-2.5 text-left text-[0.72rem] font-semibold tracking-[0.05em] uppercase text-white/38 border-b border-white/[0.08] whitespace-nowrap';
 const TD    = 'px-3.5 py-3 border-b border-white/[0.05] text-white/78 align-middle';
 const PANEL = 'flex flex-col gap-5 p-6 bg-white/[0.06] border border-white/10 rounded-2xl backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.35)] text-[#f5f0eb]';
@@ -14,18 +16,31 @@ export default function AuditLogView() {
   const [logs, setLogs]       = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
+  useSweetAlertMessages({ error });
   const [page, setPage]       = useState(1);
   const [total, setTotal]     = useState(0);
+  const [filters, setFilters] = useState({ event: '', route: '', user: '' });
 
   useEffect(() => {
     let active = true;
     setLoading(true);
-    apiFetch(`/api/reports/audit-logs?page=${page}&limit=${LIMIT}`)
+    const params = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
+    if (filters.event.trim()) params.set('event', filters.event.trim());
+    if (filters.route.trim()) params.set('route', filters.route.trim());
+    if (filters.user.trim()) params.set('user', filters.user.trim());
+    apiFetch(`/api/reports/audit-logs?${params}`)
       .then(r => { if(active) { setLogs(r.data); setTotal(r.total); } })
       .catch(e => { if(active) setError(e.message); })
       .finally(() => { if(active) setLoading(false); });
     return () => { active = false; };
-  }, [page]);
+  }, [page, filters]);
+
+  const clearFilters = () => {
+    const empty = { event: '', route: '', user: '' };
+    setFilters(empty);
+    setPage(1);
+  };
+  const activeFilterCount = Object.values(filters).filter(value => value.trim()).length;
 
   const totalPages = Math.ceil(total/LIMIT)||1;
 
@@ -42,7 +57,6 @@ export default function AuditLogView() {
         </span>
       </div>
 
-      {error && <p className="p-3 px-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">{error}</p>}
 
       <div className={PANEL}>
         <div className="flex items-center justify-between gap-4">
@@ -50,7 +64,14 @@ export default function AuditLogView() {
             Lịch sử tương tác người dùng
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/25 text-orange-500 text-xs font-semibold">{total.toLocaleString('vi-VN')}</span>
           </h2>
-          <small className="text-white/30 text-xs">Dữ liệu thời gian thực đồng bộ qua Kafka</small>
+          <div className="flex items-center gap-3">
+            <small className="text-white/30 text-xs">Dữ liệu thời gian thực đồng bộ qua Kafka</small>
+            <FilterPopover title="Lọc nhật ký" activeCount={activeFilterCount} onClear={clearFilters}>
+              <label className="flex flex-col gap-1.5 text-xs text-white/65">Sự kiện<input className="h-9 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-white outline-none focus:border-orange-400/50" placeholder="Ví dụ: page_view" value={filters.event} onChange={e => { setFilters(current => ({ ...current, event: e.target.value })); setPage(1); }}/></label>
+              <label className="flex flex-col gap-1.5 text-xs text-white/65">Trang<input className="h-9 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-white outline-none focus:border-orange-400/50" placeholder="Ví dụ: /admin/orders" value={filters.route} onChange={e => { setFilters(current => ({ ...current, route: e.target.value })); setPage(1); }}/></label>
+              <label className="flex flex-col gap-1.5 text-xs text-white/65">Người dùng<input className="h-9 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-white outline-none focus:border-orange-400/50" placeholder="Tên hoặc tên đăng nhập" value={filters.user} onChange={e => { setFilters(current => ({ ...current, user: e.target.value })); setPage(1); }}/></label>
+            </FilterPopover>
+          </div>
         </div>
 
         {loading ? <Spinner /> : (
@@ -67,8 +88,8 @@ export default function AuditLogView() {
                     <td className={`${TD} text-white/50 text-[0.8rem] tabular-nums whitespace-nowrap`}>{fmtDT(log.occurred_at)}</td>
                     <td className={TD}>
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold text-[#f5f0eb] text-[0.86rem]">{log.full_name||'Hệ thống'}</span>
-                        <small className="text-white/30 text-[0.72rem]">{log.username||'N/A'}</small>
+                        <span className="font-semibold text-[#f5f0eb] text-[0.86rem]">{log.full_name || 'Không ghi nhận danh tính'}</span>
+                        <small className="text-white/30 text-[0.72rem]">{log.username ? `${log.username}${log.role_name ? ` · ${log.role_name}` : ''}` : 'Sự kiện cũ chưa lưu tài khoản'}</small>
                       </div>
                     </td>
                     <td className={TD}>

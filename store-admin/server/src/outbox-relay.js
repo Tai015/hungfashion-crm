@@ -1,11 +1,8 @@
-import { Kafka } from 'kafkajs';
+import { createKafkaClient } from './kafka.js';
 import { pool } from './db.js';
 import { kafkaMetrics } from './kafka-metrics.js';
 
-const kafka = new Kafka({
-  clientId: 'store-admin-outbox-relay',
-  brokers: [process.env.KAFKA_BROKER],
-});
+const kafka = createKafkaClient('store-admin-outbox-relay');
 const producer = kafka.producer({ idempotent: true });
 const batchSize = 50; // Tăng batch size để xử lý nhanh hơn
 const emptyPollDelayMs = 500;

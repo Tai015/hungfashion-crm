@@ -1,13 +1,21 @@
-import { useState, useEffect, useRef } from 'react';
-import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
+﻿import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { Plus, X, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { createPortal } from 'react-dom';
+import Swal from 'sweetalert2';
+import { useModalEffects } from '../hooks/useModalEffects';
 import { apiFetch } from '../api';
-import Spinner from '../components/Spinner';
+import { TableSkeleton } from '../components/Skeleton';
+import Pagination from '../components/Pagination';
+import FilterPopover from '../components/FilterPopover';
+import { useSweetAlertMessages } from '../utils/notifications';
 
 const STATUS_LABEL = { Draft: 'Nháp', Active: 'Đang chạy', Closed: 'Đã đóng' };
 const STATUS_COLOR = { Draft: 'bg-slate-500/15 text-slate-400 border-slate-500/20', Active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25', Closed: 'bg-red-500/15 text-red-400 border-red-500/20' };
 const QUESTION_TYPE_LABELS = { SingleChoice:'Chọn một đáp án', MultiChoice:'Chọn nhiều đáp án', Text:'Trả lời tự luận', Rating:'Đánh giá 1–5 sao' };
 const GENDER_LABEL = { Male:'Nam', Female:'Nữ', Other:'Khác' };
+const EMPTY_TARGETING = { target_gender:'', target_tier:'', min_age:'', max_age:'', target_interest_id:'', reward_promotion_id:'' };
 const TOOLTIP_STYLE = { background:'rgba(20,18,16,0.92)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, color:'#f5f5f4' };
 
 const INPUT    = 'w-full h-10 px-3 bg-white/[0.07] border border-white/[0.12] rounded-xl text-[#f5f0eb] text-sm placeholder-white/22 outline-none focus:border-orange-500/50 focus:bg-white/10 focus:ring-2 focus:ring-orange-500/[0.12] transition-all dark-input';
@@ -23,11 +31,12 @@ const TD       = 'px-3.5 py-3 border-b border-white/[0.05] text-white/78 align-m
 
 const fmtDate = v => v ? new Date(v).toLocaleDateString('vi-VN') : '—';
 const fmtDT   = v => v ? new Date(v).toLocaleString('vi-VN') : '—';
-const audienceLabel = s => {
+const audienceLabel = (s, interests = []) => {
   const p = [];
   if (s.target_gender) p.push(GENDER_LABEL[s.target_gender]||s.target_gender);
   if (s.target_tier)   p.push(`Hạng ${s.target_tier}`);
   if (s.min_age!=null||s.max_age!=null) p.push(`Tuổi ${s.min_age??'…'}–${s.max_age??'…'}`);
+  if (s.target_interest_id) p.push(s.target_interest_name || interests.find(item => Number(item.interest_id) === Number(s.target_interest_id))?.interest || 'Sở thích đã chọn');
   return p.length ? p.join(' · ') : 'Tất cả khách hàng';
 };
 
@@ -46,8 +55,15 @@ export default function SurveysView() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [refresh, setRefresh] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalSurveys, setTotalSurveys] = useState(0);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [title, setTitle]     = useState('');
   const [description, setDescription] = useState('');
+  const [targeting, setTargeting] = useState(EMPTY_TARGETING);
+  const [interestOptions, setInterestOptions] = useState([]);
+  const [rewardOptions, setRewardOptions] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -55,30 +71,50 @@ export default function SurveysView() {
   const [results, setResults] = useState(null);
   const [detail, setDetail]   = useState(null);
   const [message, setMessage] = useState('');
-  const formRef   = useRef(null);
   const detailRef = useRef(null);
+  useSweetAlertMessages({ error, success: message });
 
   useEffect(() => {
     setLoading(true); setError('');
-    apiFetch('/api/surveys')
-      .then(d => setSurveys(Array.isArray(d) ? d : []))
+    const params = new URLSearchParams({ page, limit:20, paged:'true' });
+    if (search.trim()) params.set('search', search.trim());
+    if (statusFilter) params.set('status', statusFilter);
+    apiFetch(`/api/surveys?${params}`)
+      .then(d => { setSurveys(d.data || []); setTotalSurveys(d.total || 0); })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, [refresh]);
+  }, [refresh, page, search, statusFilter]);
+
+  useEffect(() => {
+    apiFetch('/api/reports/interests')
+      .then(rows => setInterestOptions(Array.isArray(rows) ? rows : []))
+      .catch(e => setError(e.message));
+    apiFetch('/api/promotions?active=true&limit=100')
+      .then(rows => setRewardOptions(Array.isArray(rows) ? rows : []))
+      .catch(e => setError(e.message));
+  }, []);
 
   const newQ = () => ({ key: crypto.randomUUID(), question_text:'', question_type:'SingleChoice', is_required:true, options:['Rất hài lòng','Hài lòng','Bình thường','Chưa hài lòng'] });
 
-  const openCreate = () => { setEditingId(null); setTitle(''); setDescription(''); setQuestions([newQ()]); setError(''); setMessage(''); setDetail(null); setFormOpen(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior:'smooth', block:'start' }), 0); };
+  const openCreate = () => { setEditingId(null); setTitle(''); setDescription(''); setTargeting(EMPTY_TARGETING); setQuestions([newQ()]); setError(''); setMessage(''); setDetail(null); setFormOpen(true); };
   const openEdit = async id => {
     setBusy(true); setError(''); setMessage('');
     try {
       const s = await apiFetch(`/api/surveys/${id}`);
       setEditingId(id); setTitle(s.title||''); setDescription(s.description||'');
+      setTargeting({
+        target_gender:s.target_gender||'', target_tier:s.target_tier||'',
+        min_age:s.min_age == null ? '' : String(s.min_age),
+        max_age:s.max_age == null ? '' : String(s.max_age),
+        target_interest_id:s.target_interest_id == null ? '' : String(s.target_interest_id),
+        reward_promotion_id:s.reward_promotion_id == null ? '' : String(s.reward_promotion_id),
+      });
       setQuestions(s.questions.map(q => ({ key:crypto.randomUUID(), question_text:q.question_text, question_type:q.question_type, is_required:q.is_required, options:q.options.map(o => o.option_text) })));
-      setDetail(null); setFormOpen(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior:'smooth', block:'start' }), 0);
+      setDetail(null); setFormOpen(true);
     } catch(e) { setError(e.message); } finally { setBusy(false); }
   };
   const closeForm = () => { setFormOpen(false); setEditingId(null); setError(''); };
+  useModalEffects(formOpen, closeForm);
   const updateQ   = (key, upd) => setQuestions(qs => qs.map(q => q.key===key ? {...q,...upd} : q));
   const updateQType = (q, qt) => updateQ(q.key, { question_type:qt, options:['SingleChoice','MultiChoice'].includes(qt) ? (q.options.length>=2 ? q.options : ['','']) : [] });
 
@@ -87,7 +123,16 @@ export default function SurveysView() {
     try {
       await apiFetch(editingId ? `/api/surveys/${editingId}` : '/api/surveys', {
         method: editingId ? 'PATCH' : 'POST',
-        body: { title, description, questions: questions.map((q,i) => ({ question_text:q.question_text, question_type:q.question_type, display_order:i+1, is_required:q.is_required, options:q.options.map((o,j) => ({ option_text:o, display_order:j+1 })) })) },
+        body: {
+          title, description,
+          target_gender:targeting.target_gender || null,
+          target_tier:targeting.target_tier || null,
+          min_age:targeting.min_age === '' ? null : Number(targeting.min_age),
+          max_age:targeting.max_age === '' ? null : Number(targeting.max_age),
+          target_interest_id:targeting.target_interest_id || null,
+          reward_promotion_id:targeting.reward_promotion_id || null,
+          questions: questions.map((q,i) => ({ question_text:q.question_text, question_type:q.question_type, display_order:i+1, is_required:q.is_required, options:q.options.map((o,j) => ({ option_text:o, display_order:j+1 })) })),
+        },
       });
       setFormOpen(false); setEditingId(null);
       setMessage(editingId ? 'Đã cập nhật khảo sát nháp.' : 'Đã tạo khảo sát nháp.');
@@ -96,8 +141,30 @@ export default function SurveysView() {
   };
   const sendSurvey = async id => {
     setBusy(true); setError(''); setMessage('');
-    try { const r = await apiFetch(`/api/surveys/${id}/send`, { method:'POST', body:{} }); setMessage(r.message); setRefresh(v => v+1); if (detail?.survey_id===id) setDetail(await apiFetch(`/api/surveys/${id}`)); }
+    try {
+      const audience = await apiFetch(`/api/surveys/${id}/recipients-preview`);
+      const confirmation = await Swal.fire({
+        icon: 'question',
+        title: 'Xác nhận gửi khảo sát?',
+        text: `Có ${audience.eligible_count} khách phù hợp. Sẽ gửi mới ${audience.new_recipient_count} lời mời; ${audience.already_invited_count} khách đã được mời trước đó.`,
+        showCancelButton: true,
+        confirmButtonText: 'Gửi khảo sát',
+        cancelButtonText: 'Quay lại',
+        confirmButtonColor: '#f97316',
+        reverseButtons: true,
+      });
+      if (!confirmation.isConfirmed) return;
+      const r = await apiFetch(`/api/surveys/${id}/send`, { method:'POST', body:{} });
+      setMessage(r.message); setRefresh(v => v+1);
+      if (detail?.survey_id===id) setDetail(await apiFetch(`/api/surveys/${id}`));
+    }
     catch(e) { setError(e.message); } finally { setBusy(false); }
+  };
+  const handleSurveyAction = (survey, action) => {
+    if (action === 'details') openDetail(survey.survey_id);
+    if (action === 'edit') openEdit(survey.survey_id);
+    if (action === 'send') sendSurvey(survey.survey_id);
+    if (action === 'results') loadResults(survey.survey_id);
   };
   const loadResults = async id => { setError(''); try { setResults(await apiFetch(`/api/surveys/${id}/results`)); } catch(e) { setError(e.message); } };
   const openDetail  = async id => {
@@ -114,15 +181,14 @@ export default function SurveysView() {
           <p className="m-0 text-white/40 text-xs font-semibold tracking-[0.08em] uppercase">CRM</p>
           <h1 className="m-0 mt-1 text-[clamp(1.5rem,2.5vw,2rem)] font-bold tracking-tight">Khảo sát khách hàng</h1>
         </div>
-        <button className={BTN_PRIMARY} type="button" onClick={openCreate}><Plus size={15}/> Tạo khảo sát</button>
+        <button className={`${BTN_PRIMARY} admin-primary-action`} type="button" onClick={openCreate}><Plus size={15}/> Tạo khảo sát</button>
       </div>
 
-      {error   && <p className="p-3 px-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm" role="alert">{error}</p>}
-      {message && <p className="p-3 px-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-sm" role="status">{message}</p>}
 
       {/* Create / edit form */}
-      {formOpen && (
-        <form ref={formRef} className={PANEL} onSubmit={saveSurvey}>
+      {formOpen && createPortal((
+        <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/55 backdrop-blur-md p-4" onClick={closeForm}>
+        <motion.form initial={{ scale:0.96, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.96, opacity:0 }} className={`${PANEL} popup-surface w-full max-w-6xl max-h-[92vh] overflow-y-auto`} onClick={event => event.stopPropagation()} onSubmit={saveSurvey}>
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="m-0 text-lg font-bold">{editingId ? 'Chỉnh sửa khảo sát' : 'Tạo khảo sát mới'}</h2>
@@ -131,7 +197,7 @@ export default function SurveysView() {
             <button type="button" className="grid w-9 h-9 place-items-center border border-white/12 rounded-xl bg-white/[0.05] text-white/50 cursor-pointer transition-all hover:bg-red-500/15 hover:border-red-500/30 hover:text-red-400 shrink-0" onClick={closeForm}><X size={16}/></button>
           </div>
 
-          <div className="grid grid-cols-[1fr_380px] gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
             {/* Fields */}
             <div className="flex flex-col gap-4">
               <Field label="Tên khảo sát *" hint="Tên ngắn gọn giúp khách hàng nhận biết nội dung.">
@@ -140,6 +206,58 @@ export default function SurveysView() {
               <Field label={<>Mô tả <small className="text-white/30 font-normal">Không bắt buộc</small></>}>
                 <textarea maxLength={2000} rows={3} className={TEXTAREA} value={description} onChange={e => setDescription(e.target.value)} placeholder="Cho khách hàng biết mục đích và thời gian hoàn thành." />
               </Field>
+
+              <section className="flex flex-col gap-3 p-4 border border-white/[0.08] rounded-xl bg-white/[0.025]">
+                <div>
+                  <h3 className="m-0 text-sm font-semibold">Đối tượng nhận khảo sát</h3>
+                  <p className="m-0 mt-1 text-xs text-white/40">Khi gửi, lời mời chỉ đến tài khoản khách đang hoạt động khớp các điều kiện đã chọn.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Độ tuổi từ">
+                    <input type="number" min="0" max="120" className={INPUT} value={targeting.min_age}
+                      onChange={e => setTargeting(v => ({ ...v, min_age:e.target.value }))} placeholder="Không giới hạn" />
+                  </Field>
+                  <Field label="Đến tuổi">
+                    <input type="number" min="0" max="120" className={INPUT} value={targeting.max_age}
+                      onChange={e => setTargeting(v => ({ ...v, max_age:e.target.value }))} placeholder="Không giới hạn" />
+                  </Field>
+                  <Field label="Sở thích">
+                    <select className={SELECT} value={targeting.target_interest_id}
+                      onChange={e => setTargeting(v => ({ ...v, target_interest_id:e.target.value }))}>
+                      <option value="">Tất cả sở thích</option>
+                      {interestOptions.map(item => <option key={item.interest_id} value={item.interest_id}>{item.interest}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Giới tính">
+                    <select className={SELECT} value={targeting.target_gender}
+                      onChange={e => setTargeting(v => ({ ...v, target_gender:e.target.value }))}>
+                      <option value="">Tất cả</option><option value="Female">Nữ</option><option value="Male">Nam</option><option value="Other">Khác</option>
+                    </select>
+                  </Field>
+                  <Field label="Hạng khách hàng">
+                    <select className={SELECT} value={targeting.target_tier}
+                      onChange={e => setTargeting(v => ({ ...v, target_tier:e.target.value }))}>
+                      <option value="">Tất cả hạng</option>
+                      {['New','Regular','Silver','Gold','VIP'].map(tier => <option key={tier} value={tier}>{tier}</option>)}
+                    </select>
+                  </Field>
+                </div>
+              </section>
+
+              <section className="flex flex-col gap-3 p-4 border border-orange-400/15 rounded-xl bg-orange-500/[0.035]">
+                <div>
+                  <h3 className="m-0 text-sm font-semibold">Mã giảm giá thưởng</h3>
+                  <p className="m-0 mt-1 text-xs text-white/40">Mã được thêm vào Ví ưu đãi sau khi khách hoàn thành khảo sát.</p>
+                </div>
+                <Field label="Chương trình khuyến mãi">
+                  <select className={SELECT} value={targeting.reward_promotion_id}
+                    onChange={e => setTargeting(v => ({ ...v, reward_promotion_id:e.target.value }))}>
+                    <option value="">Không tặng mã</option>
+                    {rewardOptions.map(promo => <option key={promo.promotion_id} value={promo.promotion_id}>{promo.code} — {promo.name}</option>)}
+                  </select>
+                  {!rewardOptions.length && <small className="text-white/35 text-xs">Chưa có chương trình khuyến mãi đang hoạt động để chọn.</small>}
+                </Field>
+              </section>
 
               {/* Question builder */}
               <div className="flex flex-col gap-3.5">
@@ -195,7 +313,7 @@ export default function SurveysView() {
                 <span className="text-white/35 text-xs">● Khảo sát lưu ở trạng thái nháp</span>
                 <div className="flex gap-2">
                   <button type="button" className={BTN_GHOST} onClick={closeForm}>Hủy</button>
-                  <button type="submit" className={BTN_PRIMARY} disabled={busy}>{busy ? 'Đang lưu...' : editingId ? 'Lưu thay đổi' : 'Tạo khảo sát nháp'}</button>
+                  <button type="submit" className={`${BTN_PRIMARY} admin-primary-action`} disabled={busy}>{busy ? 'Đang lưu...' : editingId ? 'Lưu thay đổi' : 'Tạo khảo sát nháp'}</button>
                 </div>
               </div>
             </div>
@@ -225,22 +343,43 @@ export default function SurveysView() {
               ))}
             </aside>
           </div>
-        </form>
-      )}
+        </motion.form>
+        </motion.div>
+        ), document.body)}
 
       {/* Survey list */}
       <div className={PANEL}>
         <div className="flex items-center justify-between gap-4">
           <h2 className="flex items-center gap-2.5 m-0 text-[1.05rem] font-semibold">
             Danh sách khảo sát
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/25 text-orange-500 text-xs font-semibold">{surveys.length}</span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/25 text-orange-500 text-xs font-semibold">{totalSurveys}</span>
           </h2>
         </div>
-        {loading ? <Spinner /> : (
+        <div className="flex items-center gap-2">
+          <label className="relative min-w-0 flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+            <input type="search" className={`${INPUT} pl-9`} value={search} maxLength={100}
+              placeholder="Tìm theo tiêu đề khảo sát..."
+              onChange={event => { setSearch(event.target.value); setPage(1); }} />
+          </label>
+          <FilterPopover title="Lọc khảo sát" activeCount={statusFilter ? 1 : 0}
+            onClear={() => { setStatusFilter(''); setPage(1); }}>
+            <label className="flex flex-col gap-1.5 text-xs text-white/65">Trạng thái
+              <select className={`${SELECT} w-full`} value={statusFilter}
+                onChange={event => { setStatusFilter(event.target.value); setPage(1); }}>
+                <option value="">Tất cả trạng thái</option>
+                <option value="Draft">Nháp</option>
+                <option value="Active">Đang chạy</option>
+                <option value="Closed">Đã đóng</option>
+              </select>
+            </label>
+          </FilterPopover>
+        </div>
+        {loading ? <TableSkeleton rows={5} columns={9} /> : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr>{['#','Tiêu đề','Câu hỏi','Phản hồi','Ngày kết thúc','Trạng thái','Thao tác'].map(h => <th key={h} className={TH}>{h}</th>)}</tr>
+                <tr>{['#','Tiêu đề','Đối tượng','Mã thưởng','Câu hỏi','Phản hồi','Ngày kết thúc','Trạng thái','Thao tác'].map(h => <th key={h} className={TH}>{h}</th>)}</tr>
               </thead>
               <tbody>
                 {surveys.length ? surveys.map(s => (
@@ -249,6 +388,8 @@ export default function SurveysView() {
                     <td className={TD}>
                       <button type="button" disabled={busy} onClick={() => openDetail(s.survey_id)} className="text-left font-semibold text-[#f5f0eb] hover:text-orange-400 transition-colors cursor-pointer disabled:opacity-50">{s.title}</button>
                     </td>
+                    <td className={`${TD} text-xs`}>{audienceLabel(s, interestOptions)}</td>
+                    <td className={`${TD} text-orange-300 text-xs`}>{s.reward_promotion_code || '—'}</td>
                     <td className={`${TD} text-center tabular-nums`}>{s.question_count}</td>
                     <td className={`${TD} text-center tabular-nums`}>{s.response_count}</td>
                     <td className={TD}>{fmtDate(s.end_date)}</td>
@@ -257,20 +398,28 @@ export default function SurveysView() {
                     </td>
                     <td className={TD}>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <button type="button" disabled={busy} onClick={() => openDetail(s.survey_id)} className={BTN_GHOST} style={{height:30,padding:'0 10px',fontSize:'0.75rem'}}>Chi tiết</button>
-                        {s.status==='Draft' && <button type="button" disabled={busy} onClick={() => openEdit(s.survey_id)} className={BTN_INDIGO} style={{height:30,padding:'0 10px',fontSize:'0.75rem'}}>Sửa</button>}
-                        {s.status!=='Closed' && <button type="button" disabled={busy} onClick={() => sendSurvey(s.survey_id)} className={BTN_GREEN} style={{height:30,padding:'0 10px',fontSize:'0.75rem'}}>Gửi</button>}
-                        <button type="button" onClick={() => loadResults(s.survey_id)} className={BTN_GHOST} style={{height:30,padding:'0 10px',fontSize:'0.75rem'}}>Kết quả</button>
+                        <select aria-label={`Thao tác khảo sát ${s.title}`} disabled={busy} defaultValue=""
+                          className={`${SELECT} h-9 min-w-36`} onChange={event => {
+                            handleSurveyAction(s, event.target.value);
+                            event.target.value = '';
+                          }}>
+                          <option value="" disabled>Chọn thao tác</option>
+                          <option value="details">Chi tiết</option>
+                          {s.status==='Draft' && <option value="edit">Sửa khảo sát</option>}
+                          {s.status!=='Closed' && <option value="send">Gửi khảo sát</option>}
+                          <option value="results">Xem kết quả</option>
+                        </select>
                       </div>
                     </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={7} className="py-10 text-center text-white/25 text-sm">Chưa có khảo sát</td></tr>
+                  <tr><td colSpan={9} className="py-10 text-center text-white/25 text-sm">{search || statusFilter ? 'Không có khảo sát phù hợp bộ lọc.' : 'Chưa có khảo sát'}</td></tr>
                 )}
               </tbody>
             </table>
           </div>
         )}
+        <Pagination page={page} total={totalSurveys} limit={20} loading={loading} onChange={setPage} />
       </div>
 
       {/* Detail panel */}
@@ -286,7 +435,7 @@ export default function SurveysView() {
           </div>
 
           <dl className="grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-3 md:grid-cols-5 p-4 bg-white/[0.04] border border-white/[0.07] rounded-xl">
-            {[['Trạng thái', STATUS_LABEL[detail.status]||detail.status], ['Người tạo', detail.created_by_name||'—'], ['Ngày tạo', fmtDT(detail.created_at)], ['Bắt đầu', fmtDate(detail.start_date)], ['Kết thúc', fmtDate(detail.end_date)], ['Đối tượng', audienceLabel(detail)], ['Câu hỏi', detail.question_count??detail.questions?.length??0], ['Lời mời', detail.invitation_count??0], ['Đã trả lời', `${detail.response_count??0}${detail.invitation_count?` / ${detail.invitation_count}`:''}`], ['Hoàn thành', detail.completed_count??0]].map(([k,v]) => (
+            {[['Trạng thái', STATUS_LABEL[detail.status]||detail.status], ['Người tạo', detail.created_by_name||'—'], ['Ngày tạo', fmtDT(detail.created_at)], ['Bắt đầu', fmtDate(detail.start_date)], ['Kết thúc', fmtDate(detail.end_date)], ['Đối tượng', audienceLabel(detail, interestOptions)], ['Mã giảm giá thưởng', detail.reward_promotion_code||'Không có'], ['Câu hỏi', detail.question_count??detail.questions?.length??0], ['Lời mời', detail.invitation_count??0], ['Đã trả lời', `${detail.response_count??0}${detail.invitation_count?` / ${detail.invitation_count}`:''}`], ['Hoàn thành', detail.completed_count??0]].map(([k,v]) => (
               <div key={k}><dt className="text-white/35 text-xs mb-0.5">{k}</dt><dd className="m-0 text-[#f5f0eb] text-sm font-medium">{v}</dd></div>
             ))}
           </dl>

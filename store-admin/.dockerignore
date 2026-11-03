@@ -1,0 +1,11 @@
+.git
+.env
+**/.env
+**/node_modules
+**/dist
+backups
+server/uploads/feedback/*
+!server/uploads/feedback/.gitkeep
+server/uploads/chat/*
+!server/uploads/chat/.gitkeep
+npm-debug.log*

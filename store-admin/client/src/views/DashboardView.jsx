@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ArrowUpRight, Bell, ClipboardList, DollarSign,
-  MessageSquare, Plus, Search, ShoppingBag,
+  ArrowUpRight, ClipboardList, DollarSign,
+  MessageSquare, Search, ShoppingBag,
   Star, TrendingUp, Users, Wallet,
 } from 'lucide-react';
 import {
@@ -12,13 +12,25 @@ import {
 import StatusBadge from '../components/StatusBadge';
 import Spinner from '../components/Spinner';
 import { fmtVND } from '../utils/formatters';
-import { publishTelemetry } from '../utils/telemetry';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useSweetAlertMessages } from '../utils/notifications';
 
 const COLORS = ['#10b981', '#0ea5e9', '#f59e0b', '#f43f5e', '#8b5cf6'];
 const AXIS   = { fontSize: 11, fill: 'rgba(255,255,255,0.45)' };
 const GRID   = { stroke: 'rgba(255,255,255,0.06)', strokeDasharray: '4 4' };
-const TOOLTIP_STYLE = { background: 'rgba(20,18,16,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#f5f5f4' };
+const TOOLTIP_STYLE = { backgroundColor: 'rgba(30,24,20,0.98)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 10, color: '#f5f0eb' };
+
+function CustomerShareTooltip({ active, payload, label, labelName }) {
+  if (!active || !payload?.length) return null;
+  const item = payload[0].payload;
+  return (
+    <div style={TOOLTIP_STYLE} className="px-3 py-2 text-xs shadow-xl">
+      <p className="m-0 mb-1 font-semibold">{labelName}: {label}</p>
+      <p className="m-0 text-white/70">Số khách: {Number(item.count).toLocaleString('vi-VN')}</p>
+      <p className="m-0 text-white/70">Tỷ lệ: {Number(item.percent).toLocaleString('vi-VN')}%</p>
+    </div>
+  );
+}
 
 const TABS = [['overview','Tổng quan'],['history','Lịch sử'],['analytics','Phân tích'],['accounts','Tài khoản']];
 
@@ -82,22 +94,18 @@ function TxRow({ name, amount, status, channel, index }) {
 }
 
 export default function DashboardView({ userRole, userName }) {
-  const { kpi, revenueData, topProducts, recentOrders, byTier, byGender, byAge, byInterest, loading, lastUpdated, error } = useDashboardData(userRole);
-  const [eventFeedback, setEventFeedback] = useState('');
-  const [simulating, setSimulating] = useState(false);
+  const { kpi, revenueData, monthlyRevenueData, topProducts, recentOrders, byTier, byGender, byAge, byInterest, loading, lastUpdated, error } = useDashboardData(userRole);
+  useSweetAlertMessages({ error });
   const [tab, setTab] = useState('overview');
   const [search, setSearch] = useState('');
   const canAnalyze = ['ADMIN','QL_KHACH_HANG'].includes(userRole);
-
-  const simulateTransaction = async () => {
-    setSimulating(true);
-    const amount = (Math.floor(Math.random()*90)+10)*10_000;
-    try {
-      await publishTelemetry('transaction', { eventType:'transaction_completed', transactionId:`TX-${Date.now()}`, amount, currency:'VND', status:'completed' });
-      setEventFeedback('✓ Đã gửi giao dịch mô phỏng.');
-    } catch(e) { setEventFeedback(e.message); }
-    finally { setSimulating(false); }
-  };
+  const canSearchOrders = ['ADMIN','QL_BAN_HANG'].includes(userRole);
+  const filteredOrders = recentOrders.filter(order => {
+    const query = search.trim().toLocaleLowerCase('vi');
+    if (!query) return true;
+    return [order.order_id, order.customer_name, order.order_status, order.order_channel]
+      .some(value => String(value || '').toLocaleLowerCase('vi').includes(query));
+  });
 
   if (loading) return <Spinner />;
 
@@ -106,9 +114,6 @@ export default function DashboardView({ userRole, userName }) {
   const initial      = displayName.slice(0,1).toUpperCase();
 
   const PANEL = 'bg-white/[0.06] border border-white/10 rounded-2xl backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.35)] text-[#f5f0eb]';
-  const BTN_PRIMARY = 'inline-flex items-center gap-1.5 h-9 px-4 bg-gradient-to-br from-orange-500 to-orange-600 border border-orange-500/50 text-white text-sm font-semibold rounded-xl shadow-[0_8px_20px_rgba(249,115,22,0.3)] hover:shadow-[0_10px_26px_rgba(249,115,22,0.45)] hover:-translate-y-px transition-all disabled:opacity-55 disabled:cursor-progress disabled:translate-y-0 cursor-pointer';
-  const BTN_GHOST   = 'inline-flex items-center gap-1.5 h-9 px-4 bg-white/[0.07] border border-white/15 text-white/65 text-sm font-medium rounded-xl transition-all hover:bg-white/[0.12] hover:text-white/90 disabled:opacity-50 cursor-pointer';
-
   return (
     <div className="flex flex-col gap-5 text-[#f5f0eb]">
 
@@ -123,23 +128,22 @@ export default function DashboardView({ userRole, userName }) {
             {lastUpdated && <small className="text-white/30 text-[0.7rem]">Cập nhật {lastUpdated.toLocaleString('vi-VN')}</small>}
           </div>
         </div>
-        <div className="flex items-center gap-2.5">
-          <div className="relative flex items-center">
-            <Search size={15} className="absolute left-2.5 text-white/30 pointer-events-none" />
-            <input className="w-[200px] h-9 pl-8 pr-3 bg-white/[0.06] border border-white/10 rounded-xl text-[#f5f0eb] text-sm placeholder-white/28 outline-none focus:border-orange-500/50 focus:bg-white/10 dark-input transition-all"
-              placeholder="Tìm kiếm..." value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
-          <button className="relative grid w-9 h-9 place-items-center border border-white/10 rounded-xl bg-white/[0.05] text-white/50 hover:bg-white/10 hover:text-white/85 transition-all cursor-pointer">
-            <Bell size={18} />
-            <span className="absolute top-[7px] right-[7px] w-[7px] h-[7px] border-[1.5px] border-[rgba(20,15,10,0.8)] rounded-full bg-orange-500" />
-          </button>
-          <div className="grid w-9 h-9 place-items-center rounded-full border border-white/18 bg-orange-500/25 text-orange-500 text-sm font-bold cursor-pointer">
-            {initial}
-          </div>
-        </div>
+        {canSearchOrders && (
+          <label className="relative flex min-w-0 items-center">
+            <Search size={15} className="absolute left-2.5 text-white/40 pointer-events-none" />
+            <input
+              type="search"
+              aria-label="Tìm đơn hàng gần đây"
+              className="w-[min(200px,35vw)] h-9 pl-8 pr-3 bg-white/[0.06] border border-white/10 rounded-xl text-[#f5f0eb] text-sm placeholder-white/50 outline-none focus:border-orange-500/70 focus:bg-white/10 dark-input transition-all"
+              placeholder="Tìm đơn hàng..."
+              value={search}
+              onFocus={() => setTab('history')}
+              onChange={event => { setSearch(event.target.value); setTab('history'); }}
+            />
+          </label>
+        )}
       </header>
 
-      {error && <p className="p-3 px-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm" role="alert">{error}</p>}
 
       {/* Greeting */}
       <h1 className="m-0 text-[clamp(1.7rem,3vw,2.4rem)] font-bold tracking-[-0.03em] text-[#f5f0eb]">
@@ -164,12 +168,6 @@ export default function DashboardView({ userRole, userName }) {
             <TrendingUp size={13} className="inline text-emerald-400 mr-1" />
             {(kpi?.total_customers||0).toLocaleString('vi-VN')} khách hàng trong hệ thống
           </p>
-          <div className="flex gap-2">
-            <button className={BTN_PRIMARY} onClick={simulateTransaction} disabled={simulating}>
-              <Plus size={14} /> {simulating ? 'Đang gửi...' : 'Chuyển khoản'}
-            </button>
-            <button className={BTN_GHOST} onClick={() => setTab('history')}>Yêu cầu</button>
-          </div>
         </motion.article>
 
         {/* Mini stats 2x2 */}
@@ -215,19 +213,14 @@ export default function DashboardView({ userRole, userName }) {
       {/* Main panel */}
       <section className={`flex flex-col gap-5 p-6 ${PANEL}`}>
         <div className="flex items-center justify-between gap-4">
-          <h2 className="m-0 text-[1.05rem] font-semibold">Chi tiêu theo tháng</h2>
-          {tab === 'history' && (
-            <button className={BTN_GHOST} onClick={simulateTransaction} disabled={simulating}>
-              {simulating ? 'Đang gửi...' : 'Mô phỏng GD'}
-            </button>
-          )}
+          <h2 className="m-0 text-[1.05rem] font-semibold">Doanh thu từng tháng · 12 tháng gần nhất</h2>
         </div>
 
         {/* Overview */}
         {tab === 'overview' && (
-          revenueData.length ? (
+          monthlyRevenueData.length ? (
             <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={revenueData}>
+              <AreaChart data={monthlyRevenueData}>
                 <defs>
                   <linearGradient id="revG" x1="0" x2="0" y1="0" y2="1">
                     <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.5} />
@@ -235,7 +228,7 @@ export default function DashboardView({ userRole, userName }) {
                   </linearGradient>
                 </defs>
                 <CartesianGrid {...GRID} />
-                <XAxis dataKey="day" tick={AXIS} axisLine={false} tickLine={false} />
+                <XAxis dataKey="month" tick={AXIS} axisLine={false} tickLine={false} />
                 <YAxis tick={AXIS} tickFormatter={v => `${(v/1_000_000).toFixed(1)}M`} axisLine={false} tickLine={false} />
                 <Tooltip formatter={v => fmtVND(v)} contentStyle={TOOLTIP_STYLE} />
                 <Area type="monotone" dataKey="revenue" stroke="#0ea5e9" strokeWidth={2.4} fill="url(#revG)" />
@@ -247,11 +240,10 @@ export default function DashboardView({ userRole, userName }) {
         {/* History */}
         {tab === 'history' && (
           <>
-            {eventFeedback && <p className="m-0 text-emerald-400 text-sm" role="status">{eventFeedback}</p>}
             <div className="flex flex-col gap-1">
-              {recentOrders.length
-                ? recentOrders.map((o,i) => <TxRow key={o.order_id} index={i} name={o.customer_name} amount={o.total_amount} status={o.order_status} channel={o.order_channel} />)
-                : <p className="py-16 text-center text-white/30 text-sm">Chưa có đơn hàng</p>}
+              {filteredOrders.length
+                ? filteredOrders.map((o,i) => <TxRow key={o.order_id} index={i} name={o.customer_name} amount={o.total_amount} status={o.order_status} channel={o.order_channel} />)
+                : <p className="py-16 text-center text-white/50 text-sm">{search.trim() ? 'Không tìm thấy đơn hàng phù hợp' : 'Chưa có đơn hàng'}</p>}
             </div>
           </>
         )}
@@ -262,26 +254,28 @@ export default function DashboardView({ userRole, userName }) {
             {canAnalyze && (
               <>
                 <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4">
-                  <h3 className="m-0 mb-3.5 text-sm font-semibold text-white/60">Phân bố độ tuổi</h3>
+                  <h3 className="m-0 mb-1 text-sm font-semibold text-white/60">Phân bố độ tuổi</h3>
+                  <p className="m-0 mb-3 text-xs text-white/40">Tính trên toàn bộ hồ sơ khách hàng, gồm cả tuổi chưa cung cấp.</p>
                   {byAge.length ? (
                     <ResponsiveContainer width="100%" height={200}>
                       <BarChart data={byAge}>
                         <CartesianGrid {...GRID} /><XAxis dataKey="age" tick={AXIS} axisLine={false} tickLine={false} />
-                        <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
-                        <Tooltip formatter={v => [`${v}%`,'Tỷ lệ']} contentStyle={TOOLTIP_STYLE} />
+                        <YAxis tickFormatter={value => `${value}%`} tick={AXIS} axisLine={false} tickLine={false} />
+                        <Tooltip content={<CustomerShareTooltip labelName="Độ tuổi" />} />
                         <Bar dataKey="percent" fill="#a78bfa" radius={[6,6,0,0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : <p className="py-10 text-center text-white/30 text-sm">Chưa có dữ liệu</p>}
                 </div>
                 <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4">
-                  <h3 className="m-0 mb-3.5 text-sm font-semibold text-white/60">Sở thích khách hàng</h3>
+                  <h3 className="m-0 mb-1 text-sm font-semibold text-white/60">Sở thích khách hàng</h3>
+                  <p className="m-0 mb-3 text-xs text-white/40">Số khách và tỷ lệ trên toàn bộ hồ sơ; một khách có thể chọn nhiều sở thích.</p>
                   {byInterest.length ? (
                     <ResponsiveContainer width="100%" height={200}>
                       <BarChart data={byInterest} layout="vertical">
                         <CartesianGrid {...GRID} /><XAxis type="number" tick={AXIS} axisLine={false} tickLine={false} />
                         <YAxis dataKey="interest" type="category" width={90} tick={AXIS} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={TOOLTIP_STYLE} />
+                        <Tooltip content={<CustomerShareTooltip labelName="Sở thích" />} />
                         <Bar dataKey="count" fill="#34d399" radius={[0,6,6,0]} />
                       </BarChart>
                     </ResponsiveContainer>

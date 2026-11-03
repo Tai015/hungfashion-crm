@@ -1,115 +1,150 @@
 import {
-  ClipboardList, Clock, FileText, Grid2x2, IdCard,
-  LogOut, MessageSquare, Package, Settings,
-  ShoppingBag, ShoppingCart, Tag, User, Users,
+  ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Clock, FileText, Grid2x2, Headset, IdCard,
+  LogOut, Menu, MessageSquare, Moon, Package, Settings, ShoppingBag,
+  ShoppingCart, Star, Sun, Tag, User, Users, X,
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 
 const NAV_ICONS = {
-  dashboard:  Grid2x2,
-  accounts:   Users,
-  customers:  User,
-  products:   ShoppingBag,
-  feedbacks:  MessageSquare,
-  surveys:    ClipboardList,
-  audit:      Clock,
-  settings:   Settings,
-  employees:  IdCard,
-  inventory:  Package,
-  receipts:   FileText,
-  orders:     ShoppingCart,
-  promotions: Tag,
-  catalog:    ShoppingBag,
-  profile:    User,
-  feedback:   MessageSquare,
+  dashboard: Grid2x2, accounts: Users, customers: User, products: ShoppingBag,
+  feedbacks: MessageSquare, chat: Headset, surveys: ClipboardList, audit: Clock,
+  settings: Settings, employees: IdCard, inventory: Package, receipts: FileText,
+  orders: ShoppingCart, promotions: Tag, catalog: ShoppingBag, profile: User,
+  feedback: MessageSquare, loyalty: Star, vouchers: Tag, cart: ShoppingCart,
 };
-
-function BrandMark({ initial }) {
-  return (
-    <div
-      aria-hidden="true"
-      className="grid w-[42px] h-[42px] place-items-center border border-orange-500/40 rounded-[14px] bg-gradient-to-br from-orange-500/35 to-orange-600/20 text-orange-500 text-base font-extrabold shadow-[0_6px_18px_rgba(249,115,22,0.25)]"
-    >
-      {initial}
-    </div>
-  );
-}
 
 export default function AppShell({
   brand, userName, roleLabel, navItems, active, onNav, onLogout, extraHeaderContent, children,
 }) {
   const initial = (userName || brand || 'HF').slice(0, 1).toUpperCase();
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = window.localStorage.getItem('hung-fashion-theme');
+    return savedTheme === 'light' || savedTheme === 'dark'
+      ? savedTheme
+      : window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
+  const userMenuButtonRef = useRef(null);
+  const activeLabel = navItems.find(([key]) => key === active)?.[1] || brand;
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem('hung-fashion-theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    if (!userMenuOpen) return undefined;
+    const onPointerDown = event => {
+      if (!userMenuRef.current?.contains(event.target)) setUserMenuOpen(false);
+    };
+    const onKeyDown = event => {
+      if (event.key === 'Escape') {
+        setUserMenuOpen(false);
+        requestAnimationFrame(() => userMenuButtonRef.current?.focus());
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [userMenuOpen]);
+
+  const navigate = key => {
+    onNav(key);
+    setMobileNavOpen(false);
+  };
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (document.startViewTransition && !reducedMotion) {
+      document.startViewTransition(() => {
+        flushSync(() => {
+          document.documentElement.dataset.theme = nextTheme;
+          setTheme(nextTheme);
+        });
+      });
+      return;
+    }
+    setTheme(nextTheme);
+  };
 
   return (
-    <div className="flex min-h-screen p-[18px]">
-      {/* Glass stage */}
-      <div className="flex flex-1 min-h-[calc(100vh-36px)] overflow-hidden border border-white/[0.12] rounded-[28px] bg-gradient-to-br from-white/[0.08] to-white/[0.03] shadow-[0_32px_80px_rgba(0,0,0,0.55)] backdrop-blur-[32px]">
+    <div className="customer-portal-shell" data-theme={theme}>
+      <div className="customer-portal-glow customer-portal-glow-one" aria-hidden="true" />
+      <div className="customer-portal-glow customer-portal-glow-two" aria-hidden="true" />
+      {mobileNavOpen && <button type="button" className="customer-portal-overlay" aria-label="Đóng menu" onClick={() => setMobileNavOpen(false)} />}
 
-        {/* Sidebar */}
-        <aside className="flex flex-col items-center w-[84px] py-[22px] px-3 border-r border-white/[0.07] bg-white/[0.04] shrink-0">
-          {/* Brand */}
-          <div className="flex flex-col items-center gap-2 mb-[22px] text-center" title={brand}>
-            <BrandMark initial={initial} />
-            <small className="max-w-[72px] text-white/35 text-[0.58rem] font-semibold tracking-[0.06em] uppercase leading-tight">
-              {brand}
-            </small>
+      <aside className={`customer-portal-sidebar${sidebarCollapsed ? ' is-collapsed' : ''}${mobileNavOpen ? ' is-open' : ''}`} aria-label="Điều hướng khách hàng">
+        <div className="customer-portal-brand">
+          <span className="customer-portal-brand-mark" aria-hidden="true">{initial}</span>
+          <span><strong>{brand}</strong><small>KHU VỰC KHÁCH HÀNG</small></span>
+          <button type="button" className="customer-portal-close" aria-label="Đóng menu" onClick={() => setMobileNavOpen(false)}><X size={19} /></button>
+        </div>
+
+        <p className="customer-portal-nav-label">TÀI KHOẢN CỦA TÔI</p>
+        <nav className="customer-portal-nav">
+          {navItems.map(([key, label, badgeCount]) => {
+            const Icon = NAV_ICONS[key] || Grid2x2;
+            const isActive = active === key;
+            return <button key={key} type="button" title={label} aria-current={isActive ? 'page' : undefined}
+              onClick={() => navigate(key)} className={`customer-portal-nav-item${isActive ? ' is-active' : ''}`}>
+              <Icon size={19} strokeWidth={1.8} /><span>{label}</span>
+              {badgeCount > 0 && <span className="customer-portal-unread">{badgeCount > 99 ? '99+' : badgeCount}</span>}
+            </button>;
+          })}
+        </nav>
+
+        <div className="customer-portal-sidebar-footer">
+          <div className="customer-portal-user-card"><span className="customer-portal-avatar">{initial}</span><span><strong>{userName || brand}</strong><small>{roleLabel}</small></span></div>
+          <button type="button" className="customer-portal-footer-button customer-portal-collapse" title={sidebarCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
+            aria-label={sidebarCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'} aria-expanded={!sidebarCollapsed}
+            onClick={() => setSidebarCollapsed(collapsed => !collapsed)}>
+            {sidebarCollapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
+          </button>
+        </div>
+      </aside>
+
+      <main className="customer-portal-main">
+        <header className="customer-portal-header">
+          <div className="customer-portal-header-left">
+            <button type="button" className="customer-portal-mobile-menu" aria-label="Mở menu" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(true)}><Menu size={20} /></button>
+            <div className="customer-portal-page-title"><span>Cửa hàng <i>/</i></span><strong title={activeLabel}>{activeLabel}</strong></div>
           </div>
-
-          {/* Nav */}
-          <nav className="flex flex-col items-center gap-2 flex-1 w-full">
-            {navItems.map(([key, label]) => {
-              const Icon = NAV_ICONS[key] || Grid2x2;
-              const isActive = active === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  title={label}
-                  aria-label={label}
-                  aria-current={isActive ? 'page' : undefined}
-                  onClick={() => onNav(key)}
-                  className={`grid place-items-center w-11 h-11 rounded-[14px] border transition-all duration-200 ${
-                    isActive
-                      ? 'bg-orange-500/[0.18] border-orange-500/35 text-orange-500 shadow-[0_6px_20px_rgba(249,115,22,0.2)]'
-                      : 'bg-transparent border-transparent text-white/40 hover:bg-white/[0.08] hover:border-white/[0.12] hover:text-white/75'
-                  }`}
-                >
-                  <Icon size={18} />
-                  <span className="sr-only">{label}</span>
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Footer */}
-          <div className="flex flex-col items-center gap-2.5 mt-auto">
-            {roleLabel && (
-              <small className="max-w-[76px] text-white/30 text-[0.58rem] text-center leading-tight">
-                {roleLabel}
-              </small>
-            )}
-            <button
-              type="button"
-              title="Đăng xuất"
-              aria-label="Đăng xuất"
-              onClick={onLogout}
-              className="grid place-items-center w-11 h-11 rounded-[14px] border border-transparent text-white/35 transition-all duration-200 hover:bg-red-500/[0.12] hover:border-red-500/20 hover:text-red-400"
-            >
-              <LogOut size={18} />
-              <span className="sr-only">Đăng xuất</span>
+          <div className="customer-portal-header-actions">
+            <button type="button" className="customer-portal-theme-toggle" title={theme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+              aria-label={theme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+              onClick={toggleTheme}>
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-          </div>
-        </aside>
-
-        {/* Main content */}
-        <main className="flex-1 min-w-0 overflow-auto p-6 md:p-7">
-          {extraHeaderContent && (
-            <div className="flex justify-end mb-4">
-              {extraHeaderContent}
+            {extraHeaderContent && <div className="customer-portal-header-action">{extraHeaderContent}</div>}
+            <span className="customer-portal-header-divider" aria-hidden="true" />
+            <div className="customer-portal-user-menu" ref={userMenuRef}>
+              <button ref={userMenuButtonRef} type="button" className="customer-portal-header-user"
+                aria-label={`Tài khoản ${userName || brand}`} aria-expanded={userMenuOpen} aria-haspopup="menu"
+                onClick={() => setUserMenuOpen(open => !open)}>
+                <span className="customer-portal-avatar">{initial}</span><span><strong>{userName || brand}</strong><small>{roleLabel}</small></span>
+                <ChevronDown size={15} className={userMenuOpen ? 'is-open' : ''} aria-hidden="true" />
+              </button>
+              {userMenuOpen && <div className="customer-portal-user-popover" role="menu" aria-label="Tùy chọn tài khoản">
+                <div className="customer-portal-user-summary"><span className="customer-portal-avatar">{initial}</span><span><strong>{userName || brand}</strong><small>{roleLabel}</small></span></div>
+                <button type="button" role="menuitem" onClick={() => { setUserMenuOpen(false); navigate('profile'); }}><User size={16} />Hồ sơ cá nhân</button>
+                <button type="button" role="menuitem" onClick={() => { setUserMenuOpen(false); onLogout(); }}><LogOut size={16} />Đăng xuất</button>
+              </div>}
             </div>
-          )}
+          </div>
+          <span className="customer-portal-header-glow" aria-hidden="true" />
+        </header>
+        <div className="customer-portal-content">
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

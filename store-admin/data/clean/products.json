@@ -1,6 +1,6 @@
 {
   "source": "https://fashion-studio.dicoding.dev",
-  "cleanedAt": "2026-10-20T08:58:46.487646+00:00",
+  "cleanedAt": "2026-11-03T00:44:36.616151+00:00",
   "products": [
     {
       "sourceId": 2,
@@ -8,8 +8,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1405000,
-      "sellingPrice": 2554000,
+      "importPrice": 56000,
+      "sellingPrice": 102000,
       "imageUrl": "https://picsum.photos/280/350?random=2",
       "images": [
         "https://picsum.photos/280/350?random=2"
@@ -22,8 +22,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6832000,
-      "sellingPrice": 12422000,
+      "importPrice": 273000,
+      "sellingPrice": 497000,
       "imageUrl": "https://picsum.photos/280/350?random=3",
       "images": [
         "https://picsum.photos/280/350?random=3"
@@ -36,8 +36,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 6426000,
-      "sellingPrice": 11683000,
+      "importPrice": 257000,
+      "sellingPrice": 467000,
       "imageUrl": "https://picsum.photos/280/350?random=4",
       "images": [
         "https://picsum.photos/280/350?random=4"
@@ -50,8 +50,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4422000,
-      "sellingPrice": 8040000,
+      "importPrice": 177000,
+      "sellingPrice": 322000,
       "imageUrl": "https://picsum.photos/280/350?random=5",
       "images": [
         "https://picsum.photos/280/350?random=5"
@@ -64,8 +64,8 @@
       "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 2109000,
-      "sellingPrice": 3834000,
+      "importPrice": 84000,
+      "sellingPrice": 153000,
       "imageUrl": "https://picsum.photos/280/350?random=6",
       "images": [
         "https://picsum.photos/280/350?random=6"
@@ -78,8 +78,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5923000,
-      "sellingPrice": 10769000,
+      "importPrice": 237000,
+      "sellingPrice": 431000,
       "imageUrl": "https://picsum.photos/280/350?random=7",
       "images": [
         "https://picsum.photos/280/350?random=7"
@@ -92,8 +92,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6706000,
-      "sellingPrice": 12192000,
+      "importPrice": 268000,
+      "sellingPrice": 488000,
       "imageUrl": "https://picsum.photos/280/350?random=8",
       "images": [
         "https://picsum.photos/280/350?random=8"
@@ -106,8 +106,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 3413000,
-      "sellingPrice": 6206000,
+      "importPrice": 136000,
+      "sellingPrice": 248000,
       "imageUrl": "https://picsum.photos/280/350?random=9",
       "images": [
         "https://picsum.photos/280/350?random=9"
@@ -120,8 +120,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 2664000,
-      "sellingPrice": 4844000,
+      "importPrice": 107000,
+      "sellingPrice": 194000,
       "imageUrl": "https://picsum.photos/280/350?random=10",
       "images": [
         "https://picsum.photos/280/350?random=10"
@@ -134,8 +134,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 7329000,
-      "sellingPrice": 13325000,
+      "importPrice": 293000,
+      "sellingPrice": 533000,
       "imageUrl": "https://picsum.photos/280/350?random=12",
       "images": [
         "https://picsum.photos/280/350?random=12"
@@ -148,8 +148,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 4681000,
-      "sellingPrice": 8511000,
+      "importPrice": 187000,
+      "sellingPrice": 340000,
       "imageUrl": "https://picsum.photos/280/350?random=13",
       "images": [
         "https://picsum.photos/280/350?random=13"
@@ -162,8 +162,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2792000,
-      "sellingPrice": 5076000,
+      "importPrice": 112000,
+      "sellingPrice": 203000,
       "imageUrl": "https://picsum.photos/280/350?random=14",
       "images": [
         "https://picsum.photos/280/350?random=14"
@@ -176,8 +176,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1877000,
-      "sellingPrice": 3413000,
+      "importPrice": 75000,
+      "sellingPrice": 137000,
       "imageUrl": "https://picsum.photos/280/350?random=15",
       "images": [
         "https://picsum.photos/280/350?random=15"
@@ -190,8 +190,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 723000,
-      "sellingPrice": 1315000,
+      "importPrice": 29000,
+      "sellingPrice": 53000,
       "imageUrl": "https://picsum.photos/280/350?random=17",
       "images": [
         "https://picsum.photos/280/350?random=17"
@@ -204,8 +204,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4727000,
-      "sellingPrice": 8594000,
+      "importPrice": 189000,
+      "sellingPrice": 344000,
       "imageUrl": "https://picsum.photos/280/350?random=18",
       "images": [
         "https://picsum.photos/280/350?random=18"
@@ -218,8 +218,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1125000,
-      "sellingPrice": 2045000,
+      "importPrice": 45000,
+      "sellingPrice": 82000,
       "imageUrl": "https://picsum.photos/280/350?random=19",
       "images": [
         "https://picsum.photos/280/350?random=19"
@@ -232,8 +232,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1139000,
-      "sellingPrice": 2071000,
+      "importPrice": 46000,
+      "sellingPrice": 83000,
       "imageUrl": "https://picsum.photos/280/350?random=20",
       "images": [
         "https://picsum.photos/280/350?random=20"
@@ -246,8 +246,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 3713000,
-      "sellingPrice": 6750000,
+      "importPrice": 148000,
+      "sellingPrice": 270000,
       "imageUrl": "https://picsum.photos/280/350?random=22",
       "images": [
         "https://picsum.photos/280/350?random=22"
@@ -260,8 +260,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4001000,
-      "sellingPrice": 7275000,
+      "importPrice": 160000,
+      "sellingPrice": 291000,
       "imageUrl": "https://picsum.photos/280/350?random=23",
       "images": [
         "https://picsum.photos/280/350?random=23"
@@ -274,8 +274,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 7067000,
-      "sellingPrice": 12849000,
+      "importPrice": 283000,
+      "sellingPrice": 514000,
       "imageUrl": "https://picsum.photos/280/350?random=24",
       "images": [
         "https://picsum.photos/280/350?random=24"
@@ -288,8 +288,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 7152000,
-      "sellingPrice": 13004000,
+      "importPrice": 286000,
+      "sellingPrice": 520000,
       "imageUrl": "https://picsum.photos/280/350?random=25",
       "images": [
         "https://picsum.photos/280/350?random=25"
@@ -302,8 +302,8 @@
       "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6267000,
-      "sellingPrice": 11394000,
+      "importPrice": 251000,
+      "sellingPrice": 456000,
       "imageUrl": "https://picsum.photos/280/350?random=26",
       "images": [
         "https://picsum.photos/280/350?random=26"
@@ -316,8 +316,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 3053000,
-      "sellingPrice": 5550000,
+      "importPrice": 122000,
+      "sellingPrice": 222000,
       "imageUrl": "https://picsum.photos/280/350?random=27",
       "images": [
         "https://picsum.photos/280/350?random=27"
@@ -330,8 +330,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 4482000,
-      "sellingPrice": 8150000,
+      "importPrice": 179000,
+      "sellingPrice": 326000,
       "imageUrl": "https://picsum.photos/280/350?random=28",
       "images": [
         "https://picsum.photos/280/350?random=28"
@@ -344,8 +344,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 740000,
-      "sellingPrice": 1346000,
+      "importPrice": 30000,
+      "sellingPrice": 54000,
       "imageUrl": "https://picsum.photos/280/350?random=29",
       "images": [
         "https://picsum.photos/280/350?random=29"
@@ -358,8 +358,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 7400000,
-      "sellingPrice": 13454000,
+      "importPrice": 296000,
+      "sellingPrice": 538000,
       "imageUrl": "https://picsum.photos/280/350?random=30",
       "images": [
         "https://picsum.photos/280/350?random=30"
@@ -372,8 +372,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5722000,
-      "sellingPrice": 10403000,
+      "importPrice": 229000,
+      "sellingPrice": 416000,
       "imageUrl": "https://picsum.photos/280/350?random=32",
       "images": [
         "https://picsum.photos/280/350?random=32"
@@ -386,8 +386,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6229000,
-      "sellingPrice": 11325000,
+      "importPrice": 249000,
+      "sellingPrice": 453000,
       "imageUrl": "https://picsum.photos/280/350?random=33",
       "images": [
         "https://picsum.photos/280/350?random=33"
@@ -400,8 +400,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 7187000,
-      "sellingPrice": 13067000,
+      "importPrice": 288000,
+      "sellingPrice": 523000,
       "imageUrl": "https://picsum.photos/280/350?random=34",
       "images": [
         "https://picsum.photos/280/350?random=34"
@@ -414,8 +414,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 1165000,
-      "sellingPrice": 2119000,
+      "importPrice": 47000,
+      "sellingPrice": 85000,
       "imageUrl": "https://picsum.photos/280/350?random=35",
       "images": [
         "https://picsum.photos/280/350?random=35"
@@ -428,8 +428,8 @@
       "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 6230000,
-      "sellingPrice": 11327000,
+      "importPrice": 249000,
+      "sellingPrice": 453000,
       "imageUrl": "https://picsum.photos/280/350?random=36",
       "images": [
         "https://picsum.photos/280/350?random=36"
@@ -442,8 +442,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5161000,
-      "sellingPrice": 9384000,
+      "importPrice": 206000,
+      "sellingPrice": 375000,
       "imageUrl": "https://picsum.photos/280/350?random=37",
       "images": [
         "https://picsum.photos/280/350?random=37"
@@ -456,8 +456,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 4182000,
-      "sellingPrice": 7603000,
+      "importPrice": 167000,
+      "sellingPrice": 304000,
       "imageUrl": "https://picsum.photos/280/350?random=38",
       "images": [
         "https://picsum.photos/280/350?random=38"
@@ -470,8 +470,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5527000,
-      "sellingPrice": 10049000,
+      "importPrice": 221000,
+      "sellingPrice": 402000,
       "imageUrl": "https://picsum.photos/280/350?random=39",
       "images": [
         "https://picsum.photos/280/350?random=39"
@@ -484,8 +484,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 5030000,
-      "sellingPrice": 9146000,
+      "importPrice": 201000,
+      "sellingPrice": 366000,
       "imageUrl": "https://picsum.photos/280/350?random=40",
       "images": [
         "https://picsum.photos/280/350?random=40"
@@ -498,8 +498,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 5796000,
-      "sellingPrice": 10538000,
+      "importPrice": 232000,
+      "sellingPrice": 422000,
       "imageUrl": "https://picsum.photos/280/350?random=42",
       "images": [
         "https://picsum.photos/280/350?random=42"
@@ -512,8 +512,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2500000,
-      "sellingPrice": 4546000,
+      "importPrice": 100000,
+      "sellingPrice": 182000,
       "imageUrl": "https://picsum.photos/280/350?random=43",
       "images": [
         "https://picsum.photos/280/350?random=43"
@@ -526,8 +526,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2847000,
-      "sellingPrice": 5176000,
+      "importPrice": 114000,
+      "sellingPrice": 207000,
       "imageUrl": "https://picsum.photos/280/350?random=44",
       "images": [
         "https://picsum.photos/280/350?random=44"
@@ -540,8 +540,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 7471000,
-      "sellingPrice": 13583000,
+      "importPrice": 299000,
+      "sellingPrice": 543000,
       "imageUrl": "https://picsum.photos/280/350?random=45",
       "images": [
         "https://picsum.photos/280/350?random=45"
@@ -554,8 +554,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 5470000,
-      "sellingPrice": 9945000,
+      "importPrice": 219000,
+      "sellingPrice": 398000,
       "imageUrl": "https://picsum.photos/280/350?random=47",
       "images": [
         "https://picsum.photos/280/350?random=47"
@@ -568,8 +568,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4292000,
-      "sellingPrice": 7804000,
+      "importPrice": 172000,
+      "sellingPrice": 312000,
       "imageUrl": "https://picsum.photos/280/350?random=48",
       "images": [
         "https://picsum.photos/280/350?random=48"
@@ -582,8 +582,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 921000,
-      "sellingPrice": 1674000,
+      "importPrice": 37000,
+      "sellingPrice": 67000,
       "imageUrl": "https://picsum.photos/280/350?random=49",
       "images": [
         "https://picsum.photos/280/350?random=49"
@@ -596,8 +596,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5098000,
-      "sellingPrice": 9270000,
+      "importPrice": 204000,
+      "sellingPrice": 371000,
       "imageUrl": "https://picsum.photos/280/350?random=50",
       "images": [
         "https://picsum.photos/280/350?random=50"
@@ -610,8 +610,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 1372000,
-      "sellingPrice": 2494000,
+      "importPrice": 55000,
+      "sellingPrice": 100000,
       "imageUrl": "https://picsum.photos/280/350?random=52",
       "images": [
         "https://picsum.photos/280/350?random=52"
@@ -624,8 +624,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 3842000,
-      "sellingPrice": 6986000,
+      "importPrice": 153000,
+      "sellingPrice": 279000,
       "imageUrl": "https://picsum.photos/280/350?random=53",
       "images": [
         "https://picsum.photos/280/350?random=53"
@@ -638,8 +638,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 734000,
-      "sellingPrice": 1335000,
+      "importPrice": 29000,
+      "sellingPrice": 53000,
       "imageUrl": "https://picsum.photos/280/350?random=54",
       "images": [
         "https://picsum.photos/280/350?random=54"
@@ -652,8 +652,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1542000,
-      "sellingPrice": 2803000,
+      "importPrice": 62000,
+      "sellingPrice": 112000,
       "imageUrl": "https://picsum.photos/280/350?random=55",
       "images": [
         "https://picsum.photos/280/350?random=55"
@@ -666,8 +666,8 @@
       "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 3990000,
-      "sellingPrice": 7255000,
+      "importPrice": 160000,
+      "sellingPrice": 290000,
       "imageUrl": "https://picsum.photos/280/350?random=56",
       "images": [
         "https://picsum.photos/280/350?random=56"
@@ -680,8 +680,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2712000,
-      "sellingPrice": 4930000,
+      "importPrice": 108000,
+      "sellingPrice": 197000,
       "imageUrl": "https://picsum.photos/280/350?random=57",
       "images": [
         "https://picsum.photos/280/350?random=57"
@@ -694,8 +694,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 1407000,
-      "sellingPrice": 2559000,
+      "importPrice": 56000,
+      "sellingPrice": 102000,
       "imageUrl": "https://picsum.photos/280/350?random=58",
       "images": [
         "https://picsum.photos/280/350?random=58"
@@ -708,8 +708,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 1937000,
-      "sellingPrice": 3522000,
+      "importPrice": 78000,
+      "sellingPrice": 141000,
       "imageUrl": "https://picsum.photos/280/350?random=59",
       "images": [
         "https://picsum.photos/280/350?random=59"
@@ -722,8 +722,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 2901000,
-      "sellingPrice": 5274000,
+      "importPrice": 116000,
+      "sellingPrice": 211000,
       "imageUrl": "https://picsum.photos/280/350?random=60",
       "images": [
         "https://picsum.photos/280/350?random=60"
@@ -736,8 +736,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1183000,
-      "sellingPrice": 2151000,
+      "importPrice": 47000,
+      "sellingPrice": 86000,
       "imageUrl": "https://picsum.photos/280/350?random=62",
       "images": [
         "https://picsum.photos/280/350?random=62"
@@ -750,8 +750,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5568000,
-      "sellingPrice": 10124000,
+      "importPrice": 223000,
+      "sellingPrice": 405000,
       "imageUrl": "https://picsum.photos/280/350?random=63",
       "images": [
         "https://picsum.photos/280/350?random=63"
@@ -764,8 +764,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 6642000,
-      "sellingPrice": 12076000,
+      "importPrice": 266000,
+      "sellingPrice": 483000,
       "imageUrl": "https://picsum.photos/280/350?random=64",
       "images": [
         "https://picsum.photos/280/350?random=64"
@@ -778,8 +778,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 2050000,
-      "sellingPrice": 3728000,
+      "importPrice": 82000,
+      "sellingPrice": 149000,
       "imageUrl": "https://picsum.photos/280/350?random=65",
       "images": [
         "https://picsum.photos/280/350?random=65"
@@ -792,8 +792,8 @@
       "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 3741000,
-      "sellingPrice": 6802000,
+      "importPrice": 150000,
+      "sellingPrice": 272000,
       "imageUrl": "https://picsum.photos/280/350?random=66",
       "images": [
         "https://picsum.photos/280/350?random=66"
@@ -806,8 +806,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 7279000,
-      "sellingPrice": 13235000,
+      "importPrice": 291000,
+      "sellingPrice": 529000,
       "imageUrl": "https://picsum.photos/280/350?random=67",
       "images": [
         "https://picsum.photos/280/350?random=67"
@@ -820,8 +820,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6897000,
-      "sellingPrice": 12540000,
+      "importPrice": 276000,
+      "sellingPrice": 502000,
       "imageUrl": "https://picsum.photos/280/350?random=68",
       "images": [
         "https://picsum.photos/280/350?random=68"
@@ -834,8 +834,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 883000,
-      "sellingPrice": 1606000,
+      "importPrice": 35000,
+      "sellingPrice": 64000,
       "imageUrl": "https://picsum.photos/280/350?random=69",
       "images": [
         "https://picsum.photos/280/350?random=69"
@@ -848,8 +848,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 1007000,
-      "sellingPrice": 1830000,
+      "importPrice": 40000,
+      "sellingPrice": 73000,
       "imageUrl": "https://picsum.photos/280/350?random=70",
       "images": [
         "https://picsum.photos/280/350?random=70"
@@ -862,8 +862,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 3245000,
-      "sellingPrice": 5900000,
+      "importPrice": 130000,
+      "sellingPrice": 236000,
       "imageUrl": "https://picsum.photos/280/350?random=72",
       "images": [
         "https://picsum.photos/280/350?random=72"
@@ -876,8 +876,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2114000,
-      "sellingPrice": 3844000,
+      "importPrice": 85000,
+      "sellingPrice": 154000,
       "imageUrl": "https://picsum.photos/280/350?random=73",
       "images": [
         "https://picsum.photos/280/350?random=73"
@@ -890,8 +890,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6621000,
-      "sellingPrice": 12039000,
+      "importPrice": 265000,
+      "sellingPrice": 482000,
       "imageUrl": "https://picsum.photos/280/350?random=74",
       "images": [
         "https://picsum.photos/280/350?random=74"
@@ -904,8 +904,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1806000,
-      "sellingPrice": 3284000,
+      "importPrice": 72000,
+      "sellingPrice": 131000,
       "imageUrl": "https://picsum.photos/280/350?random=75",
       "images": [
         "https://picsum.photos/280/350?random=75"
@@ -918,8 +918,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 740000,
-      "sellingPrice": 1346000,
+      "importPrice": 30000,
+      "sellingPrice": 54000,
       "imageUrl": "https://picsum.photos/280/350?random=77",
       "images": [
         "https://picsum.photos/280/350?random=77"
@@ -932,8 +932,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 2334000,
-      "sellingPrice": 4244000,
+      "importPrice": 94000,
+      "sellingPrice": 170000,
       "imageUrl": "https://picsum.photos/280/350?random=78",
       "images": [
         "https://picsum.photos/280/350?random=78"
@@ -946,8 +946,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2844000,
-      "sellingPrice": 5171000,
+      "importPrice": 114000,
+      "sellingPrice": 207000,
       "imageUrl": "https://picsum.photos/280/350?random=79",
       "images": [
         "https://picsum.photos/280/350?random=79"
@@ -960,8 +960,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 3591000,
-      "sellingPrice": 6529000,
+      "importPrice": 144000,
+      "sellingPrice": 261000,
       "imageUrl": "https://picsum.photos/280/350?random=80",
       "images": [
         "https://picsum.photos/280/350?random=80"
@@ -974,8 +974,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 7146000,
-      "sellingPrice": 12993000,
+      "importPrice": 286000,
+      "sellingPrice": 520000,
       "imageUrl": "https://picsum.photos/280/350?random=82",
       "images": [
         "https://picsum.photos/280/350?random=82"
@@ -988,8 +988,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 3392000,
-      "sellingPrice": 6168000,
+      "importPrice": 136000,
+      "sellingPrice": 247000,
       "imageUrl": "https://picsum.photos/280/350?random=83",
       "images": [
         "https://picsum.photos/280/350?random=83"
@@ -1002,8 +1002,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 2429000,
-      "sellingPrice": 4416000,
+      "importPrice": 97000,
+      "sellingPrice": 177000,
       "imageUrl": "https://picsum.photos/280/350?random=84",
       "images": [
         "https://picsum.photos/280/350?random=84"
@@ -1016,8 +1016,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 3923000,
-      "sellingPrice": 7132000,
+      "importPrice": 157000,
+      "sellingPrice": 285000,
       "imageUrl": "https://picsum.photos/280/350?random=85",
       "images": [
         "https://picsum.photos/280/350?random=85"
@@ -1030,8 +1030,8 @@
       "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1436000,
-      "sellingPrice": 2611000,
+      "importPrice": 57000,
+      "sellingPrice": 104000,
       "imageUrl": "https://picsum.photos/280/350?random=86",
       "images": [
         "https://picsum.photos/280/350?random=86"
@@ -1044,8 +1044,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6763000,
-      "sellingPrice": 12297000,
+      "importPrice": 271000,
+      "sellingPrice": 492000,
       "imageUrl": "https://picsum.photos/280/350?random=87",
       "images": [
         "https://picsum.photos/280/350?random=87"
@@ -1058,8 +1058,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 6523000,
-      "sellingPrice": 11860000,
+      "importPrice": 261000,
+      "sellingPrice": 474000,
       "imageUrl": "https://picsum.photos/280/350?random=88",
       "images": [
         "https://picsum.photos/280/350?random=88"
@@ -1072,8 +1072,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4173000,
-      "sellingPrice": 7588000,
+      "importPrice": 167000,
+      "sellingPrice": 304000,
       "imageUrl": "https://picsum.photos/280/350?random=89",
       "images": [
         "https://picsum.photos/280/350?random=89"
@@ -1086,8 +1086,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 6153000,
-      "sellingPrice": 11188000,
+      "importPrice": 246000,
+      "sellingPrice": 448000,
       "imageUrl": "https://picsum.photos/280/350?random=90",
       "images": [
         "https://picsum.photos/280/350?random=90"
@@ -1100,8 +1100,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 4308000,
-      "sellingPrice": 7832000,
+      "importPrice": 172000,
+      "sellingPrice": 313000,
       "imageUrl": "https://picsum.photos/280/350?random=92",
       "images": [
         "https://picsum.photos/280/350?random=92"
@@ -1114,8 +1114,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1173000,
-      "sellingPrice": 2133000,
+      "importPrice": 47000,
+      "sellingPrice": 85000,
       "imageUrl": "https://picsum.photos/280/350?random=93",
       "images": [
         "https://picsum.photos/280/350?random=93"
@@ -1128,8 +1128,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 924000,
-      "sellingPrice": 1680000,
+      "importPrice": 37000,
+      "sellingPrice": 67000,
       "imageUrl": "https://picsum.photos/280/350?random=94",
       "images": [
         "https://picsum.photos/280/350?random=94"
@@ -1142,8 +1142,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 5210000,
-      "sellingPrice": 9472000,
+      "importPrice": 208000,
+      "sellingPrice": 379000,
       "imageUrl": "https://picsum.photos/280/350?random=95",
       "images": [
         "https://picsum.photos/280/350?random=95"
@@ -1156,8 +1156,8 @@
       "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 3952000,
-      "sellingPrice": 7185000,
+      "importPrice": 158000,
+      "sellingPrice": 287000,
       "imageUrl": "https://picsum.photos/280/350?random=96",
       "images": [
         "https://picsum.photos/280/350?random=96"
@@ -1170,8 +1170,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5254000,
-      "sellingPrice": 9552000,
+      "importPrice": 210000,
+      "sellingPrice": 382000,
       "imageUrl": "https://picsum.photos/280/350?random=97",
       "images": [
         "https://picsum.photos/280/350?random=97"
@@ -1184,8 +1184,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 7388000,
-      "sellingPrice": 13433000,
+      "importPrice": 295000,
+      "sellingPrice": 537000,
       "imageUrl": "https://picsum.photos/280/350?random=98",
       "images": [
         "https://picsum.photos/280/350?random=98"
@@ -1198,8 +1198,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 4321000,
-      "sellingPrice": 7856000,
+      "importPrice": 173000,
+      "sellingPrice": 314000,
       "imageUrl": "https://picsum.photos/280/350?random=99",
       "images": [
         "https://picsum.photos/280/350?random=99"
@@ -1212,8 +1212,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 1906000,
-      "sellingPrice": 3465000,
+      "importPrice": 76000,
+      "sellingPrice": 139000,
       "imageUrl": "https://picsum.photos/280/350?random=100",
       "images": [
         "https://picsum.photos/280/350?random=100"
@@ -1226,8 +1226,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 3301000,
-      "sellingPrice": 6001000,
+      "importPrice": 132000,
+      "sellingPrice": 240000,
       "imageUrl": "https://picsum.photos/280/350?random=102",
       "images": [
         "https://picsum.photos/280/350?random=102"
@@ -1240,8 +1240,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2004000,
-      "sellingPrice": 3643000,
+      "importPrice": 80000,
+      "sellingPrice": 146000,
       "imageUrl": "https://picsum.photos/280/350?random=103",
       "images": [
         "https://picsum.photos/280/350?random=103"
@@ -1254,8 +1254,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2041000,
-      "sellingPrice": 3710000,
+      "importPrice": 81000,
+      "sellingPrice": 148000,
       "imageUrl": "https://picsum.photos/280/350?random=104",
       "images": [
         "https://picsum.photos/280/350?random=104"
@@ -1268,8 +1268,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 4314000,
-      "sellingPrice": 7844000,
+      "importPrice": 173000,
+      "sellingPrice": 314000,
       "imageUrl": "https://picsum.photos/280/350?random=105",
       "images": [
         "https://picsum.photos/280/350?random=105"
@@ -1282,8 +1282,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 5694000,
-      "sellingPrice": 10352000,
+      "importPrice": 228000,
+      "sellingPrice": 414000,
       "imageUrl": "https://picsum.photos/280/350?random=107",
       "images": [
         "https://picsum.photos/280/350?random=107"
@@ -1296,8 +1296,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4771000,
-      "sellingPrice": 8674000,
+      "importPrice": 191000,
+      "sellingPrice": 347000,
       "imageUrl": "https://picsum.photos/280/350?random=108",
       "images": [
         "https://picsum.photos/280/350?random=108"
@@ -1310,8 +1310,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5059000,
-      "sellingPrice": 9198000,
+      "importPrice": 202000,
+      "sellingPrice": 368000,
       "imageUrl": "https://picsum.photos/280/350?random=109",
       "images": [
         "https://picsum.photos/280/350?random=109"
@@ -1324,8 +1324,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6185000,
-      "sellingPrice": 11246000,
+      "importPrice": 248000,
+      "sellingPrice": 450000,
       "imageUrl": "https://picsum.photos/280/350?random=110",
       "images": [
         "https://picsum.photos/280/350?random=110"
@@ -1338,8 +1338,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 3662000,
-      "sellingPrice": 6659000,
+      "importPrice": 146000,
+      "sellingPrice": 266000,
       "imageUrl": "https://picsum.photos/280/350?random=112",
       "images": [
         "https://picsum.photos/280/350?random=112"
@@ -1352,8 +1352,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 3843000,
-      "sellingPrice": 6988000,
+      "importPrice": 154000,
+      "sellingPrice": 280000,
       "imageUrl": "https://picsum.photos/280/350?random=113",
       "images": [
         "https://picsum.photos/280/350?random=113"
@@ -1366,8 +1366,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4629000,
-      "sellingPrice": 8416000,
+      "importPrice": 185000,
+      "sellingPrice": 337000,
       "imageUrl": "https://picsum.photos/280/350?random=114",
       "images": [
         "https://picsum.photos/280/350?random=114"
@@ -1380,8 +1380,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1662000,
-      "sellingPrice": 3021000,
+      "importPrice": 67000,
+      "sellingPrice": 121000,
       "imageUrl": "https://picsum.photos/280/350?random=115",
       "images": [
         "https://picsum.photos/280/350?random=115"
@@ -1394,8 +1394,8 @@
       "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2986000,
-      "sellingPrice": 5429000,
+      "importPrice": 119000,
+      "sellingPrice": 217000,
       "imageUrl": "https://picsum.photos/280/350?random=116",
       "images": [
         "https://picsum.photos/280/350?random=116"
@@ -1408,8 +1408,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2902000,
-      "sellingPrice": 5276000,
+      "importPrice": 116000,
+      "sellingPrice": 211000,
       "imageUrl": "https://picsum.photos/280/350?random=117",
       "images": [
         "https://picsum.photos/280/350?random=117"
@@ -1422,8 +1422,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 4800000,
-      "sellingPrice": 8727000,
+      "importPrice": 192000,
+      "sellingPrice": 349000,
       "imageUrl": "https://picsum.photos/280/350?random=118",
       "images": [
         "https://picsum.photos/280/350?random=118"
@@ -1436,8 +1436,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 3061000,
-      "sellingPrice": 5565000,
+      "importPrice": 123000,
+      "sellingPrice": 223000,
       "imageUrl": "https://picsum.photos/280/350?random=119",
       "images": [
         "https://picsum.photos/280/350?random=119"
@@ -1450,8 +1450,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 6428000,
-      "sellingPrice": 11688000,
+      "importPrice": 257000,
+      "sellingPrice": 468000,
       "imageUrl": "https://picsum.photos/280/350?random=120",
       "images": [
         "https://picsum.photos/280/350?random=120"
@@ -1464,8 +1464,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1686000,
-      "sellingPrice": 3066000,
+      "importPrice": 68000,
+      "sellingPrice": 123000,
       "imageUrl": "https://picsum.photos/280/350?random=122",
       "images": [
         "https://picsum.photos/280/350?random=122"
@@ -1478,8 +1478,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 3865000,
-      "sellingPrice": 7028000,
+      "importPrice": 155000,
+      "sellingPrice": 281000,
       "imageUrl": "https://picsum.photos/280/350?random=123",
       "images": [
         "https://picsum.photos/280/350?random=123"
@@ -1492,8 +1492,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 6036000,
-      "sellingPrice": 10974000,
+      "importPrice": 241000,
+      "sellingPrice": 439000,
       "imageUrl": "https://picsum.photos/280/350?random=124",
       "images": [
         "https://picsum.photos/280/350?random=124"
@@ -1506,8 +1506,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 6014000,
-      "sellingPrice": 10935000,
+      "importPrice": 240000,
+      "sellingPrice": 437000,
       "imageUrl": "https://picsum.photos/280/350?random=125",
       "images": [
         "https://picsum.photos/280/350?random=125"
@@ -1520,8 +1520,8 @@
       "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 3804000,
-      "sellingPrice": 6916000,
+      "importPrice": 152000,
+      "sellingPrice": 277000,
       "imageUrl": "https://picsum.photos/280/350?random=126",
       "images": [
         "https://picsum.photos/280/350?random=126"
@@ -1534,8 +1534,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 7143000,
-      "sellingPrice": 12987000,
+      "importPrice": 285000,
+      "sellingPrice": 519000,
       "imageUrl": "https://picsum.photos/280/350?random=127",
       "images": [
         "https://picsum.photos/280/350?random=127"
@@ -1548,8 +1548,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 3838000,
-      "sellingPrice": 6979000,
+      "importPrice": 153000,
+      "sellingPrice": 279000,
       "imageUrl": "https://picsum.photos/280/350?random=128",
       "images": [
         "https://picsum.photos/280/350?random=128"
@@ -1562,8 +1562,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2176000,
-      "sellingPrice": 3957000,
+      "importPrice": 87000,
+      "sellingPrice": 158000,
       "imageUrl": "https://picsum.photos/280/350?random=129",
       "images": [
         "https://picsum.photos/280/350?random=129"
@@ -1576,8 +1576,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 5675000,
-      "sellingPrice": 10318000,
+      "importPrice": 227000,
+      "sellingPrice": 413000,
       "imageUrl": "https://picsum.photos/280/350?random=130",
       "images": [
         "https://picsum.photos/280/350?random=130"
@@ -1590,8 +1590,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 5564000,
-      "sellingPrice": 10117000,
+      "importPrice": 223000,
+      "sellingPrice": 405000,
       "imageUrl": "https://picsum.photos/280/350?random=132",
       "images": [
         "https://picsum.photos/280/350?random=132"
@@ -1604,8 +1604,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1733000,
-      "sellingPrice": 3150000,
+      "importPrice": 69000,
+      "sellingPrice": 126000,
       "imageUrl": "https://picsum.photos/280/350?random=133",
       "images": [
         "https://picsum.photos/280/350?random=133"
@@ -1618,8 +1618,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5102000,
-      "sellingPrice": 9277000,
+      "importPrice": 204000,
+      "sellingPrice": 371000,
       "imageUrl": "https://picsum.photos/280/350?random=134",
       "images": [
         "https://picsum.photos/280/350?random=134"
@@ -1632,8 +1632,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 4418000,
-      "sellingPrice": 8033000,
+      "importPrice": 177000,
+      "sellingPrice": 321000,
       "imageUrl": "https://picsum.photos/280/350?random=135",
       "images": [
         "https://picsum.photos/280/350?random=135"
@@ -1646,8 +1646,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 6005000,
-      "sellingPrice": 10919000,
+      "importPrice": 240000,
+      "sellingPrice": 437000,
       "imageUrl": "https://picsum.photos/280/350?random=137",
       "images": [
         "https://picsum.photos/280/350?random=137"
@@ -1660,8 +1660,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 3984000,
-      "sellingPrice": 7243000,
+      "importPrice": 160000,
+      "sellingPrice": 290000,
       "imageUrl": "https://picsum.photos/280/350?random=138",
       "images": [
         "https://picsum.photos/280/350?random=138"
@@ -1674,8 +1674,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6921000,
-      "sellingPrice": 12583000,
+      "importPrice": 277000,
+      "sellingPrice": 503000,
       "imageUrl": "https://picsum.photos/280/350?random=139",
       "images": [
         "https://picsum.photos/280/350?random=139"
@@ -1688,8 +1688,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5853000,
-      "sellingPrice": 10642000,
+      "importPrice": 234000,
+      "sellingPrice": 426000,
       "imageUrl": "https://picsum.photos/280/350?random=140",
       "images": [
         "https://picsum.photos/280/350?random=140"
@@ -1702,8 +1702,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 1998000,
-      "sellingPrice": 3633000,
+      "importPrice": 80000,
+      "sellingPrice": 145000,
       "imageUrl": "https://picsum.photos/280/350?random=142",
       "images": [
         "https://picsum.photos/280/350?random=142"
@@ -1716,8 +1716,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 2876000,
-      "sellingPrice": 5229000,
+      "importPrice": 115000,
+      "sellingPrice": 209000,
       "imageUrl": "https://picsum.photos/280/350?random=143",
       "images": [
         "https://picsum.photos/280/350?random=143"
@@ -1730,8 +1730,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4948000,
-      "sellingPrice": 8997000,
+      "importPrice": 198000,
+      "sellingPrice": 360000,
       "imageUrl": "https://picsum.photos/280/350?random=144",
       "images": [
         "https://picsum.photos/280/350?random=144"
@@ -1744,8 +1744,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2984000,
-      "sellingPrice": 5426000,
+      "importPrice": 119000,
+      "sellingPrice": 217000,
       "imageUrl": "https://picsum.photos/280/350?random=145",
       "images": [
         "https://picsum.photos/280/350?random=145"
@@ -1758,8 +1758,8 @@
       "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6608000,
-      "sellingPrice": 12014000,
+      "importPrice": 265000,
+      "sellingPrice": 481000,
       "imageUrl": "https://picsum.photos/280/350?random=146",
       "images": [
         "https://picsum.photos/280/350?random=146"
@@ -1772,8 +1772,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2624000,
-      "sellingPrice": 4770000,
+      "importPrice": 105000,
+      "sellingPrice": 191000,
       "imageUrl": "https://picsum.photos/280/350?random=147",
       "images": [
         "https://picsum.photos/280/350?random=147"
@@ -1786,8 +1786,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 5185000,
-      "sellingPrice": 9427000,
+      "importPrice": 207000,
+      "sellingPrice": 377000,
       "imageUrl": "https://picsum.photos/280/350?random=148",
       "images": [
         "https://picsum.photos/280/350?random=148"
@@ -1800,8 +1800,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 2669000,
-      "sellingPrice": 4853000,
+      "importPrice": 107000,
+      "sellingPrice": 194000,
       "imageUrl": "https://picsum.photos/280/350?random=149",
       "images": [
         "https://picsum.photos/280/350?random=149"
@@ -1814,8 +1814,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 1290000,
-      "sellingPrice": 2345000,
+      "importPrice": 52000,
+      "sellingPrice": 94000,
       "imageUrl": "https://picsum.photos/280/350?random=150",
       "images": [
         "https://picsum.photos/280/350?random=150"
@@ -1828,8 +1828,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5404000,
-      "sellingPrice": 9826000,
+      "importPrice": 216000,
+      "sellingPrice": 393000,
       "imageUrl": "https://picsum.photos/280/350?random=152",
       "images": [
         "https://picsum.photos/280/350?random=152"
@@ -1842,8 +1842,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2286000,
-      "sellingPrice": 4157000,
+      "importPrice": 91000,
+      "sellingPrice": 166000,
       "imageUrl": "https://picsum.photos/280/350?random=153",
       "images": [
         "https://picsum.photos/280/350?random=153"
@@ -1856,8 +1856,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 2009000,
-      "sellingPrice": 3652000,
+      "importPrice": 80000,
+      "sellingPrice": 146000,
       "imageUrl": "https://picsum.photos/280/350?random=154",
       "images": [
         "https://picsum.photos/280/350?random=154"
@@ -1870,8 +1870,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 3251000,
-      "sellingPrice": 5911000,
+      "importPrice": 130000,
+      "sellingPrice": 236000,
       "imageUrl": "https://picsum.photos/280/350?random=155",
       "images": [
         "https://picsum.photos/280/350?random=155"
@@ -1884,8 +1884,8 @@
       "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 5711000,
-      "sellingPrice": 10383000,
+      "importPrice": 228000,
+      "sellingPrice": 415000,
       "imageUrl": "https://picsum.photos/280/350?random=156",
       "images": [
         "https://picsum.photos/280/350?random=156"
@@ -1898,8 +1898,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 950000,
-      "sellingPrice": 1728000,
+      "importPrice": 38000,
+      "sellingPrice": 69000,
       "imageUrl": "https://picsum.photos/280/350?random=157",
       "images": [
         "https://picsum.photos/280/350?random=157"
@@ -1912,8 +1912,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6291000,
-      "sellingPrice": 11439000,
+      "importPrice": 252000,
+      "sellingPrice": 458000,
       "imageUrl": "https://picsum.photos/280/350?random=158",
       "images": [
         "https://picsum.photos/280/350?random=158"
@@ -1926,8 +1926,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2038000,
-      "sellingPrice": 3706000,
+      "importPrice": 81000,
+      "sellingPrice": 148000,
       "imageUrl": "https://picsum.photos/280/350?random=159",
       "images": [
         "https://picsum.photos/280/350?random=159"
@@ -1940,8 +1940,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 2409000,
-      "sellingPrice": 4380000,
+      "importPrice": 96000,
+      "sellingPrice": 175000,
       "imageUrl": "https://picsum.photos/280/350?random=160",
       "images": [
         "https://picsum.photos/280/350?random=160"
@@ -1954,8 +1954,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 1327000,
-      "sellingPrice": 2412000,
+      "importPrice": 53000,
+      "sellingPrice": 96000,
       "imageUrl": "https://picsum.photos/280/350?random=162",
       "images": [
         "https://picsum.photos/280/350?random=162"
@@ -1968,8 +1968,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6756000,
-      "sellingPrice": 12284000,
+      "importPrice": 270000,
+      "sellingPrice": 491000,
       "imageUrl": "https://picsum.photos/280/350?random=163",
       "images": [
         "https://picsum.photos/280/350?random=163"
@@ -1982,8 +1982,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 3018000,
-      "sellingPrice": 5488000,
+      "importPrice": 121000,
+      "sellingPrice": 220000,
       "imageUrl": "https://picsum.photos/280/350?random=164",
       "images": [
         "https://picsum.photos/280/350?random=164"
@@ -1996,8 +1996,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5948000,
-      "sellingPrice": 10814000,
+      "importPrice": 238000,
+      "sellingPrice": 433000,
       "imageUrl": "https://picsum.photos/280/350?random=165",
       "images": [
         "https://picsum.photos/280/350?random=165"
@@ -2010,8 +2010,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 2813000,
-      "sellingPrice": 5115000,
+      "importPrice": 113000,
+      "sellingPrice": 205000,
       "imageUrl": "https://picsum.photos/280/350?random=167",
       "images": [
         "https://picsum.photos/280/350?random=167"
@@ -2024,8 +2024,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 748000,
-      "sellingPrice": 1360000,
+      "importPrice": 30000,
+      "sellingPrice": 54000,
       "imageUrl": "https://picsum.photos/280/350?random=168",
       "images": [
         "https://picsum.photos/280/350?random=168"
@@ -2038,8 +2038,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6903000,
-      "sellingPrice": 12551000,
+      "importPrice": 276000,
+      "sellingPrice": 502000,
       "imageUrl": "https://picsum.photos/280/350?random=169",
       "images": [
         "https://picsum.photos/280/350?random=169"
@@ -2052,8 +2052,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5739000,
-      "sellingPrice": 10434000,
+      "importPrice": 229000,
+      "sellingPrice": 417000,
       "imageUrl": "https://picsum.photos/280/350?random=170",
       "images": [
         "https://picsum.photos/280/350?random=170"
@@ -2066,8 +2066,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 1346000,
-      "sellingPrice": 2447000,
+      "importPrice": 54000,
+      "sellingPrice": 98000,
       "imageUrl": "https://picsum.photos/280/350?random=172",
       "images": [
         "https://picsum.photos/280/350?random=172"
@@ -2080,8 +2080,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 6046000,
-      "sellingPrice": 10992000,
+      "importPrice": 242000,
+      "sellingPrice": 440000,
       "imageUrl": "https://picsum.photos/280/350?random=173",
       "images": [
         "https://picsum.photos/280/350?random=173"
@@ -2094,8 +2094,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 5399000,
-      "sellingPrice": 9816000,
+      "importPrice": 216000,
+      "sellingPrice": 393000,
       "imageUrl": "https://picsum.photos/280/350?random=174",
       "images": [
         "https://picsum.photos/280/350?random=174"
@@ -2108,8 +2108,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6983000,
-      "sellingPrice": 12696000,
+      "importPrice": 279000,
+      "sellingPrice": 508000,
       "imageUrl": "https://picsum.photos/280/350?random=175",
       "images": [
         "https://picsum.photos/280/350?random=175"
@@ -2122,8 +2122,8 @@
       "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5246000,
-      "sellingPrice": 9538000,
+      "importPrice": 210000,
+      "sellingPrice": 382000,
       "imageUrl": "https://picsum.photos/280/350?random=176",
       "images": [
         "https://picsum.photos/280/350?random=176"
@@ -2136,8 +2136,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1625000,
-      "sellingPrice": 2954000,
+      "importPrice": 65000,
+      "sellingPrice": 118000,
       "imageUrl": "https://picsum.photos/280/350?random=177",
       "images": [
         "https://picsum.photos/280/350?random=177"
@@ -2150,8 +2150,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 5315000,
-      "sellingPrice": 9663000,
+      "importPrice": 213000,
+      "sellingPrice": 387000,
       "imageUrl": "https://picsum.photos/280/350?random=178",
       "images": [
         "https://picsum.photos/280/350?random=178"
@@ -2164,8 +2164,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4998000,
-      "sellingPrice": 9088000,
+      "importPrice": 200000,
+      "sellingPrice": 364000,
       "imageUrl": "https://picsum.photos/280/350?random=179",
       "images": [
         "https://picsum.photos/280/350?random=179"
@@ -2178,8 +2178,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4772000,
-      "sellingPrice": 8676000,
+      "importPrice": 191000,
+      "sellingPrice": 347000,
       "imageUrl": "https://picsum.photos/280/350?random=180",
       "images": [
         "https://picsum.photos/280/350?random=180"
@@ -2192,8 +2192,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2006000,
-      "sellingPrice": 3648000,
+      "importPrice": 80000,
+      "sellingPrice": 146000,
       "imageUrl": "https://picsum.photos/280/350?random=182",
       "images": [
         "https://picsum.photos/280/350?random=182"
@@ -2206,8 +2206,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 3356000,
-      "sellingPrice": 6101000,
+      "importPrice": 134000,
+      "sellingPrice": 244000,
       "imageUrl": "https://picsum.photos/280/350?random=183",
       "images": [
         "https://picsum.photos/280/350?random=183"
@@ -2220,8 +2220,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 6668000,
-      "sellingPrice": 12124000,
+      "importPrice": 267000,
+      "sellingPrice": 485000,
       "imageUrl": "https://picsum.photos/280/350?random=184",
       "images": [
         "https://picsum.photos/280/350?random=184"
@@ -2234,8 +2234,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 6723000,
-      "sellingPrice": 12223000,
+      "importPrice": 269000,
+      "sellingPrice": 489000,
       "imageUrl": "https://picsum.photos/280/350?random=185",
       "images": [
         "https://picsum.photos/280/350?random=185"
@@ -2248,8 +2248,8 @@
       "description": "Trang phục demo Size S, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 5964000,
-      "sellingPrice": 10844000,
+      "importPrice": 239000,
+      "sellingPrice": 434000,
       "imageUrl": "https://picsum.photos/280/350?random=186",
       "images": [
         "https://picsum.photos/280/350?random=186"
@@ -2262,8 +2262,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5727000,
-      "sellingPrice": 10412000,
+      "importPrice": 229000,
+      "sellingPrice": 416000,
       "imageUrl": "https://picsum.photos/280/350?random=187",
       "images": [
         "https://picsum.photos/280/350?random=187"
@@ -2276,8 +2276,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 3375000,
-      "sellingPrice": 6137000,
+      "importPrice": 135000,
+      "sellingPrice": 245000,
       "imageUrl": "https://picsum.photos/280/350?random=188",
       "images": [
         "https://picsum.photos/280/350?random=188"
@@ -2290,8 +2290,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 1673000,
-      "sellingPrice": 3042000,
+      "importPrice": 67000,
+      "sellingPrice": 122000,
       "imageUrl": "https://picsum.photos/280/350?random=189",
       "images": [
         "https://picsum.photos/280/350?random=189"
@@ -2304,8 +2304,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 1909000,
-      "sellingPrice": 3470000,
+      "importPrice": 76000,
+      "sellingPrice": 139000,
       "imageUrl": "https://picsum.photos/280/350?random=190",
       "images": [
         "https://picsum.photos/280/350?random=190"
@@ -2318,8 +2318,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4354000,
-      "sellingPrice": 7916000,
+      "importPrice": 174000,
+      "sellingPrice": 317000,
       "imageUrl": "https://picsum.photos/280/350?random=192",
       "images": [
         "https://picsum.photos/280/350?random=192"
@@ -2332,8 +2332,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6321000,
-      "sellingPrice": 11493000,
+      "importPrice": 253000,
+      "sellingPrice": 460000,
       "imageUrl": "https://picsum.photos/280/350?random=193",
       "images": [
         "https://picsum.photos/280/350?random=193"
@@ -2346,8 +2346,8 @@
       "description": "Trang phục demo Size XL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 2422000,
-      "sellingPrice": 4404000,
+      "importPrice": 97000,
+      "sellingPrice": 176000,
       "imageUrl": "https://picsum.photos/280/350?random=194",
       "images": [
         "https://picsum.photos/280/350?random=194"
@@ -2360,8 +2360,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 6195000,
-      "sellingPrice": 11264000,
+      "importPrice": 248000,
+      "sellingPrice": 451000,
       "imageUrl": "https://picsum.photos/280/350?random=195",
       "images": [
         "https://picsum.photos/280/350?random=195"
@@ -2374,8 +2374,8 @@
       "description": "Trang phục demo Size M, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4883000,
-      "sellingPrice": 8878000,
+      "importPrice": 195000,
+      "sellingPrice": 355000,
       "imageUrl": "https://picsum.photos/280/350?random=197",
       "images": [
         "https://picsum.photos/280/350?random=197"
@@ -2388,8 +2388,8 @@
       "description": "Trang phục demo Size L, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 4671000,
-      "sellingPrice": 8492000,
+      "importPrice": 187000,
+      "sellingPrice": 340000,
       "imageUrl": "https://picsum.photos/280/350?random=198",
       "images": [
         "https://picsum.photos/280/350?random=198"
@@ -2402,8 +2402,8 @@
       "description": "Trang phục demo Size XL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5796000,
-      "sellingPrice": 10538000,
+      "importPrice": 232000,
+      "sellingPrice": 422000,
       "imageUrl": "https://picsum.photos/280/350?random=199",
       "images": [
         "https://picsum.photos/280/350?random=199"
@@ -2416,8 +2416,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5405000,
-      "sellingPrice": 9828000,
+      "importPrice": 216000,
+      "sellingPrice": 393000,
       "imageUrl": "https://picsum.photos/280/350?random=200",
       "images": [
         "https://picsum.photos/280/350?random=200"
@@ -2430,8 +2430,8 @@
       "description": "Trang phục demo Size M, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 4806000,
-      "sellingPrice": 8738000,
+      "importPrice": 193000,
+      "sellingPrice": 350000,
       "imageUrl": "https://picsum.photos/280/350?random=202",
       "images": [
         "https://picsum.photos/280/350?random=202"
@@ -2444,8 +2444,8 @@
       "description": "Trang phục demo Size L, phù hợp Women, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 1843000,
-      "sellingPrice": 3350000,
+      "importPrice": 74000,
+      "sellingPrice": 134000,
       "imageUrl": "https://picsum.photos/280/350?random=203",
       "images": [
         "https://picsum.photos/280/350?random=203"
@@ -2458,8 +2458,8 @@
       "description": "Trang phục demo Size XL, phù hợp Unisex, 3 màu",
       "categoryName": "Áo khoác",
       "brandName": "Fashion Studio",
-      "importPrice": 5183000,
-      "sellingPrice": 9424000,
+      "importPrice": 207000,
+      "sellingPrice": 377000,
       "imageUrl": "https://picsum.photos/280/350?random=204",
       "images": [
         "https://picsum.photos/280/350?random=204"
@@ -2472,8 +2472,8 @@
       "description": "Trang phục demo Size XXL, phù hợp Men, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5530000,
-      "sellingPrice": 10054000,
+      "importPrice": 221000,
+      "sellingPrice": 402000,
       "imageUrl": "https://picsum.photos/280/350?random=205",
       "images": [
         "https://picsum.photos/280/350?random=205"
@@ -2486,8 +2486,8 @@
       "description": "Trang phục demo Size S, phù hợp Women, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 4017000,
-      "sellingPrice": 7304000,
+      "importPrice": 161000,
+      "sellingPrice": 292000,
       "imageUrl": "https://picsum.photos/280/350?random=206",
       "images": [
         "https://picsum.photos/280/350?random=206"
@@ -2500,8 +2500,8 @@
       "description": "Trang phục demo Size M, phù hợp Unisex, 3 màu",
       "categoryName": "Áo thun",
       "brandName": "Fashion Studio",
-      "importPrice": 5244000,
-      "sellingPrice": 9534000,
+      "importPrice": 210000,
+      "sellingPrice": 381000,
       "imageUrl": "https://picsum.photos/280/350?random=207",
       "images": [
         "https://picsum.photos/280/350?random=207"
@@ -2514,8 +2514,8 @@
       "description": "Trang phục demo Size L, phù hợp Men, 3 màu",
       "categoryName": "Quần",
       "brandName": "Fashion Studio",
-      "importPrice": 3985000,
-      "sellingPrice": 7246000,
+      "importPrice": 160000,
+      "sellingPrice": 290000,
       "imageUrl": "https://picsum.photos/280/350?random=208",
       "images": [
         "https://picsum.photos/280/350?random=208"

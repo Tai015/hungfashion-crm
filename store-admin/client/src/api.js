@@ -12,6 +12,139 @@ export function authHeaders(extraHeaders = {}) {
   return headers;
 }
 
+export async function listenForChatEvents(onEvent, { signal } = {}) {
+  const response = await fetch('/api/chat/events', {
+    headers: authHeaders({ accept: 'text/event-stream' }),
+    signal,
+  });
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    const error = new Error(result?.message || `Không thể kết nối chat (${response.status}).`);
+    error.status = response.status;
+    throw error;
+  }
+  if (!response.body) throw new Error('Trình duyệt không hỗ trợ kết nối chat realtime.');
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) return;
+    buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+    let boundary = buffer.indexOf('\n\n');
+    while (boundary !== -1) {
+      const frame = buffer.slice(0, boundary);
+      buffer = buffer.slice(boundary + 2);
+      const eventName = frame.split('\n').find(line => line.startsWith('event:'))?.slice(6).trim();
+      const data = frame.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trim()).join('\n');
+      if (eventName === 'chat' && data) {
+        try { onEvent(JSON.parse(data)); } catch { /* ignore malformed event payload */ }
+      }
+      boundary = buffer.indexOf('\n\n');
+    }
+  }
+}
+
+const chatEventListeners = new Set();
+const pendingChatEvents = new Map();
+let chatEventController;
+let chatEventRetryTimer;
+let chatEventRetryResolver;
+let chatEventBatchTimer;
+let chatEventGeneration = 0;
+let chatEventHasConnected = false;
+
+function restartChatEventStream() {
+  if (!chatEventListeners.size || document.hidden) return;
+  chatEventGeneration += 1;
+  chatEventController?.abort();
+  window.clearTimeout(chatEventRetryTimer);
+  chatEventRetryResolver?.();
+  chatEventRetryResolver = null;
+  startChatEventStream();
+}
+
+function dispatchChatEvent(event) {
+  const key = event.conversationId == null
+    ? `global:${event.type || 'event'}`
+    : `conversation:${event.conversationId}`;
+  pendingChatEvents.set(key, event);
+  if (chatEventBatchTimer) return;
+  chatEventBatchTimer = window.setTimeout(() => {
+    chatEventBatchTimer = null;
+    const events = [...pendingChatEvents.values()];
+    pendingChatEvents.clear();
+    const notification = events.length === 1 ? events[0] : { type: 'batch', events };
+    chatEventListeners.forEach(listener => {
+      try { listener(notification); } catch { /* one consumer must not interrupt other listeners */ }
+    });
+  }, 100);
+}
+
+function startChatEventStream() {
+  const generation = ++chatEventGeneration;
+  const connect = async () => {
+    let retryAttempt = 0;
+    while (chatEventListeners.size && generation === chatEventGeneration) {
+      chatEventController = new AbortController();
+      let connectedAt = 0;
+      try {
+        await listenForChatEvents(event => {
+          if (event.type === 'connected') {
+            connectedAt = Date.now();
+            if (chatEventHasConnected) dispatchChatEvent(event);
+            chatEventHasConnected = true;
+            return;
+          }
+          dispatchChatEvent(event);
+        }, { signal: chatEventController.signal });
+      } catch (error) {
+        if (error.status === 401 || error.status === 403) {
+          window.localStorage.removeItem(TOKEN_KEY);
+          window.dispatchEvent(new Event('auth:expired'));
+          break;
+        }
+        // Retry after transient network errors or server restarts.
+      }
+      if (!chatEventListeners.size || generation !== chatEventGeneration) break;
+      if (connectedAt && Date.now() - connectedAt >= 10000) retryAttempt = 0;
+      const delayMs = Math.min(1000 * (2 ** retryAttempt), 30000);
+      retryAttempt += 1;
+      await new Promise(resolve => {
+        chatEventRetryResolver = resolve;
+        chatEventRetryTimer = window.setTimeout(resolve, delayMs);
+      });
+      chatEventRetryResolver = null;
+    }
+  };
+  connect();
+}
+
+export function subscribeToChatEvents(onEvent) {
+  const wasEmpty = chatEventListeners.size === 0;
+  chatEventListeners.add(onEvent);
+  if (wasEmpty) {
+    document.addEventListener('visibilitychange', restartChatEventStream);
+    window.addEventListener('online', restartChatEventStream);
+    startChatEventStream();
+  }
+  return () => {
+    chatEventListeners.delete(onEvent);
+    if (chatEventListeners.size) return;
+    chatEventGeneration += 1;
+    document.removeEventListener('visibilitychange', restartChatEventStream);
+    window.removeEventListener('online', restartChatEventStream);
+    chatEventController?.abort();
+    window.clearTimeout(chatEventRetryTimer);
+    chatEventRetryResolver?.();
+    window.clearTimeout(chatEventBatchTimer);
+    chatEventBatchTimer = null;
+    pendingChatEvents.clear();
+    chatEventHasConnected = false;
+  };
+}
+
 export async function apiFetch(url, options = {}) {
   const headers = authHeaders(options.headers);
   let body = options.body;

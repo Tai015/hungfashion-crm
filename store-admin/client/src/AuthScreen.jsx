@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { apiFetch, TOKEN_KEY } from './api';
 import PasswordInput from './PasswordInput';
+import { useSweetAlertMessages } from './utils/notifications';
 
 const INPUT = 'w-full h-11 px-3 bg-white/70 border border-stone-400 rounded-xl text-stone-900 text-sm placeholder-stone-500 outline-none focus:border-sky-700 focus:ring-2 focus:ring-sky-700/30 transition-all disabled:bg-stone-100 disabled:text-stone-500 disabled:cursor-not-allowed';
 
@@ -20,6 +21,7 @@ export default function AuthScreen({ onAuthenticated }) {
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  useSweetAlertMessages({ error });
 
   const submit = async (e) => {
     e.preventDefault(); setError(''); setBusy(true);
@@ -34,8 +36,8 @@ export default function AuthScreen({ onAuthenticated }) {
   };
 
   return (
-    <main className="grid min-h-screen place-items-center p-6">
-      <section className="w-full max-w-md p-8 bg-white/50 border border-white/75 rounded-3xl shadow-[0_18px_40px_rgba(28,25,23,0.1)] backdrop-blur-2xl">
+    <main className="auth-screen grid min-h-screen place-items-center p-6">
+      <section className="auth-card w-full max-w-md p-8 border rounded-3xl">
         <div className="text-center mb-8">
           <span className="inline-block px-3 py-1 bg-white/50 border border-white/70 rounded-full text-stone-600 text-xs font-semibold uppercase tracking-wider mb-3">
             Hung Fashion CRM
@@ -48,24 +50,18 @@ export default function AuthScreen({ onAuthenticated }) {
           </p>
         </div>
 
-        {error && (
-          <div className="mb-5 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm" role="alert">
-            {error}
-          </div>
-        )}
-
         <form className="space-y-4" onSubmit={submit}>
           {mode === 'register' && (
             <>
               <label className="block">
                 <span className="block text-xs font-semibold text-stone-800 mb-1.5">Họ và tên</span>
                 <input required maxLength={150} autoComplete="name" className={INPUT}
-                  placeholder="Nguyễn Văn A" value={fullName} onChange={e => setFullName(e.target.value)} />
+                  placeholder="Nhập họ và tên" value={fullName} onChange={e => setFullName(e.target.value)} />
               </label>
               <label className="block">
                 <span className="block text-xs font-semibold text-stone-800 mb-1.5">Tên đăng nhập</span>
                 <input required minLength={3} maxLength={100} pattern="[A-Za-z0-9_.-]+" autoComplete="username"
-                  className={INPUT} placeholder="user123" value={username} onChange={e => setUsername(e.target.value)} />
+                  className={INPUT} placeholder="Nhập tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} />
               </label>
               <label className="block">
                 <span className="block text-xs font-semibold text-stone-800 mb-1.5">Email</span>
@@ -79,7 +75,7 @@ export default function AuthScreen({ onAuthenticated }) {
             <label className="block">
               <span className="block text-xs font-semibold text-stone-800 mb-1.5">Tên đăng nhập hoặc email</span>
               <input required autoComplete="username" className={INPUT}
-                placeholder="admin / admin@hungfashion.vn" value={identifier} onChange={e => setIdentifier(e.target.value)} />
+                placeholder="Nhập tên đăng nhập hoặc email" value={identifier} onChange={e => setIdentifier(e.target.value)} />
             </label>
           )}
 
@@ -87,6 +83,7 @@ export default function AuthScreen({ onAuthenticated }) {
             <span className="block text-xs font-semibold text-stone-800 mb-1.5">Mật khẩu</span>
             <PasswordInput required minLength={8} maxLength={128}
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              placeholder="Nhập mật khẩu"
               value={password} onChange={e => setPassword(e.target.value)} />
           </label>
 

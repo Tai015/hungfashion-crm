@@ -3,10 +3,25 @@ import { pool } from '../db.js';
 
 const router = Router();
 
+function validateSupplierFields({ supplier_name, contact_name, phone, email, address }) {
+  if (typeof supplier_name !== 'string' || !supplier_name.trim() || supplier_name.trim().length > 200) return 'Tên nhà cung cấp là bắt buộc và tối đa 200 ký tự.';
+  if (contact_name != null && (typeof contact_name !== 'string' || contact_name.length > 150)) return 'Tên người liên hệ tối đa 150 ký tự.';
+  if (phone != null && (typeof phone !== 'string' || phone.length > 20)) return 'Điện thoại tối đa 20 ký tự.';
+  if (email != null && (typeof email !== 'string' || email.length > 150 || (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))) return 'Email nhà cung cấp không hợp lệ.';
+  if (address != null && (typeof address !== 'string' || address.length > 500)) return 'Địa chỉ tối đa 500 ký tự.';
+  return null;
+}
+
 // GET /api/inventory – tồn kho theo biến thể
 router.get('/', async (req, res) => {
   try {
     const { search, category_id, low_stock } = req.query;
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 20);
+    if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 100) {
+      return res.status(400).json({ message: 'Tham số phân trang không hợp lệ.' });
+    }
+    const offset = (page - 1) * limit;
     const conditions = ['p.is_active = TRUE'];
     const params = [];
 
@@ -24,7 +39,7 @@ router.get('/', async (req, res) => {
 
     const where = `WHERE ${conditions.join(' AND ')}`;
 
-    const { rows } = await pool.query(
+    const [{ rows }, { rows: countRows }] = await Promise.all([pool.query(
       `SELECT pv.variant_id, pv.sku, pv.quantity,
               p.product_id, p.product_name, p.selling_price,
               c.category_name,
@@ -35,9 +50,15 @@ router.get('/', async (req, res) => {
        JOIN size s     ON s.size_id = pv.size_id
        JOIN color co   ON co.color_id = pv.color_id
        ${where}
-       ORDER BY pv.quantity ASC`,
-      params
-    );
+       ORDER BY pv.quantity ASC
+       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, limit, offset]
+    ), pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM product_variant pv JOIN product p ON p.product_id=pv.product_id ${where}`,
+      params,
+    )]);
+    if (req.query.paged === 'true') return res.json({ data: rows, total: countRows[0].total, page, limit });
     res.json(rows);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -45,11 +66,47 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/inventory/suppliers – nhà cung cấp
-router.get('/suppliers', async (_req, res) => {
+router.get('/suppliers', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT * FROM supplier WHERE is_active = TRUE ORDER BY supplier_name`
-    );
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    if (search.length > 100) return res.status(400).json({ message: 'Từ khóa tìm nhà cung cấp tối đa 100 ký tự.' });
+    const sortColumns = { name: 'supplier_name', contact: 'contact_name', created: 'created_at' };
+    const sort = String(req.query.sort || 'name');
+    const order = String(req.query.order || 'asc').toLowerCase();
+    const contactFilter = String(req.query.contact_filter || 'all');
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 20);
+    if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 100) {
+      return res.status(400).json({ message: 'Tham số phân trang không hợp lệ.' });
+    }
+    const offset = (page - 1) * limit;
+    if (!sortColumns[sort] || !['asc', 'desc'].includes(order)) {
+      return res.status(400).json({ message: 'Cách sắp xếp nhà cung cấp không hợp lệ.' });
+    }
+    if (!['all', 'has_email', 'no_email', 'has_phone', 'no_phone'].includes(contactFilter)) {
+      return res.status(400).json({ message: 'Bộ lọc nhà cung cấp không hợp lệ.' });
+    }
+    const filterSql = {
+      all: '',
+      has_email: 'AND NULLIF(BTRIM(email), \'\') IS NOT NULL',
+      no_email: 'AND NULLIF(BTRIM(email), \'\') IS NULL',
+      has_phone: 'AND NULLIF(BTRIM(phone), \'\') IS NOT NULL',
+      no_phone: 'AND NULLIF(BTRIM(phone), \'\') IS NULL',
+    }[contactFilter];
+    const [{ rows }, { rows: countRows }] = await Promise.all([pool.query(
+      `SELECT * FROM supplier WHERE is_active = TRUE
+       AND ($1 = '' OR supplier_name ILIKE $2 OR contact_name ILIKE $2 OR phone ILIKE $2 OR email ILIKE $2)
+       ${filterSql}
+       ORDER BY ${sortColumns[sort]} ${order.toUpperCase()} NULLS LAST, supplier_id ASC
+       LIMIT $3 OFFSET $4`,
+      [search, `%${search}%`, limit, offset],
+    ), pool.query(
+      `SELECT COUNT(*)::int AS total FROM supplier WHERE is_active=TRUE
+       AND ($1 = '' OR supplier_name ILIKE $2 OR contact_name ILIKE $2 OR phone ILIKE $2 OR email ILIKE $2)
+       ${filterSql}`,
+      [search, `%${search}%`],
+    )]);
+    if (req.query.paged === 'true') return res.json({ data: rows, total: countRows[0].total, page, limit });
     res.json(rows);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -59,11 +116,13 @@ router.get('/suppliers', async (_req, res) => {
 // POST /api/inventory/suppliers
 router.post('/suppliers', async (req, res) => {
   try {
-    const { supplier_name, contact_name, phone, email, address } = req.body;
+    const { supplier_name, contact_name = null, phone = null, email = null, address = null } = req.body || {};
+    const validationError = validateSupplierFields({ supplier_name, contact_name, phone, email, address });
+    if (validationError) return res.status(400).json({ message: validationError });
     const { rows } = await pool.query(
       `INSERT INTO supplier (supplier_name, contact_name, phone, email, address)
        VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [supplier_name, contact_name, phone, email, address]
+      [supplier_name.trim(), contact_name, phone, email, address]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -71,11 +130,33 @@ router.post('/suppliers', async (req, res) => {
   }
 });
 
+router.patch('/suppliers/:id', async (req, res) => {
+  try {
+    const { supplier_name, contact_name = null, phone = null, email = null, address = null } = req.body || {};
+    const validationError = validateSupplierFields({ supplier_name, contact_name, phone, email, address });
+    if (validationError) return res.status(400).json({ message: validationError });
+    const { rows } = await pool.query(
+      `UPDATE supplier SET supplier_name=$1, contact_name=$2, phone=$3, email=$4, address=$5
+       WHERE supplier_id=$6 AND is_active=TRUE RETURNING *`,
+      [supplier_name.trim(), contact_name, phone, email, address, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy nhà cung cấp.' });
+    return res.json(rows[0]);
+  } catch (err) {
+    return res.status(500).json({ message: 'Không thể cập nhật nhà cung cấp.' });
+  }
+});
+
 // GET /api/inventory/receipts – phiếu nhập/xuất
 router.get('/receipts', async (req, res) => {
   try {
     const { type, from, to, page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
+    const pageNumber = Number(page);
+    const pageSize = Number(limit);
+    if (!Number.isInteger(pageNumber) || pageNumber < 1 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+      return res.status(400).json({ message: 'Tham số phân trang không hợp lệ.' });
+    }
+    const offset = (pageNumber - 1) * pageSize;
     const conditions = [];
     const params = [];
 
@@ -93,9 +174,10 @@ router.get('/receipts', async (req, res) => {
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-    params.push(limit, offset);
+    const countParams = [...params];
+    params.push(pageSize, offset);
 
-    const { rows } = await pool.query(
+    const [{ rows }, { rows: countRows }] = await Promise.all([pool.query(
       `SELECT ir.*, s.supplier_name,
               e.full_name AS employee_name
        FROM import_receipt ir
@@ -105,7 +187,8 @@ router.get('/receipts', async (req, res) => {
        ORDER BY ir.receipt_date DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
-    );
+    ), pool.query(`SELECT COUNT(*)::int AS total FROM import_receipt ir ${where}`, countParams)]);
+    if (req.query.paged === 'true') return res.json({ data: rows, total: countRows[0].total, page: pageNumber, limit: pageSize });
     res.json(rows);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -153,6 +236,14 @@ router.post('/receipts', async (req, res) => {
       || !['Import', 'Export', 'Adjustment'].includes(receipt_type)) {
       await client.query('ROLLBACK');
       return res.status(400).json({ message: 'Loại phiếu hoặc danh sách chi tiết không hợp lệ.' });
+    }
+    if (supplier_id != null && (!Number.isInteger(Number(supplier_id)) || Number(supplier_id) < 1)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'Nhà cung cấp không hợp lệ.' });
+    }
+    if (receipt_type === 'Import' && supplier_id == null) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'Phiếu nhập cần chọn nhà cung cấp.' });
     }
 
     // Tính tổng tiền

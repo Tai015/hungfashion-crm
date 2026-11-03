@@ -16,7 +16,28 @@ const cleanCatalogPath = path.join(storeAdminDir, 'data', 'clean', 'products.jso
 const sourceName = 'Fashion Studio public HTML catalog';
 const restoreEnabled = process.env.ENABLE_DATABASE_RESTORE === 'true';
 const maxRestoreBytes = 512 * 1024 * 1024;
-let databaseOperationInProgress = false;
+let activeDatabaseOperation = null;
+let databaseOperationProgress = null;
+
+const seedProgressStages = {
+  scrape_catalog: [1, 13, 'Đang cào catalog sản phẩm'],
+  normalize_catalog: [2, 13, 'Đang chuẩn hóa dữ liệu catalog'],
+  connect_database: [3, 13, 'Đang kết nối cơ sở dữ liệu'],
+  seed_roles: [4, 13, 'Đang chuẩn bị vai trò'],
+  seed_accounts: [5, 13, 'Đang tạo/cập nhật tài khoản mẫu'],
+  seed_suppliers: [6, 13, 'Đang cập nhật nhà cung cấp'],
+  seed_products: [7, 13, 'Đang cập nhật sản phẩm và biến thể'],
+  seed_receipts: [8, 13, 'Đang tạo phiếu nhập kho mẫu'],
+  seed_customers: [9, 13, 'Đang tạo/cập nhật khách hàng mẫu'],
+  seed_orders: [10, 13, 'Đang tạo đơn hàng và thanh toán mẫu'],
+  seed_promotions: [11, 13, 'Đang cập nhật khuyến mãi mẫu'],
+  seed_feedback: [12, 13, 'Đang tạo phản hồi mẫu'],
+  seed_surveys: [13, 13, 'Đang tạo khảo sát và câu trả lời mẫu'],
+};
+
+function updateOperationProgress(operation, step, total, message) {
+  databaseOperationProgress = { operation, step, total, message, updatedAt: new Date().toISOString() };
+}
 
 function postgresEnvironment() {
   return {
@@ -25,7 +46,7 @@ function postgresEnvironment() {
   };
 }
 
-function runProcess(command, args, { cwd, env, timeoutMs = 120_000, maxStdoutBytes = 8 * 1024 * 1024 } = {}) {
+function runProcess(command, args, { cwd, env, timeoutMs = 120_000, maxStdoutBytes = 8 * 1024 * 1024, onStdoutLine } = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
@@ -38,6 +59,7 @@ function runProcess(command, args, { cwd, env, timeoutMs = 120_000, maxStdoutByt
     let stdoutBytes = 0;
     let outputExceeded = false;
     let settled = false;
+    let stdoutRemainder = '';
 
     let timedOut = false;
     const timeout = setTimeout(() => {
@@ -59,6 +81,11 @@ function runProcess(command, args, { cwd, env, timeoutMs = 120_000, maxStdoutByt
         return;
       }
       stdout += chunk.toString('utf8');
+      if (onStdoutLine) {
+        const lines = (stdoutRemainder + chunk.toString('utf8')).split(/\r?\n/);
+        stdoutRemainder = lines.pop() || '';
+        for (const line of lines) onStdoutLine(line);
+      }
     });
     child.stderr.on('data', chunk => {
       stderr = (stderr + chunk.toString('utf8')).slice(-16_000);
@@ -74,6 +101,7 @@ function runProcess(command, args, { cwd, env, timeoutMs = 120_000, maxStdoutByt
       if (settled) return;
       settled = true;
       clearTimeout(timeout);
+      if (stdoutRemainder && onStdoutLine) onStdoutLine(stdoutRemainder);
       if (outputExceeded) {
         reject(new Error(`${command} produced more output than allowed.`));
       } else if (timedOut) {
@@ -99,7 +127,7 @@ function runCatalogScript(script, args = []) {
   });
 }
 
-async function getCatalogProducts(limit = 50, queryable = pool) {
+async function getCatalogProducts(limit = 50, queryable = pool, offset = 0) {
   const { rows } = await queryable.query(
     `SELECT p.product_id AS "productId", p.product_name AS "productName",
             p.selling_price AS "sellingPrice", p.image_url AS "imageUrl",
@@ -111,8 +139,8 @@ async function getCatalogProducts(limit = 50, queryable = pool) {
      LEFT JOIN brand b ON b.brand_id = p.brand_id
      GROUP BY p.product_id, c.category_name, b.brand_name
      ORDER BY p.created_at DESC, p.product_id DESC
-     LIMIT $1`,
-    [limit]
+     LIMIT $1 OFFSET $2`,
+    [limit, offset]
   );
   const { rows: [summary] } = await queryable.query(
     `SELECT COUNT(DISTINCT p.product_id)::int AS total, MAX(p.updated_at) AS "lastImportedAt"
@@ -123,7 +151,7 @@ async function getCatalogProducts(limit = 50, queryable = pool) {
   return { products: rows, total: summary.total, lastImportedAt: summary.lastImportedAt };
 }
 
-async function importNormalizedCatalog(client) {
+async function importNormalizedCatalog(client, onProgress = () => {}) {
   const clean = JSON.parse(await readFile(cleanCatalogPath, 'utf8'));
   const products = clean.products;
   if (!Array.isArray(products) || products.length < 80 || products.length > 180) {
@@ -141,7 +169,7 @@ async function importNormalizedCatalog(client) {
   let insertedCount = 0;
   let updatedCount = 0;
 
-  for (const item of products) {
+  for (const [productIndex, item] of products.entries()) {
     const sourceId = Number(item.sourceId);
     const productName = typeof item.productName === 'string' ? item.productName.trim() : '';
     const sellingPrice = Number(item.sellingPrice);
@@ -234,18 +262,29 @@ async function importNormalizedCatalog(client) {
         [productId, imageUrl, index === 0, index + 1],
       );
     }
+    onProgress(productIndex + 1, products.length);
   }
 
   return { insertedCount, updatedCount, total: products.length };
 }
 
-function acquireOperation(res) {
-  if (databaseOperationInProgress) {
-    res.status(409).json({ message: 'A settings or database operation is already running.' });
+function acquireOperation(res, operation) {
+  if (activeDatabaseOperation) {
+    res.status(409).json({
+      message: 'Một thao tác Cài đặt hoặc Cơ sở dữ liệu đang chạy.',
+      activeOperation: activeDatabaseOperation,
+      operationProgress: databaseOperationProgress,
+    });
     return false;
   }
-  databaseOperationInProgress = true;
+  activeDatabaseOperation = operation;
+  updateOperationProgress(operation, 0, 1, 'Đang khởi tạo thao tác');
   return true;
+}
+
+function releaseOperation() {
+  activeDatabaseOperation = null;
+  databaseOperationProgress = null;
 }
 
 router.get('/status', async (_req, res) => {
@@ -262,6 +301,8 @@ router.get('/status', async (_req, res) => {
       catalogProductCount: total,
       lastCatalogImportAt: lastImportedAt,
       sourceName,
+      activeOperation: activeDatabaseOperation,
+      operationProgress: databaseOperationProgress,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -271,20 +312,25 @@ router.get('/status', async (_req, res) => {
 router.get('/catalog-products', async (req, res) => {
   try {
     const requestedLimit = Number.parseInt(req.query.limit, 10);
-    const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 100) : 50;
-    res.json(await getCatalogProducts(limit));
+    const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 100) : 20;
+    const page = Number(req.query.page ?? 1);
+    if (!Number.isInteger(page) || page < 1) return res.status(400).json({ message: 'Trang yêu cầu không hợp lệ.' });
+    const result = await getCatalogProducts(limit, pool, (page - 1) * limit);
+    res.json({ ...result, page, limit });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
 router.post('/scrape', async (_req, res) => {
-  if (!acquireOperation(res)) return;
+  if (!acquireOperation(res, 'scrape')) return;
   let client;
   let transactionStarted = false;
   try {
+    updateOperationProgress('scrape', 1, 4, 'Đang cào dữ liệu catalog');
     try {
       await runCatalogScript('scrape-catalog.mjs', ['--force']);
+      updateOperationProgress('scrape', 2, 4, 'Đang chuẩn hóa dữ liệu sản phẩm');
       await runCatalogScript('normalize-catalog.mjs');
     } catch (scrapeError) {
       res.status(502).json({ message: scrapeError.message });
@@ -292,12 +338,20 @@ router.post('/scrape', async (_req, res) => {
     }
 
     client = await pool.connect();
+    updateOperationProgress('scrape', 3, 4, 'Đang nhập sản phẩm và biến thể vào cơ sở dữ liệu');
     await client.query('BEGIN');
     transactionStarted = true;
-    const importResult = await importNormalizedCatalog(client);
+    const importResult = await importNormalizedCatalog(client, (completed, total) => {
+      databaseOperationProgress = {
+        ...databaseOperationProgress,
+        detailStep: completed,
+        detailTotal: total,
+      };
+    });
     const importedProducts = await getCatalogProducts(100, client);
     await client.query('COMMIT');
     transactionStarted = false;
+    updateOperationProgress('scrape', 4, 4, 'Đã nhập catalog thành công');
     res.json({
       success: true,
       importedCount: importResult.total,
@@ -315,14 +369,59 @@ router.post('/scrape', async (_req, res) => {
     res.status(500).json({ message: error.message });
   } finally {
     client?.release();
-    databaseOperationInProgress = false;
+    releaseOperation();
+  }
+});
+
+router.post('/seed', async (_req, res) => {
+  if (!acquireOperation(res, 'seed')) return;
+  try {
+    const seedScript = path.join(storeAdminDir, 'scripts', 'seed.mjs');
+    await runProcess(process.execPath, [seedScript], {
+      cwd: storeAdminDir,
+      // The authenticated ADMIN action seeds the same database used by this server,
+      // including when PostgreSQL is reached through a Docker service hostname.
+      env: {
+        ...process.env,
+        SEED_TARGET: 'runtime',
+        ALLOW_NONLOCAL_SEED: 'true',
+      },
+      timeoutMs: 300_000,
+      onStdoutLine(line) {
+        const productsMatch = /^HF_SEED_PRODUCTS:(\d+):(\d+)$/.exec(line.trim());
+        if (productsMatch) {
+          databaseOperationProgress = {
+            ...databaseOperationProgress,
+            detailStep: Number(productsMatch[1]),
+            detailTotal: Number(productsMatch[2]),
+          };
+          return;
+        }
+        const match = /^HF_SEED_PROGRESS:([a-z_]+)$/.exec(line.trim());
+        const stage = match && seedProgressStages[match[1]];
+        if (stage) {
+          updateOperationProgress('seed', stage[0], stage[1], stage[2]);
+          if (match[1] === 'seed_products') {
+            databaseOperationProgress.detailStep = 0;
+            databaseOperationProgress.detailTotal = null;
+          }
+        }
+      },
+    });
+    updateOperationProgress('seed', 13, 13, 'Dữ liệu mẫu đã được cập nhật');
+    res.json({ success: true, message: 'Đã tạo/cập nhật dữ liệu mẫu thành công.' });
+  } catch (error) {
+    console.error('Demo data seed failed:', error);
+    res.status(500).json({ message: `Không thể tạo dữ liệu mẫu: ${error.message}` });
+  } finally {
+    releaseOperation();
   }
 });
 
 router.get('/database/backup', async (_req, res) => {
-  if (!acquireOperation(res)) return;
+  if (!acquireOperation(res, 'backup')) return;
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'hungfashion-backup-')).catch(error => {
-    databaseOperationInProgress = false;
+    releaseOperation();
     res.status(500).json({ message: error.message });
     return null;
   });
@@ -367,7 +466,7 @@ router.get('/database/backup', async (_req, res) => {
     } catch (cleanupError) {
       console.error('Could not remove the temporary database backup:', cleanupError);
     } finally {
-      databaseOperationInProgress = false;
+      releaseOperation();
     }
   }
 });
@@ -411,10 +510,10 @@ router.post('/database/restore', async (req, res) => {
     res.status(415).json({ message: 'Upload a PostgreSQL custom-format .dump file.' });
     return;
   }
-  if (!acquireOperation(res)) return;
+  if (!acquireOperation(res, 'restore')) return;
 
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'hungfashion-restore-')).catch(error => {
-    databaseOperationInProgress = false;
+    releaseOperation();
     res.status(500).json({ message: error.message });
     return null;
   });
@@ -452,7 +551,7 @@ router.post('/database/restore', async (req, res) => {
     } catch (cleanupError) {
       console.error('Could not remove the temporary database restore file:', cleanupError);
     } finally {
-      databaseOperationInProgress = false;
+      releaseOperation();
     }
   }
 });

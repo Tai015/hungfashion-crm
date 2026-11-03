@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { Kafka } from 'kafkajs';
+import { createKafkaClient } from './kafka.js';
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 // ── Cấu hình môi trường ───────────────────────────────────
@@ -14,6 +15,7 @@ import { pool } from './db.js';
 import { runMigrations } from './migrations.js';
 import { kafkaMetrics } from './kafka-metrics.js';
 import { startOutboxRelay } from './outbox-relay.js';
+import { writeOutboxEvent } from './outbox-writer.js';
 import { allowRoles, requireAuth } from './auth.js';
 import authRouter       from './routes/auth.js';
 import accountRouter   from './routes/account.js';
@@ -28,12 +30,20 @@ import surveyRouter    from './routes/survey.js';
 import reportRouter    from './routes/report.js';
 import settingsRouter  from './routes/settings.js';
 import chatRouter      from './routes/chat.js';
+import { CHAT_ROLES } from './chat-access.js';
+import loyaltyRouter   from './routes/loyalty.js';
+import demoPaymentRouter from './routes/demo-payment.js';
 
 const app  = express();
 const PORT = Number(process.env.PORT || 5000);
 if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
   throw new Error('PORT must be an integer between 1 and 65535.');
 }
+const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
+if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0) {
+  throw new Error('TRUST_PROXY_HOPS must be a non-negative integer.');
+}
+app.set('trust proxy', trustProxyHops);
 const databaseBrowserEnabled = process.env.ENABLE_DATABASE_BROWSER === 'true';
 const eventRateLimitWindowMs = Number(process.env.EVENT_RATE_LIMIT_WINDOW_MS || 1000);
 const eventRateLimitMax = Number(process.env.EVENT_RATE_LIMIT_MAX || 1200);
@@ -41,7 +51,8 @@ const outboxMaxBacklog = Number(process.env.OUTBOX_MAX_BACKLOG || 10000);
 const eventRateLimits = new Map();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
+app.use(demoPaymentRouter);
 
 // ── Health check ──────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
@@ -50,6 +61,7 @@ app.get('/api/health', (_req, res) => {
 
 // ── Hung Fashion API Routes ───────────────────────────────
 app.use('/api/auth', authRouter);
+app.use('/api/loyalty', requireAuth, allowRoles('KHACH_HANG'), loyaltyRouter);
 app.use('/api/accounts', requireAuth, allowRoles('ADMIN'), accountRouter);
 app.use('/api/employees', requireAuth, allowRoles('ADMIN', 'QL_NHAN_SU'), employeeRouter);
 app.use('/api/customers', requireAuth, allowRoles('ADMIN', 'QL_KHACH_HANG'), customerRouter);
@@ -62,15 +74,30 @@ app.use('/api/orders', requireAuth, (req, res, next) => {
   if (req.user.role_name === 'KHACH_HANG') {
     // Khách hàng chỉ được xật GET /mine*, POST / (tạo đơn), PATCH /:id/status (hủy)
     const isGetMine  = req.method === 'GET'   && req.path.startsWith('/mine');
+    const isPostDemoPaymentToken = req.method === 'POST'
+      && /^\/mine\/\d+\/demo-payment-token$/.test(req.path);
     const isPost     = req.method === 'POST'  && req.path === '/';
     const isCancel   = req.method === 'PATCH' && /^\/\d+\/status$/.test(req.path);
-    if (isGetMine || isPost || isCancel) return next();
+    if (isGetMine || isPostDemoPaymentToken || isPost || isCancel) return next();
     return res.status(403).json({ message: 'Bạn không có quyền thực hiện thao tác này.' });
   }
   return allowRoles('ADMIN', 'QL_BAN_HANG')(req, res, next);
 }, orderRouter);
-app.use('/api/promotions', requireAuth, allowRoles('ADMIN', 'QL_BAN_HANG', 'QL_KHACH_HANG'), promotionRouter);
+app.use('/api/promotions', requireAuth, (req, res, next) => {
+  if (req.user.role_name === 'KHACH_HANG') {
+    const canReadOwnWallet = req.method === 'GET' && req.path === '/mine';
+    const canValidateCoupon = req.method === 'GET' && req.path.startsWith('/validate/');
+    const canClaimCoupon = req.method === 'POST' && req.path === '/claim';
+    if (canReadOwnWallet || canValidateCoupon || canClaimCoupon) return next();
+    return res.status(403).json({ message: 'Bạn không có quyền thực hiện thao tác này.' });
+  }
+  return allowRoles('ADMIN', 'QL_BAN_HANG', 'QL_KHACH_HANG')(req, res, next);
+}, promotionRouter);
 app.use('/api/feedbacks', requireAuth, (req, res, next) => {
+  if (req.user.role_name === 'KHACH_HANG' && req.method === 'GET'
+    && (req.path === '/mine' || /^\/media\/\d+$/.test(req.path))) {
+    return next();
+  }
   const roles = req.method === 'POST'
     ? ['KHACH_HANG']
     : ['ADMIN', 'QL_KHACH_HANG'];
@@ -87,7 +114,7 @@ app.use('/api/surveys', requireAuth, (req, res, next) => {
 }, surveyRouter);
 app.use('/api/reports', requireAuth, allowRoles('ADMIN', 'QL_KHACH_HANG', 'QL_NHAN_SU', 'QL_KHO', 'QL_BAN_HANG'), reportRouter);
 app.use('/api/settings', requireAuth, allowRoles('ADMIN'), settingsRouter);
-app.use('/api/chat',    requireAuth, chatRouter);
+app.use('/api/chat',    requireAuth, allowRoles(...CHAT_ROLES), chatRouter);
 
 // ── Database Browser (chỉ cho phép truy cập từ máy local) ─
 function requireDatabaseBrowser(req, res, next) {
@@ -166,7 +193,7 @@ app.get('/api/database/tables/:tableName/rows', requireDatabaseBrowser, async (r
 });
 
 // ── Kafka Setup ───────────────────────────────────────────
-const kafka    = new Kafka({ clientId: 'store-admin-service', brokers: [process.env.KAFKA_BROKER] });
+const kafka    = createKafkaClient('store-admin-service');
 const consumer = kafka.consumer({ groupId: 'store-admin-group' });
 
 // Flag theo dõi Kafka đã sẵn sàng chưa
@@ -219,16 +246,19 @@ app.use('/api/events', eventRateLimit);
 
 async function ensureKafkaTopics() {
   const admin = kafka.admin();
-  await admin.connect();
-  const topics   = [{ topic: 'user-events' }, { topic: 'transaction-events' }];
-  const existing = await admin.listTopics();
-  for (const topic of topics) {
-    if (!existing.includes(topic.topic)) {
-      await admin.createTopics({ topics: [topic], waitForLeaders: true });
-      console.log(`Created Kafka topic: ${topic.topic}`);
+  try {
+    await admin.connect();
+    const topics   = [{ topic: 'user-events' }, { topic: 'transaction-events' }];
+    const existing = await admin.listTopics();
+    for (const topic of topics) {
+      if (!existing.includes(topic.topic)) {
+        await admin.createTopics({ topics: [topic], waitForLeaders: true });
+        console.log(`Created Kafka topic: ${topic.topic}`);
+      }
     }
+  } finally {
+    await admin.disconnect().catch(() => {});
   }
-  await admin.disconnect();
 }
 
 function textValue(value) {
@@ -322,7 +352,7 @@ function validateEvent(req, res, next) {
 }
 
 async function enqueueEvent(topic, req, res) {
-  const payload = req.body;
+  const payload = { ...req.body, userId: String(req.user.account_id) };
   const eventId = textValue(payload.eventId);
   const { rows: [existing] } = await pool.query(
     'SELECT 1 FROM outbox_events WHERE event_id = $1',
@@ -340,21 +370,21 @@ async function enqueueEvent(topic, req, res) {
   }
 
   const partitionKey = textValue(payload.userId);
-  const { rowCount } = await pool.query(
-    `INSERT INTO outbox_events (event_id, topic, partition_key, payload)
-     VALUES ($1, $2, $3, $4::jsonb)
-     ON CONFLICT (event_id) DO NOTHING`,
-    [eventId, topic, partitionKey, JSON.stringify(payload)]
-  );
+  const inserted = await writeOutboxEvent(pool, {
+    eventId,
+    topic,
+    partitionKey,
+    payload,
+  });
   return res.status(202).json({
     success: true,
     queued: true,
-    duplicate: rowCount === 0,
+    duplicate: !inserted,
     eventId,
   });
 }
 
-app.post('/api/events/user', validateEvent, async (req, res) => {
+app.post('/api/events/user', requireAuth, validateEvent, async (req, res) => {
   try {
     await enqueueEvent('user-events', req, res);
   } catch (err) {
@@ -362,7 +392,7 @@ app.post('/api/events/user', validateEvent, async (req, res) => {
   }
 });
 
-app.post('/api/events/transaction', validateEvent, async (req, res) => {
+app.post('/api/events/transaction', requireAuth, validateEvent, async (req, res) => {
   try {
     await enqueueEvent('transaction-events', req, res);
   } catch (err) {
@@ -392,6 +422,18 @@ app.get('/api/events/status', (_req, res) => {
   res.json({ kafkaReady, message: kafkaReady ? 'Kafka connected' : 'Kafka connecting...' });
 });
 
+if (process.env.SERVE_CLIENT === 'true') {
+  const clientDist = path.resolve(serverDir, '../client/dist');
+  if (!existsSync(path.join(clientDist, 'index.html'))) {
+    throw new Error('SERVE_CLIENT=true but client/dist/index.html was not found. Build the client before starting the server.');
+  }
+  app.use(express.static(clientDist, { index: false, maxAge: '1h' }));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    return res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
+
 // ── Khởi động server ──────────────────────────────────────
 async function waitForDatabase() {
   let lastError;
@@ -418,12 +460,16 @@ async function startServer() {
   await connectDatabase();
 
   // 2. Khởi động Express ngay — không chờ Kafka
-  app.listen(PORT, () => {
+  const listenHost = process.env.DEMO_PAYMENT === 'true' ? '0.0.0.0' : null;
+  const onListening = () => {
     console.log(`🚀 Hung Fashion API running at http://localhost:${PORT}`);
+    if (listenHost) console.log(`   Demo payment enabled; listening on ${listenHost}:${PORT} for LAN/tunnel access.`);
     console.log(`   Routes: /api/accounts | /api/customers | /api/products`);
     console.log(`           /api/inventory | /api/orders | /api/promotions`);
     console.log(`           /api/feedbacks | /api/surveys | /api/reports`);
-  });
+  };
+  if (listenHost) app.listen(PORT, listenHost, onListening);
+  else app.listen(PORT, onListening);
 
   startOutboxRelay().catch((err) => {
     console.error('Outbox relay stopped unexpectedly:', err);
@@ -435,22 +481,24 @@ async function startServer() {
 
 // Kafka chạy tách biệt, tự retry nếu lỗi
 async function connectKafka() {
-  const MAX_RETRIES = 10;
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+  let attempt = 0;
+  while (!kafkaReady) {
+    attempt += 1;
     try {
       await ensureKafkaTopics();
       await consumeEvents();
       kafkaReady = true;   // ← bật flag: từ giờ dùng Kafka thay vì DB fallback
       console.log('✅ Kafka connected');
-      return;
+      break;
     } catch (err) {
-      console.warn(`⚠️  Kafka attempt ${attempt}/${MAX_RETRIES} failed: ${err.message}`);
-      if (attempt < MAX_RETRIES) {
-        await new Promise(r => setTimeout(r, 3000 * attempt)); // backoff tăng dần
-      }
+      console.warn(`⚠️  Kafka attempt ${attempt} failed: ${err.message}`);
+      kafkaReady = false;
+      await consumer.disconnect().catch(() => {});
+      const retryDelayMs = Math.min(3000 * attempt, 30_000);
+      console.warn(`Kafka will retry in ${retryDelayMs}ms.`);
+      await new Promise(r => setTimeout(r, retryDelayMs));
     }
   }
-  console.error('❌ Kafka unavailable — events will be written to DB fallback; other APIs work normally');
 }
 
 startServer().catch((err) => {

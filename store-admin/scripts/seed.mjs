@@ -1,62 +1,91 @@
 import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { assertLocalPostgres, loadDbConfig, printDbConfig, serverDir, storeAdminDir } from './db-env.mjs';
+import { fileURLToPath } from 'node:url';
 import { scrapeCatalog } from './scrape-catalog.mjs';
 import { normalizeCatalog } from './normalize-catalog.mjs';
+import { createSeedClientConfig } from './seed-db-config.mjs';
 
 const require = createRequire(new URL('../server/package.json', import.meta.url));
 const pg = require('pg');
 const bcrypt = require('bcryptjs');
+const storeAdminDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const serverDir = path.join(storeAdminDir, 'server');
+const isolatedLocalSeed = process.env.SEED_ISOLATED_LOCAL === 'true';
+const seedTarget = process.env.SEED_TARGET || 'local';
+let dbHelpers;
+if (!isolatedLocalSeed) dbHelpers = await import('./db-env.mjs');
 
-const DEMO_PASSWORD = 'Demo@12345';
+if (!['local', 'aiven', 'runtime'].includes(seedTarget)) {
+  throw new Error('SEED_TARGET phải là local hoặc aiven.');
+}
+if (isolatedLocalSeed && seedTarget !== 'local') {
+  throw new Error('SEED_ISOLATED_LOCAL chỉ dùng cùng SEED_TARGET=local.');
+}
+
+const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD;
 const HASH_ROUNDS = 10;
+const LOCKED_DEMO_ACCOUNT = {
+  role: 'KHACH_HANG',
+  username: 'demo_khach_khoa',
+  email: 'demo-khach-khoa@hungfashion.local',
+  fullName: 'Khách Demo Đã Khóa',
+  status: 'Blocked',
+};
+const DEMO_PROMOTIONS = [
+  { code: 'DEMO10', name: 'Demo giảm 10%', promoType: 'Percent', value: 10, minOrder: 200000, maxDiscount: 100000 },
+  { code: 'DEMO50K', name: 'Demo giảm 50.000đ', promoType: 'FixedAmount', value: 50000, minOrder: 300000, maxDiscount: null },
+  { code: 'SURVEY10', name: 'Cảm ơn hoàn thành khảo sát', promoType: 'Percent', value: 10, minOrder: 100000, maxDiscount: 50000 },
+];
 
 const TEST_ACCOUNTS = [
-  { role: 'ADMIN', username: 'admin', email: 'admin@hungfashion.local', fullName: 'Nguyễn Quản Trị' },
-  { role: 'ADMIN', username: 'admin2', email: 'admin2@hungfashion.local', fullName: 'Quản Trị Dự Phòng' },
-  { role: 'QL_NHAN_SU', username: 'qlnhansu', email: 'nhansu@hungfashion.local', fullName: 'Trần Minh Châu' },
-  { role: 'QL_KHO', username: 'qlkho', email: 'kho@hungfashion.local', fullName: 'Lê Hoàng Nam' },
-  { role: 'QL_BAN_HANG', username: 'qlbanhang', email: 'banhang@hungfashion.local', fullName: 'Phạm Thị Hoa' },
-  { role: 'QL_KHACH_HANG', username: 'qlkhachhang', email: 'crm@hungfashion.local', fullName: 'Đỗ Thanh Tùng' },
-  { role: 'KHACH_HANG', username: 'khach1', email: 'khach1@hungfashion.local', fullName: 'Ngô Bảo An' },
-  { role: 'KHACH_HANG', username: 'khach2', email: 'khach2@hungfashion.local', fullName: 'Vũ Mai Linh' },
-  { role: 'KHACH_HANG', username: 'khach3', email: 'khach3@hungfashion.local', fullName: 'Bùi Đức Huy' },
+  { role: 'ADMIN', username: 'admin', email: 'admin@hungfashion.local', fullName: 'Demo Administrator' },
+  { role: 'ADMIN', username: 'admin2', email: 'admin2@hungfashion.local', fullName: 'Demo Admin Backup' },
+  { role: 'QL_NHAN_SU', username: 'qlnhansu', email: 'nhansu@hungfashion.local', fullName: 'Demo HR Manager' },
+  { role: 'QL_KHO', username: 'qlkho', email: 'kho@hungfashion.local', fullName: 'Demo Warehouse Manager' },
+  { role: 'QL_BAN_HANG', username: 'qlbanhang', email: 'banhang@hungfashion.local', fullName: 'Demo Sales Manager' },
+  { role: 'QL_KHACH_HANG', username: 'qlkhachhang', email: 'crm@hungfashion.local', fullName: 'Demo CRM Manager' },
+  { role: 'KHACH_HANG', username: 'khach1', email: 'khach1@hungfashion.local', fullName: 'Demo Customer 01' },
+  { role: 'KHACH_HANG', username: 'khach2', email: 'khach2@hungfashion.local', fullName: 'Demo Customer 02' },
+  { role: 'KHACH_HANG', username: 'khach3', email: 'khach3@hungfashion.local', fullName: 'Demo Customer 03' },
 ];
 
-const SUPPLIERS = [
-  { name: 'Công ty TNHH May mặc Á Đông', contact: 'Nguyễn Văn Khoa', phone: '0901234001', email: 'aodong@supplier.vn', address: '12 Nguyễn Trãi, Q.5, TP.HCM' },
-  { name: 'Nhà phân phối Denim Việt', contact: 'Lý Thu Hà', phone: '0901234002', email: 'denimviet@supplier.vn', address: '88 Cộng Hòa, Tân Bình, TP.HCM' },
-  { name: 'Xưởng giày dép Sài Gòn', contact: 'Phan Quốc Việt', phone: '0901234003', email: 'giaysg@supplier.vn', address: '45 Lê Văn Việt, TP. Thủ Đức' },
-  { name: 'Phụ kiện thời trang Minh Châu', contact: 'Đặng Ngọc Châu', phone: '0901234004', email: 'minhchau@supplier.vn', address: '6 Hai Bà Trưng, Q.1, TP.HCM' },
-];
+const SUPPLIERS = Array.from({ length: 4 }, (_, index) => ({
+  name: `Demo Supplier ${String(index + 1).padStart(2, '0')}`,
+  contact: `Demo Contact ${String(index + 1).padStart(2, '0')}`,
+  phone: `00000000${String(index + 1).padStart(2, '0')}`,
+  email: `supplier-${String(index + 1).padStart(2, '0')}@hungfashion.local`,
+  address: `Synthetic address ${String(index + 1).padStart(2, '0')}`,
+}));
 
-const EXTRA_CUSTOMERS = [
-  ['Nguyễn Thị Lan', 'Female', '1998-04-12', 'Áo thun'],
-  ['Trần Văn Hùng', 'Male', '1986-11-03', 'Quần jean'],
-  ['Lê Thị Hồng', 'Female', '2003-07-21', 'Váy'],
-  ['Phạm Quốc Bảo', 'Male', '1975-01-30', 'Áo sơ mi'],
-  ['Hoàng Thị Mỹ', 'Female', '1992-09-08', 'Áo khoác'],
-  ['Đinh Văn Tài', 'Male', '2001-12-15', 'Giày dép'],
-  ['Võ Ngọc Ánh', 'Female', '1968-05-19', 'Phụ kiện'],
-  ['Bùi Minh Khang', 'Male', '1995-02-27', 'Quần kaki'],
-  ['Đặng Thu Trang', 'Female', '1989-08-04', 'Váy'],
-  ['Ngô Nhật Nam', 'Male', '2005-03-11', 'Áo thun'],
-  ['Lý Phương Chi', 'Female', '1979-10-22', 'Áo khoác'],
-  ['Trịnh Đức Long', 'Male', '1990-06-17', 'Quần jean'],
-  ['Mai Thị Hạnh', 'Female', '2000-01-05', 'Phụ kiện'],
-  ['Hồ Văn Phúc', 'Male', '1959-12-01', 'Áo sơ mi'],
-  ['Cao Ngọc Diệp', 'Female', '1997-07-09', 'Áo thun'],
-  ['Phùng Thành Đạt', 'Male', '1983-04-28', 'Giày dép'],
-  ['Tạ Khánh Linh', 'Female', '2004-11-14', 'Váy'],
-  ['Dương Anh Tuấn', 'Male', '1971-09-16', 'Quần kaki'],
-  ['Kiều Thanh Hà', 'Female', '1964-02-08', 'Phụ kiện'],
-  ['Quách Hoàng Yến', 'Female', '1993-05-25', 'Áo khoác'],
-];
+const EXTRA_CUSTOMERS = Array.from({ length: 20 }, (_, index) => [
+  `Demo Customer ${String(index + 1).padStart(2, '0')}`,
+  index % 2 ? 'Female' : 'Male',
+  `19${String(70 + index).padStart(2, '0')}-06-15`,
+  ['Áo thun', 'Quần jean', 'Váy', 'Áo khoác'][index % 4],
+]);
 
 const ORDER_STATUSES = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Refunded'];
 const VARIANT_SIZES = ['S', 'M', 'L'];
 const VARIANT_COLORS = ['Đen', 'Trắng', 'Xanh Navy'];
+
+if (typeof DEMO_PASSWORD !== 'string' || DEMO_PASSWORD.length < 8 || Buffer.byteLength(DEMO_PASSWORD, 'utf8') > 72) {
+  throw new Error('Set SEED_DEMO_PASSWORD to a value between 8 and 72 UTF-8 bytes before seeding.');
+}
+
+function getDatabaseConfig() {
+  if (!isolatedLocalSeed) return dbHelpers.loadDbConfig();
+  const host = process.env.SEED_DB_HOST;
+  const port = Number(process.env.SEED_DB_PORT);
+  const database = process.env.SEED_DB_NAME;
+  const user = process.env.SEED_DB_USER;
+  const password = process.env.SEED_DB_PASSWORD;
+  if (!['127.0.0.1', 'localhost'].includes(host) || !Number.isInteger(port) || port < 1
+    || !database || !user || !password) {
+    throw new Error('Isolated seed requires explicit SEED_DB_* values and a loopback PostgreSQL host.');
+  }
+  return { host, port, database, user, password, serverDir, storeAdminDir };
+}
 
 function mulberry32(seed) {
   return function next() {
@@ -67,17 +96,18 @@ function mulberry32(seed) {
   };
 }
 
-async function upsertAccount(client, { role, username, email, passwordHash }) {
+async function upsertAccount(client, { role, username, email, passwordHash, status = 'Active' }) {
   const { rows: [row] } = await client.query(
     `INSERT INTO account (role_id, username, password_hash, email, status)
-     SELECT role_id, $1, $2, $3, 'Active' FROM role WHERE role_name = $4
+     SELECT role_id, $1, $2, $3, $5 FROM role WHERE role_name = $4
      ON CONFLICT (email) DO UPDATE
        SET password_hash = EXCLUDED.password_hash,
            username = EXCLUDED.username,
            role_id = EXCLUDED.role_id,
+           status = EXCLUDED.status,
            updated_at = NOW()
      RETURNING account_id`,
-    [username, passwordHash, email, role],
+    [username, passwordHash, email, role, status],
   );
   return row.account_id;
 }
@@ -133,6 +163,7 @@ async function seed(client) {
   const catalog = clean.products || [];
   if (catalog.length < 80) throw new Error('Dữ liệu clean quá ít, dừng seed sản phẩm.');
 
+  console.log('HF_SEED_PROGRESS:seed_roles');
   console.log('1. Vai trò, quyền (schema đã seed, bổ sung nếu thiếu)');
   await client.query(`
     INSERT INTO role (role_name, description) VALUES
@@ -145,17 +176,19 @@ async function seed(client) {
     ON CONFLICT (role_name) DO NOTHING
   `);
 
+  console.log('HF_SEED_PROGRESS:seed_accounts');
   console.log('2. Tài khoản test');
   const accountIds = {};
   for (const acc of TEST_ACCOUNTS) {
     accountIds[acc.email] = await upsertAccount(client, { ...acc, passwordHash });
   }
-  await ensureEmployee(client, accountIds['admin@hungfashion.local'], 'Nguyễn Quản Trị', 'Quản trị viên');
-  await ensureEmployee(client, accountIds['admin2@hungfashion.local'], 'Quản Trị Dự Phòng', 'Quản trị viên');
-  await ensureEmployee(client, accountIds['nhansu@hungfashion.local'], 'Trần Minh Châu', 'Quản lý nhân sự');
-  await ensureEmployee(client, accountIds['kho@hungfashion.local'], 'Lê Hoàng Nam', 'Quản lý kho');
-  await ensureEmployee(client, accountIds['banhang@hungfashion.local'], 'Phạm Thị Hoa', 'Quản lý bán hàng');
-  await ensureEmployee(client, accountIds['crm@hungfashion.local'], 'Đỗ Thanh Tùng', 'Quản lý khách hàng');
+  accountIds[LOCKED_DEMO_ACCOUNT.email] = await upsertAccount(client, { ...LOCKED_DEMO_ACCOUNT, passwordHash });
+  await ensureEmployee(client, accountIds['admin@hungfashion.local'], 'Demo Employee Admin 01', 'Quản trị viên');
+  await ensureEmployee(client, accountIds['admin2@hungfashion.local'], 'Demo Employee Admin 02', 'Quản trị viên');
+  await ensureEmployee(client, accountIds['nhansu@hungfashion.local'], 'Demo Employee HR 01', 'Quản lý nhân sự');
+  await ensureEmployee(client, accountIds['kho@hungfashion.local'], 'Demo Employee Warehouse 01', 'Quản lý kho');
+  await ensureEmployee(client, accountIds['banhang@hungfashion.local'], 'Demo Employee Sales 01', 'Quản lý bán hàng');
+  await ensureEmployee(client, accountIds['crm@hungfashion.local'], 'Demo Employee CRM 01', 'Quản lý khách hàng');
 
   const { rows: [warehouseStaff] } = await client.query(
     'SELECT employee_id FROM employee WHERE account_id = $1',
@@ -170,6 +203,7 @@ async function seed(client) {
     [accountIds['crm@hungfashion.local']],
   );
 
+  console.log('HF_SEED_PROGRESS:seed_suppliers');
   console.log('3. Nhà cung cấp');
   for (const s of SUPPLIERS) {
     await client.query(
@@ -184,6 +218,7 @@ async function seed(client) {
     [SUPPLIERS.map((s) => s.name)],
   );
 
+  console.log('HF_SEED_PROGRESS:seed_products');
   console.log('4. Danh mục, thương hiệu, sản phẩm, biến thể, hình');
   const { rows: sizeRows } = await client.query(
     'SELECT size_id, size_name FROM size WHERE size_name = ANY($1)',
@@ -221,6 +256,14 @@ async function seed(client) {
       const { rows: [found] } = await client.query('SELECT product_id FROM product WHERE product_name = $1', [item.productName]);
       productId = found.product_id;
     }
+    // Refresh prices for products owned by this imported catalog; keep order history unchanged.
+    await client.query(
+      `UPDATE product p
+       SET import_price = $2, selling_price = $3, updated_at = NOW()
+       FROM brand b
+       WHERE p.product_id = $1 AND p.brand_id = b.brand_id AND b.brand_name = $4`,
+      [productId, item.importPrice, item.sellingPrice, item.brandName],
+    );
     for (const [imgIndex, url] of item.images.entries()) {
       await client.query(
         `INSERT INTO product_image (product_id, image_url, is_primary, display_order)
@@ -240,8 +283,11 @@ async function seed(client) {
       [productId, sizeByName[sizeName], colorByName[colorName], sku, item.sellingPrice],
     );
     variantIds.push({ variantId: variant.variant_id, unitPrice: item.importPrice, qty: 12 + (index % 20) });
+    const completed = index + 1;
+    console.log(`HF_SEED_PRODUCTS:${completed}:${catalog.length}`);
   }
 
+  console.log('HF_SEED_PROGRESS:seed_receipts');
   console.log('5. Phiếu nhập kho');
   const { rows: [existingReceipt] } = await client.query(
     `SELECT receipt_id FROM import_receipt WHERE note = 'SEED-IMPORT-CATALOG'`,
@@ -276,6 +322,7 @@ async function seed(client) {
     await client.query('UPDATE import_receipt SET total_amount = total_amount + $2 WHERE receipt_id = $1', [receiptId, receiptTotal]);
   }
 
+  console.log('HF_SEED_PROGRESS:seed_customers');
   console.log('6. Khách hàng');
   const customerIds = [];
   const guestAccounts = TEST_ACCOUNTS.filter((a) => a.role === 'KHACH_HANG');
@@ -290,9 +337,9 @@ async function seed(client) {
       fullName: acc.fullName,
       gender: guestMeta[i].gender,
       dob: guestMeta[i].dob,
-      phone: `091200000${i + 1}`,
+      phone: `000000000${i + 1}`,
       email: acc.email,
-      address: `${10 + i} Nguyễn Huệ, Q.1, TP.HCM`,
+    address: `Synthetic demo address ${String(i + 1).padStart(2, '0')}`,
       tier: i === 0 ? 'Gold' : 'Silver',
       points: 400 + i * 80,
       interest: guestMeta[i].interest,
@@ -304,9 +351,9 @@ async function seed(client) {
       fullName,
       gender,
       dob,
-      phone: `0987${String(100000 + i).slice(-6)}`,
+      phone: `000000${String(i + 1).padStart(4, '0')}`,
       email: `khach-mau-${String(i + 1).padStart(2, '0')}@hungfashion.local`,
-      address: `${20 + i} Cách Mạng Tháng 8, TP.HCM`,
+      address: `Synthetic demo address ${String(i + 21).padStart(2, '0')}`,
       tier: ['New', 'Regular', 'Silver', 'Gold', 'VIP'][i % 5],
       points: 50 + i * 70,
       interest,
@@ -314,6 +361,26 @@ async function seed(client) {
     customerIds.push(id);
   }
 
+  console.log('6.1 Khách demo cho thao tác khóa và xóa');
+  await ensureCustomer(client, {
+    accountId: accountIds[LOCKED_DEMO_ACCOUNT.email],
+    fullName: LOCKED_DEMO_ACCOUNT.fullName,
+    gender: 'Other', dob: '1995-01-01', phone: '0000000101',
+    email: LOCKED_DEMO_ACCOUNT.email, address: 'Hồ sơ demo trạng thái khóa',
+    tier: 'Regular', points: 0,
+  });
+  await ensureCustomer(client, {
+    fullName: 'Khách Demo Chưa Có Lịch Sử', gender: 'Female', dob: '1998-06-15',
+    phone: '0000000102', email: 'demo-xoa-khach@hungfashion.local',
+    address: 'Hồ sơ demo có thể xóa', tier: 'New', points: 0,
+  });
+  const orderBlockerCustomerId = await ensureCustomer(client, {
+    fullName: 'Khách Demo Đã Có Đơn', gender: 'Male', dob: '1992-03-20',
+    phone: '0000000103', email: 'demo-chan-xoa@hungfashion.local',
+    address: 'Hồ sơ demo có đơn hàng', tier: 'Regular', points: 0,
+  });
+
+  console.log('HF_SEED_PROGRESS:seed_orders');
   console.log('7. Đơn hàng');
   const rand = mulberry32(841065);
   const { rows: sellable } = await client.query(
@@ -350,6 +417,30 @@ async function seed(client) {
     );
   }
 
+  const demoBlockerOrderNote = 'SEED-ORDER-DEMO-DELETE-BLOCKER';
+  const { rows: [existingDemoBlockerOrder] } = await client.query(
+    'SELECT order_id FROM "order" WHERE note=$1', [demoBlockerOrderNote],
+  );
+  if (!existingDemoBlockerOrder) {
+    const [firstVariant, secondVariant] = [sellable[0], sellable[1] || sellable[0]];
+    const subtotal = Number(firstVariant.price) + Number(secondVariant.price);
+    const { rows: [order] } = await client.query(
+      `INSERT INTO "order" (customer_id, employee_id, order_status, subtotal, discount_amt, total_amount, note, order_channel)
+       VALUES ($1,$2,'Confirmed',$3,0,$3,$4,'Website') RETURNING order_id`,
+      [orderBlockerCustomerId, salesStaff.employee_id, subtotal, demoBlockerOrderNote],
+    );
+    await client.query(
+      `INSERT INTO order_detail (order_id, variant_id, quantity, unit_price)
+       VALUES ($1,$2,1,$3),($1,$4,1,$5)`,
+      [order.order_id, firstVariant.variant_id, firstVariant.price, secondVariant.variant_id, secondVariant.price],
+    );
+    await client.query(
+      `INSERT INTO payment (order_id, method, status, amount)
+       VALUES ($1,'Cash','Pending',$2) ON CONFLICT (order_id) DO NOTHING`,
+      [order.order_id, subtotal],
+    );
+  }
+
   await client.query(`
     UPDATE product_variant pv
     SET quantity = GREATEST(
@@ -365,6 +456,22 @@ async function seed(client) {
     WHERE pv.sku LIKE 'FS-%'
   `);
 
+  console.log('HF_SEED_PROGRESS:seed_promotions');
+  console.log('7.1 Khuyến mãi demo');
+  for (const promotion of DEMO_PROMOTIONS) {
+    await client.query(
+      `INSERT INTO promotion (code, name, promo_type, value, min_order, max_discount, start_date, end_date, is_active, created_by)
+       VALUES ($1,$2,$3::promotion_type,$4,$5,$6,CURRENT_DATE - 1,CURRENT_DATE + 180,TRUE,$7)
+       ON CONFLICT (code) DO UPDATE SET
+         name=EXCLUDED.name, promo_type=EXCLUDED.promo_type, value=EXCLUDED.value,
+         min_order=EXCLUDED.min_order, max_discount=EXCLUDED.max_discount,
+         start_date=EXCLUDED.start_date, end_date=EXCLUDED.end_date,
+         is_active=TRUE, created_by=EXCLUDED.created_by`,
+      [promotion.code, promotion.name, promotion.promoType, promotion.value, promotion.minOrder, promotion.maxDiscount, salesStaff.employee_id],
+    );
+  }
+
+  console.log('HF_SEED_PROGRESS:seed_feedback');
   console.log('8. Phản hồi sản phẩm');
   const { rows: productRows } = await client.query(
     `SELECT product_id FROM product WHERE product_name IN (SELECT product_name FROM product LIMIT 20) ORDER BY product_id LIMIT 12`,
@@ -393,6 +500,7 @@ async function seed(client) {
     );
   }
 
+  console.log('HF_SEED_PROGRESS:seed_surveys');
   console.log('9. Khảo sát');
   const { rows: [survey] } = await client.query(
     `INSERT INTO survey (created_by, title, description, status, start_date, end_date)
@@ -477,27 +585,32 @@ async function seed(client) {
   }
 }
 
-const config = loadDbConfig();
-printDbConfig(config);
-assertLocalPostgres(config);
-
-await scrapeCatalog();
-await normalizeCatalog();
-
-const client = new pg.Client({
-  host: config.host,
-  port: config.port,
-  user: config.user,
-  password: config.password,
-  database: config.database,
+const config = getDatabaseConfig();
+const clientConfig = createSeedClientConfig({
+  target: seedTarget,
+  config,
+  sslEnabled: process.env.POSTGRES_SSL,
+  caPath: process.env.POSTGRES_CA_PATH,
+  projectRoot: storeAdminDir,
+  allowRuntimeTarget: process.env.ALLOW_NONLOCAL_SEED === 'true',
 });
+
+if (process.env.SEED_USE_EXISTING_CATALOG !== 'true') {
+  console.log('HF_SEED_PROGRESS:scrape_catalog');
+  await scrapeCatalog();
+  console.log('HF_SEED_PROGRESS:normalize_catalog');
+  await normalizeCatalog();
+}
+
+console.log('HF_SEED_PROGRESS:connect_database');
+const client = new pg.Client(clientConfig);
 await client.connect();
 try {
   await client.query('BEGIN');
   await seed(client);
   await client.query('COMMIT');
   console.log('Seed hoàn tất (idempotent).');
-  console.log(`Mật khẩu mọi tài khoản test: ${DEMO_PASSWORD}`);
+  console.log('Mật khẩu tài khoản seed lấy từ SEED_DEMO_PASSWORD; không in giá trị.');
 } catch (error) {
   await client.query('ROLLBACK');
   console.error('Seed thất bại:', error.message);

@@ -1,14 +1,14 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { apiFetch, checkRuntimeServices, TOKEN_KEY } from './api';
+import { apiFetch, checkRuntimeServices, subscribeToChatEvents, TOKEN_KEY } from './api';
 import AuthScreen from './AuthScreen';
 const CustomerPortal = lazy(() => import('./CustomerPortal'));
 
-import AppShell from './components/AppShell';
 import Spinner from './components/Spinner';
 
 import { publishTelemetry } from './utils/telemetry';
+import { runPageTransition } from './utils/pageTransition';
 
-const DashboardView = lazy(() => import('./views/DashboardView'));
+const DashboardPage = lazy(() => import('./views/DashboardPage'));
 const CustomersView = lazy(() => import('./views/CustomersView'));
 const ProductsView = lazy(() => import('./views/ProductsView'));
 const FeedbacksView = lazy(() => import('./views/FeedbacksView'));
@@ -17,6 +17,11 @@ const SettingsView = lazy(() => import('./views/SettingsView'));
 const AccountsView = lazy(() => import('./views/AccountsView'));
 const OperationsView = lazy(() => import('./views/OperationsView'));
 const AuditLogView = lazy(() => import('./views/AuditLogView'));
+const EmployeesView = lazy(() => import('./views/EmployeesView'));
+const InventoryManagementView = lazy(() => import('./views/InventoryManagementView'));
+const PromotionsView = lazy(() => import('./views/PromotionsView'));
+const CustomerSupportChatView = lazy(() => import('./views/CustomerSupportChatView'));
+const ReportsView = lazy(() => import('./views/ReportsView'));
 
 const showBackendWarning = async () => {
   const { default: Swal } = await import('sweetalert2');
@@ -46,16 +51,17 @@ const ROLE_LABELS = {
 
 const ROLE_NAVIGATION = {
   ADMIN: [
-    ['dashboard', 'Tổng quan'], ['accounts', 'Tài khoản'], ['customers', 'Khách hàng'],
-    ['products', 'Sản phẩm'], ['feedbacks', 'Phản hồi'], ['surveys', 'Khảo sát'],
+    ['dashboard', 'Tổng quan'], ['reports', 'Báo cáo'], ['accounts', 'Tài khoản'], ['customers', 'Khách hàng'], ['orders', 'Đơn hàng'],
+    ['products', 'Sản phẩm'], ['employees', 'Nhân viên'], ['inventory', 'Tồn kho'],
+    ['promotions', 'Khuyến mãi'], ['feedbacks', 'Phản hồi'], ['surveys', 'Khảo sát'], ['chat', 'Trò chuyện CSKH'],
     ['audit', 'Nhật ký'], ['settings', 'Cài đặt'],
   ],
   QL_KHACH_HANG: [
-    ['dashboard', 'Tổng quan CRM'], ['customers', 'Khách hàng'], ['feedbacks', 'Phản hồi'], ['surveys', 'Khảo sát'],
+    ['dashboard', 'Tổng quan'], ['reports', 'Báo cáo'], ['customers', 'Khách hàng'], ['chat', 'Trò chuyện CSKH'], ['feedbacks', 'Phản hồi'], ['surveys', 'Khảo sát'],
   ],
-  QL_NHAN_SU: [['employees', 'Nhân viên'], ['dashboard', 'Báo cáo']],
-  QL_KHO: [['products', 'Sản phẩm'], ['inventory', 'Tồn kho'], ['receipts', 'Phiếu kho']],
-  QL_BAN_HANG: [['orders', 'Đơn hàng'], ['promotions', 'Khuyến mãi'], ['dashboard', 'Báo cáo']],
+  QL_NHAN_SU: [['dashboard', 'Tổng quan'], ['reports', 'Báo cáo'], ['employees', 'Nhân viên']],
+  QL_KHO: [['dashboard', 'Tổng quan'], ['reports', 'Báo cáo'], ['products', 'Sản phẩm'], ['inventory', 'Tồn kho']],
+  QL_BAN_HANG: [['dashboard', 'Tổng quan'], ['reports', 'Báo cáo'], ['orders', 'Đơn hàng'], ['promotions', 'Khuyến mãi']],
 };
 
 const ROLE_ROUTE_PREFIX = {
@@ -81,7 +87,8 @@ function App() {
   const [view, setView] = useState(sectionFromHash);
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const pageViewTracked = useRef(false);
+  const [staffUnreadChatCount, setStaffUnreadChatCount] = useState(0);
+  const pageViewTracked = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -105,17 +112,37 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!pageViewTracked.current) {
-      pageViewTracked.current = true;
+    const accountId = user?.account_id;
+    if (accountId && pageViewTracked.current !== accountId) {
+      pageViewTracked.current = accountId;
       publishTelemetry('user', { eventType: 'page_view' }).catch(() => {});
     }
-  }, []);
+  }, [user?.account_id]);
+
+  useEffect(() => {
+    if (!user?.account_id) return undefined;
+    const heartbeat = async () => {
+      try {
+        const session = await apiFetch('/api/auth/heartbeat', { method: 'POST' });
+        if (session.role && session.role !== user.role) {
+          setUser(await apiFetch('/api/auth/me'));
+        }
+      } catch { /* keep retrying on the next heartbeat */ }
+    };
+    heartbeat();
+    const timer = window.setInterval(heartbeat, 30000);
+    return () => window.clearInterval(timer);
+  }, [user?.account_id, user?.role]);
 
   useEffect(() => {
     const token = window.localStorage.getItem(TOKEN_KEY);
     let active = true;
-    const expire = () => { setUser(null); setView('dashboard'); };
+    const expire = () => { pageViewTracked.current = null; setUser(null); setView('dashboard'); };
+    const handleStorage = event => {
+      if (event.key === TOKEN_KEY && !event.newValue) expire();
+    };
     window.addEventListener('auth:expired', expire);
+    window.addEventListener('storage', handleStorage);
     if (!token) setAuthLoading(false);
     else {
       apiFetch('/api/auth/me')
@@ -123,17 +150,48 @@ function App() {
         .catch(() => { if (active) setUser(null); })
         .finally(() => { if (active) setAuthLoading(false); });
     }
-    return () => { active = false; window.removeEventListener('auth:expired', expire); };
+    return () => {
+      active = false;
+      window.removeEventListener('auth:expired', expire);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   const recordNavigation = (section) => {
-    setView(section);
-    window.location.hash = roleRoute(role, section);
+    runPageTransition(() => {
+      setView(section);
+      window.location.hash = roleRoute(role, section);
+    });
     publishTelemetry('user', { eventType: 'navigation_click', section }).catch(() => {});
   };
 
   const role = user?.role;
-  const navItems = ROLE_NAVIGATION[role] || [];
+  useEffect(() => {
+    let active = true;
+    if (role !== 'QL_KHACH_HANG') {
+      setStaffUnreadChatCount(0);
+      return () => { active = false; };
+    }
+    const refreshUnread = async () => {
+      try {
+        const conversations = await apiFetch('/api/chat');
+        const unread = conversations.reduce((total, conversation) => total + (Number(conversation.unread_count) || 0), 0);
+        if (active) setStaffUnreadChatCount(unread);
+      } catch { /* retain the last known count during a temporary disconnect */ }
+    };
+    refreshUnread();
+    const unsubscribe = subscribeToChatEvents(refreshUnread);
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [role, user?.account_id]);
+
+  const navItems = (ROLE_NAVIGATION[role] || []).map(([key, label]) => (
+    key === 'chat' && role === 'QL_KHACH_HANG'
+      ? [key, label, staffUnreadChatCount]
+      : [key, label]
+  ));
   useEffect(() => {
     if (!role || role === 'KHACH_HANG') return undefined;
     const syncRoute = () => {
@@ -150,13 +208,16 @@ function App() {
   }, [role]);
 
   const logout = () => {
-    window.localStorage.removeItem(TOKEN_KEY);
-    setUser(null);
-    setView('dashboard');
-    window.location.hash = '';
+    pageViewTracked.current = null;
+    apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {}).finally(() => {
+      window.localStorage.removeItem(TOKEN_KEY);
+      setUser(null);
+      setView('dashboard');
+      window.location.hash = '';
+    });
   };
 
-  if (authLoading) return <main className="grid min-h-screen place-items-center"><Spinner /></main>;
+  if (authLoading) return <main className="app-loading-screen"><Spinner /></main>;
   if (!user) return <AuthScreen onAuthenticated={authenticatedUser => {
     setUser(authenticatedUser);
     setView(authenticatedUser.role === 'KHACH_HANG' ? 'catalog' : 'dashboard');
@@ -164,42 +225,36 @@ function App() {
       ? '#/khach-hang/catalog'
       : roleRoute(authenticatedUser.role, 'dashboard');
   }} />;
-  if (role === 'KHACH_HANG') return <Suspense fallback={<main className="grid min-h-screen place-items-center"><Spinner /></main>}><CustomerPortal user={user} onUserUpdated={setUser} onLogout={logout} /></Suspense>;
-
+  if (role === 'KHACH_HANG') return <Suspense fallback={<main className="app-loading-screen"><Spinner /></main>}><CustomerPortal user={user} onUserUpdated={setUser} onLogout={logout} /></Suspense>;
+  if (view === 'dashboard') return <Suspense fallback={<main className="app-loading-screen"><Spinner /></main>}>
+    <DashboardPage userName={user.full_name || user.username} roleLabel={ROLE_LABELS[role] || role} userRole={role} navItems={navItems} onNavigate={recordNavigation} onLogout={logout} />
+  </Suspense>;
   const renderView = () => {
     switch (view) {
-      case 'dashboard': return <DashboardView userRole={role} userName={user.full_name || user.username} />;
+      case 'dashboard': return null;
+      case 'reports': return <ReportsView userRole={role} />;
       case 'customers': return <CustomersView userRole={role} />;
       case 'products': return <ProductsView />;
       case 'feedbacks': return <FeedbacksView />;
+      case 'chat': return <CustomerSupportChatView user={user} />;
       case 'surveys': return <SurveysView />;
       case 'settings': return <SettingsView />;
-      case 'accounts': return <AccountsView />;
+      case 'accounts': return <AccountsView currentAccountId={user.account_id} />;
       case 'audit': return <AuditLogView />;
-      case 'employees': return <OperationsView type="employees" />;
-      case 'inventory': return <OperationsView type="inventory" />;
-      case 'receipts': return <OperationsView type="receipts" />;
+      case 'employees': return <EmployeesView />;
+      case 'inventory': return <InventoryManagementView initialTab="stock" />;
       case 'orders': return <OperationsView type="orders" />;
-      case 'promotions': return <OperationsView type="promotions" />;
-      default: return <DashboardView userRole={role} userName={user.full_name || user.username} />;
+      case 'promotions': return <PromotionsView />;
+      default: return null;
     }
   };
 
-  return (
-    <AppShell
-      brand="Hung Fashion"
-      userName={user.full_name || user.username}
-      roleLabel={ROLE_LABELS[role] || role}
-      navItems={navItems}
-      active={view}
-      onNav={recordNavigation}
-      onLogout={logout}
-    >
-      <Suspense fallback={<div className="grid min-h-64 place-items-center"><Spinner /></div>}>
-        {renderView()}
-      </Suspense>
-    </AppShell>
-  );
+  return <Suspense fallback={<main className="app-loading-screen"><Spinner /></main>}>
+    <DashboardPage userName={user.full_name || user.username} roleLabel={ROLE_LABELS[role] || role}
+      userRole={role} navItems={navItems} onNavigate={recordNavigation} onLogout={logout} initialView={view}>
+      {renderView()}
+    </DashboardPage>
+  </Suspense>;
 }
 
 export default App;

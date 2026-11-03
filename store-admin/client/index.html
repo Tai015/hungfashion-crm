@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hung Fashion · Glassy Dashboard</title>
+    <script>
+      (() => {
+        try {
+          const theme = localStorage.getItem('hung-fashion-theme');
+          if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+        } catch { /* Theme preference is optional when storage is unavailable. */ }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@380;500;600;700&display=swap" rel="stylesheet" />

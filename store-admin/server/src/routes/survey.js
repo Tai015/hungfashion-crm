@@ -3,13 +3,29 @@ import { pool } from '../db.js';
 
 const router = Router();
 const QUESTION_TYPES = new Set(['SingleChoice', 'MultiChoice', 'Text', 'Rating']);
+const GENDERS = new Set(['Male', 'Female', 'Other']);
+const CUSTOMER_TIERS = new Set(['New', 'Regular', 'Silver', 'Gold', 'VIP']);
 
 function validateSurveyPayload(body) {
-  const { title, description, questions } = body || {};
+  const {
+    title, description, questions, target_gender, target_tier,
+    min_age, max_age, target_interest_id, reward_promotion_id,
+  } = body || {};
+  const minAge = min_age == null || min_age === '' ? null : Number(min_age);
+  const maxAge = max_age == null || max_age === '' ? null : Number(max_age);
+  const interestId = target_interest_id == null || target_interest_id === '' ? null : Number(target_interest_id);
+  const rewardPromotionId = reward_promotion_id == null || reward_promotion_id === '' ? null : Number(reward_promotion_id);
   if (typeof title !== 'string' || !title.trim() || title.trim().length > 300
     || (description != null && (typeof description !== 'string' || description.length > 2000))
+    || (target_gender != null && target_gender !== '' && !GENDERS.has(target_gender))
+    || (target_tier != null && target_tier !== '' && !CUSTOMER_TIERS.has(target_tier))
+    || (minAge !== null && (!Number.isInteger(minAge) || minAge < 0 || minAge > 120))
+    || (maxAge !== null && (!Number.isInteger(maxAge) || maxAge < 0 || maxAge > 120))
+    || (minAge !== null && maxAge !== null && minAge > maxAge)
+    || (interestId !== null && (!Number.isInteger(interestId) || interestId < 1))
+    || (rewardPromotionId !== null && (!Number.isInteger(rewardPromotionId) || rewardPromotionId < 1))
     || !Array.isArray(questions) || questions.length < 1 || questions.length > 50) {
-    return 'Khảo sát cần tiêu đề hợp lệ và từ 1 đến 50 câu hỏi.';
+    return 'Thông tin khảo sát, bộ lọc khách hàng hoặc phần thưởng không hợp lệ.';
   }
 
   for (const question of questions) {
@@ -34,6 +50,40 @@ function validateSurveyPayload(body) {
   return null;
 }
 
+function addRecipientTargetFilters(survey, conditions, params, purchaseDays = null) {
+  conditions.push("a.status = 'Active'");
+  if (survey.target_gender) {
+    params.push(survey.target_gender);
+    conditions.push(`c.gender = $${params.length}`);
+  }
+  if (survey.target_tier) {
+    params.push(survey.target_tier);
+    conditions.push(`c.customer_tier = $${params.length}`);
+  }
+  if (survey.min_age !== null) {
+    params.push(survey.min_age);
+    conditions.push(`EXTRACT(YEAR FROM AGE(c.date_of_birth)) >= $${params.length}`);
+  }
+  if (survey.max_age !== null) {
+    params.push(survey.max_age);
+    conditions.push(`EXTRACT(YEAR FROM AGE(c.date_of_birth)) <= $${params.length}`);
+  }
+  if (survey.target_interest_id !== null) {
+    params.push(survey.target_interest_id);
+    conditions.push(`EXISTS (
+      SELECT 1 FROM customer_interest ci
+      WHERE ci.customer_id=c.customer_id AND ci.interest_id=$${params.length}
+    )`);
+  }
+  if (purchaseDays !== null) {
+    params.push(purchaseDays);
+    conditions.push(`c.customer_id IN (
+      SELECT DISTINCT customer_id FROM "order"
+      WHERE ordered_at >= NOW() - INTERVAL '1 day' * $${params.length}
+    )`);
+  }
+}
+
 async function insertSurveyQuestions(client, surveyId, questions) {
   for (const [index, question] of questions.entries()) {
     const { rows: [savedQuestion] } = await client.query(
@@ -51,10 +101,26 @@ async function insertSurveyQuestions(client, surveyId, questions) {
   }
 }
 
+async function ensureRewardPromotion(client, promotionId) {
+  if (promotionId == null || promotionId === '') return null;
+  const { rows } = await client.query(
+    `SELECT promotion_id FROM promotion
+     WHERE promotion_id=$1 AND is_active=TRUE AND CURRENT_DATE BETWEEN start_date AND end_date`,
+    [promotionId],
+  );
+  return rows.length ? null : 'Chỉ có thể chọn chương trình khuyến mãi đang hoạt động và còn hạn.';
+}
+
 router.get('/mine', async (req, res) => {
   if (!req.user.customer_id) return res.status(403).json({ message: 'Tài khoản chưa liên kết hồ sơ khách hàng.' });
   try {
-    const { rows } = await pool.query(
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 20);
+    if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 100) {
+      return res.status(400).json({ message: 'Tham số phân trang không hợp lệ.' });
+    }
+    const offset = (page - 1) * limit;
+    const [surveys, count] = await Promise.all([pool.query(
       `SELECT s.survey_id, s.title, s.description, s.end_date,
               si.status AS invitation_status, si.invited_at
        FROM survey_invitation si
@@ -62,10 +128,18 @@ router.get('/mine', async (req, res) => {
        WHERE si.customer_id = $1 AND s.status = 'Active'
          AND si.status <> 'Completed'
          AND (s.end_date IS NULL OR s.end_date >= CURRENT_DATE)
-       ORDER BY si.invited_at DESC`,
+       ORDER BY si.invited_at DESC
+       LIMIT $2 OFFSET $3`,
+      [req.user.customer_id, limit, offset],
+    ), pool.query(
+      `SELECT COUNT(*)::int AS total FROM survey_invitation si
+       JOIN survey s ON s.survey_id=si.survey_id
+       WHERE si.customer_id=$1 AND s.status='Active' AND si.status <> 'Completed'
+         AND (s.end_date IS NULL OR s.end_date >= CURRENT_DATE)`,
       [req.user.customer_id],
-    );
-    return res.json(rows);
+    )]);
+    if (req.query.paged === 'true') return res.json({ data: surveys.rows, total: count.rows[0].total, page, limit });
+    return res.json(surveys.rows);
   } catch {
     return res.status(500).json({ message: 'Không thể tải danh sách khảo sát.' });
   }
@@ -75,6 +149,17 @@ router.get('/mine', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { status } = req.query;
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 20);
+    if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 100) {
+      return res.status(400).json({ message: 'Tham số phân trang không hợp lệ.' });
+    }
+    if ((status !== undefined && (typeof status !== 'string' || !['Draft', 'Active', 'Closed'].includes(status)))
+      || search.length > 100) {
+      return res.status(400).json({ message: 'Bộ lọc khảo sát không hợp lệ.' });
+    }
+    const offset = (page - 1) * limit;
     const conditions = [];
     const params = [];
 
@@ -82,12 +167,18 @@ router.get('/', async (req, res) => {
       params.push(status);
       conditions.push(`s.status = $${params.length}`);
     }
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`s.title ILIKE $${params.length}`);
+    }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const { rows } = await pool.query(
+    const [surveys, count] = await Promise.all([pool.query(
       `SELECT s.*,
               e.full_name AS created_by_name,
+              (SELECT i.interest_name FROM interest i WHERE i.interest_id=s.target_interest_id) AS target_interest_name,
+              (SELECT p.code FROM promotion p WHERE p.promotion_id=s.reward_promotion_id) AS reward_promotion_code,
               COUNT(DISTINCT sq.question_id)::int AS question_count,
               COUNT(DISTINCT sr.response_id)::int AS response_count
        FROM survey s
@@ -96,12 +187,48 @@ router.get('/', async (req, res) => {
        LEFT JOIN survey_response sr ON sr.survey_id = s.survey_id
        ${where}
        GROUP BY s.survey_id, e.full_name
-       ORDER BY s.created_at DESC`,
-      params
-    );
-    res.json(rows);
+       ORDER BY s.created_at DESC
+       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, limit, offset]
+    ), pool.query(`SELECT COUNT(*)::int AS total FROM survey s ${where}`, params)]);
+    if (req.query.paged === 'true') return res.json({ data: surveys.rows, total: count.rows[0].total, page, limit });
+    res.json(surveys.rows);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// GET /api/surveys/:id/recipients-preview – đếm nhóm khách phù hợp trước khi gửi
+router.get('/:id/recipients-preview', async (req, res) => {
+  try {
+    const { rows: [survey] } = await pool.query(
+      `SELECT target_gender, target_tier, min_age, max_age, target_interest_id
+       FROM survey WHERE survey_id=$1`,
+      [req.params.id],
+    );
+    if (!survey) return res.status(404).json({ message: 'Không tìm thấy khảo sát.' });
+
+    const params = [req.params.id];
+    const conditions = [];
+    addRecipientTargetFilters(survey, conditions, params);
+    const { rows: [counts] } = await pool.query(
+      `SELECT COUNT(*)::int AS eligible_count,
+              COUNT(*) FILTER (WHERE NOT EXISTS (
+                SELECT 1 FROM survey_invitation si
+                WHERE si.survey_id=$1 AND si.customer_id=c.customer_id
+              ))::int AS new_recipient_count
+       FROM customer c
+       LEFT JOIN account a ON a.account_id=c.account_id
+       WHERE ${conditions.join(' AND ')}`,
+      params,
+    );
+    return res.json({
+      eligible_count: counts.eligible_count,
+      new_recipient_count: counts.new_recipient_count,
+      already_invited_count: counts.eligible_count - counts.new_recipient_count,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Không thể đếm khách hàng phù hợp với khảo sát.' });
   }
 });
 
@@ -122,6 +249,8 @@ router.get('/:id', async (req, res) => {
     }
     const { rows: survey } = await pool.query(
       `SELECT s.*, e.full_name AS created_by_name,
+              (SELECT i.interest_name FROM interest i WHERE i.interest_id=s.target_interest_id) AS target_interest_name,
+              (SELECT p.code FROM promotion p WHERE p.promotion_id=s.reward_promotion_id) AS reward_promotion_code,
               (SELECT COUNT(*)::int FROM survey_question sqc WHERE sqc.survey_id = s.survey_id) AS question_count,
               (SELECT COUNT(*)::int FROM survey_response src WHERE src.survey_id = s.survey_id) AS response_count,
               (SELECT COUNT(*)::int FROM survey_invitation sic WHERE sic.survey_id = s.survey_id) AS invitation_count,
@@ -183,17 +312,28 @@ router.post('/', async (req, res) => {
     const {
       title, description,
       target_gender, target_tier, min_age, max_age,
+      target_interest_id, reward_promotion_id,
       start_date, end_date,
       questions,
     } = req.body;
 
+    const rewardError = await ensureRewardPromotion(client, reward_promotion_id);
+    if (rewardError) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: rewardError });
+    }
+
     const { rows } = await client.query(
       `INSERT INTO survey
          (created_by, title, description, target_gender, target_tier,
-          min_age, max_age, start_date, end_date, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'Draft') RETURNING *`,
-      [req.user.employee_id, title.trim(), description, target_gender, target_tier,
-       min_age, max_age, start_date, end_date]
+          min_age, max_age, target_interest_id, reward_promotion_id,
+          start_date, end_date, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'Draft') RETURNING *`,
+      [req.user.employee_id, title.trim(), description?.trim() || null,
+       target_gender || null, target_tier || null,
+       min_age === '' ? null : min_age, max_age === '' ? null : max_age,
+       target_interest_id || null, reward_promotion_id || null,
+       start_date || null, end_date || null]
     );
     const survey = rows[0];
     await insertSurveyQuestions(client, survey.survey_id, questions);
@@ -202,7 +342,7 @@ router.post('/', async (req, res) => {
     res.status(201).json(survey);
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    if (err.code === '23514' || err.code === '22P02' || err.code === '22007') return res.status(400).json({ message: 'Thông tin khảo sát không hợp lệ.' });
+    if (err.code === '23514' || err.code === '23503' || err.code === '22P02' || err.code === '22007') return res.status(400).json({ message: 'Thông tin khảo sát không hợp lệ.' });
     res.status(500).json({ message: err.message });
   } finally {
     client.release();
@@ -248,20 +388,39 @@ router.patch('/:id', async (req, res) => {
       return res.status(409).json({ message: 'Không thể sửa khảo sát đã gửi lời mời hoặc đã có câu trả lời.' });
     }
 
-    const { title, description } = req.body;
+    const {
+      title, description, target_gender, target_tier, min_age, max_age,
+      target_interest_id, reward_promotion_id,
+    } = req.body;
+    const rewardError = await ensureRewardPromotion(client, reward_promotion_id);
+    if (rewardError) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: rewardError });
+    }
     await client.query(
       `UPDATE survey
-       SET title = $2, description = $3, updated_at = NOW()
+       SET title=$2, description=$3, target_gender=$4, target_tier=$5,
+           min_age=$6, max_age=$7, target_interest_id=$8, reward_promotion_id=$9,
+           updated_at=NOW()
        WHERE survey_id = $1`,
-      [survey.survey_id, title.trim(), description?.trim() || null],
+      [survey.survey_id, title.trim(), description?.trim() || null,
+       target_gender || null, target_tier || null,
+       min_age === '' ? null : min_age, max_age === '' ? null : max_age,
+       target_interest_id || null, reward_promotion_id || null],
     );
     await client.query('DELETE FROM survey_question WHERE survey_id = $1', [survey.survey_id]);
     await insertSurveyQuestions(client, survey.survey_id, req.body.questions);
     await client.query('COMMIT');
-    res.json({ survey_id: survey.survey_id, title: title.trim(), description: description?.trim() || null, status: survey.status });
+    res.json({
+      survey_id: survey.survey_id, title: title.trim(), description: description?.trim() || null,
+      target_gender: target_gender || null, target_tier: target_tier || null,
+      min_age: min_age === '' ? null : min_age, max_age: max_age === '' ? null : max_age,
+      target_interest_id: target_interest_id || null, reward_promotion_id: reward_promotion_id || null,
+      status: survey.status,
+    });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    if (err.code === '23514' || err.code === '22P02' || err.code === '22007') {
+    if (err.code === '23514' || err.code === '23503' || err.code === '22P02' || err.code === '22007') {
       return res.status(400).json({ message: 'Thông tin khảo sát không hợp lệ.' });
     }
     res.status(500).json({ message: err.message });
@@ -291,59 +450,36 @@ router.patch('/:id/status', async (req, res) => {
 
 // POST /api/surveys/:id/send – gửi khảo sát cho nhóm khách hàng
 router.post('/:id/send', async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { gender, tier, min_age, max_age, purchased_within_days } = req.body || {};
-    const minAge = min_age === undefined || min_age === null ? null : Number(min_age);
-    const maxAge = max_age === undefined || max_age === null ? null : Number(max_age);
+    const { purchased_within_days } = req.body || {};
     const purchaseDays = purchased_within_days === undefined || purchased_within_days === null
       ? null
       : Number(purchased_within_days);
-    if ((gender && !['Male', 'Female', 'Other'].includes(gender))
-      || (minAge !== null && (!Number.isInteger(minAge) || minAge < 0 || minAge > 120))
-      || (maxAge !== null && (!Number.isInteger(maxAge) || maxAge < 0 || maxAge > 120))
-      || (minAge !== null && maxAge !== null && minAge > maxAge)
-      || (purchaseDays !== null && (!Number.isInteger(purchaseDays) || purchaseDays < 1 || purchaseDays > 3650))) {
+    if (purchaseDays !== null && (!Number.isInteger(purchaseDays) || purchaseDays < 1 || purchaseDays > 3650)) {
       return res.status(400).json({ message: 'Điều kiện gửi khảo sát không hợp lệ.' });
     }
-    const { rows: surveys } = await pool.query(
-      `SELECT status FROM survey WHERE survey_id=$1`,
+    await client.query('BEGIN');
+    const { rows: surveys } = await client.query(
+      `SELECT status, target_gender, target_tier, min_age, max_age, target_interest_id
+       FROM survey WHERE survey_id=$1 FOR UPDATE`,
       [req.params.id],
     );
-    if (!surveys.length) return res.status(404).json({ message: 'Không tìm thấy khảo sát.' });
+    if (!surveys.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Không tìm thấy khảo sát.' });
+    }
     if (surveys[0].status === 'Closed') {
+      await client.query('ROLLBACK');
       return res.status(409).json({ message: 'Không thể gửi khảo sát đã đóng.' });
     }
-    const conditions = ['a.status = \'Active\''];
+    const survey = surveys[0];
     const params = [req.params.id, req.user.employee_id || null];
-
-    if (gender) {
-      params.push(gender);
-      conditions.push(`c.gender = $${params.length}`);
-    }
-    if (tier) {
-      params.push(tier);
-      conditions.push(`c.customer_tier = $${params.length}`);
-    }
-    if (minAge !== null) {
-      params.push(minAge);
-      conditions.push(`EXTRACT(YEAR FROM AGE(c.date_of_birth)) >= $${params.length}`);
-    }
-    if (maxAge !== null) {
-      params.push(maxAge);
-      conditions.push(`EXTRACT(YEAR FROM AGE(c.date_of_birth)) <= $${params.length}`);
-    }
-    if (purchaseDays !== null) {
-      params.push(purchaseDays);
-      conditions.push(
-        `c.customer_id IN (
-           SELECT DISTINCT customer_id FROM "order"
-           WHERE ordered_at >= NOW() - INTERVAL '1 day' * $${params.length}
-         )`
-      );
-    }
+    const conditions = [];
+    addRecipientTargetFilters(survey, conditions, params, purchaseDays);
 
     const where = `WHERE ${conditions.join(' AND ')}`;
-    const { rows: [delivery] } = await pool.query(
+    const { rows: [delivery] } = await client.query(
       `WITH matching AS MATERIALIZED (
          SELECT c.customer_id
          FROM customer c
@@ -364,10 +500,11 @@ router.post('/:id/send', async (req, res) => {
     );
 
     // Kích hoạt khảo sát nếu còn Draft
-    await pool.query(
+    await client.query(
       `UPDATE survey SET status='Active', updated_at=NOW() WHERE survey_id=$1 AND status='Draft'`,
       [req.params.id]
     );
+    await client.query('COMMIT');
 
     res.json({
       message: delivery.recipient_count
@@ -380,7 +517,13 @@ router.post('/:id/send', async (req, res) => {
       already_invited_count: delivery.eligible_count - delivery.recipient_count,
     });
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '22P02' || err.code === '23503') {
+      return res.status(400).json({ message: 'Bộ lọc khảo sát không hợp lệ.' });
+    }
     res.status(500).json({ message: 'Không thể gửi khảo sát.' });
+  } finally {
+    client.release();
   }
 });
 
@@ -398,13 +541,13 @@ router.post('/:id/respond', async (req, res) => {
     // [{ question_id, option_id?, answer_text? }]
 
     const { rows: invitations } = await client.query(
-      `SELECT si.invitation_id
+      `SELECT si.invitation_id, s.reward_promotion_id
        FROM survey_invitation si
        JOIN survey s ON s.survey_id = si.survey_id
        WHERE si.survey_id=$1 AND si.customer_id=$2
          AND si.status <> 'Completed' AND s.status='Active'
          AND (s.end_date IS NULL OR s.end_date >= CURRENT_DATE)
-       FOR UPDATE`,
+       FOR UPDATE OF si`,
       [req.params.id, req.user.customer_id],
     );
     if (!invitations.length) {
@@ -492,8 +635,32 @@ router.post('/:id/respond', async (req, res) => {
       `UPDATE survey_invitation SET status='Completed' WHERE invitation_id=$1`,
       [invitations[0].invitation_id],
     );
+    let reward = null;
+    if (invitations[0].reward_promotion_id) {
+      const promotionId = invitations[0].reward_promotion_id;
+      const { rows: [promotion] } = await client.query(
+        'SELECT promotion_id, code FROM promotion WHERE promotion_id=$1', [promotionId],
+      );
+      if (promotion) {
+        const { rowCount } = await client.query(
+          `INSERT INTO user_promotion (customer_id, promotion_id)
+           VALUES ($1,$2) ON CONFLICT (customer_id, promotion_id) DO NOTHING`,
+          [req.user.customer_id, promotionId],
+        );
+        reward = { code: promotion.code, granted: rowCount > 0 };
+      }
+    }
     await client.query('COMMIT');
-    res.status(201).json({ message: 'Cảm ơn bạn đã hoàn thành khảo sát!', response_id: response.response_id });
+    const rewardMessage = reward
+      ? reward.granted
+        ? ` Mã giảm giá ${reward.code} đã được thêm vào Ví ưu đãi.`
+        : ` Mã giảm giá ${reward.code} đã có trong Ví ưu đãi của bạn.`
+      : '';
+    res.status(201).json({
+      message: `Cảm ơn bạn đã hoàn thành khảo sát!${rewardMessage}`,
+      response_id: response.response_id,
+      reward,
+    });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') return res.status(409).json({ message: 'Bạn đã trả lời khảo sát này rồi' });
@@ -506,15 +673,28 @@ router.post('/:id/respond', async (req, res) => {
 
 // GET /api/surveys/:id/results – thống kê kết quả khảo sát
 router.get('/:id/results', async (req, res) => {
+  const { from, to } = req.query;
+  const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+    && !Number.isNaN(Date.parse(`${value}T00:00:00Z`))
+    && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+  if ((from === undefined) !== (to === undefined)
+    || (from !== undefined && (!validDate(from) || !validDate(to)
+      || (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000 + 1 < 1
+      || (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000 + 1 > 3660))) {
+    return res.status(400).json({ message: 'Khoảng ngày không hợp lệ; cần from và to theo định dạng YYYY-MM-DD, tối đa 10 năm.' });
+  }
+  const rangeFrom = from ?? null;
+  const rangeTo = to ?? null;
   try {
     const { rows: survey } = await pool.query(
       `SELECT s.survey_id, s.title, s.status,
               COUNT(DISTINCT sr.response_id)::int AS total_responses
        FROM survey s
        LEFT JOIN survey_response sr ON sr.survey_id = s.survey_id
+         AND ($2::date IS NULL OR (sr.submitted_at >= $2::date AND sr.submitted_at < $3::date + INTERVAL '1 day'))
        WHERE s.survey_id = $1
        GROUP BY s.survey_id, s.title, s.status`,
-      [req.params.id]
+      [req.params.id, rangeFrom, rangeTo]
     );
     if (!survey.length) return res.status(404).json({ message: 'Không tìm thấy khảo sát' });
 
@@ -526,19 +706,19 @@ router.get('/:id/results', async (req, res) => {
               COUNT(sa.answer_id)::int AS vote_count
        FROM survey_question sq
        LEFT JOIN survey_option so   ON so.question_id = sq.question_id
-       LEFT JOIN survey_answer sa   ON (
-                                      sa.question_id = sq.question_id
-                                      AND sa.option_id = so.option_id
-                                    ) OR (
-                                      sq.question_type = 'Rating'
-                                      AND sa.question_id = sq.question_id
-                                      AND sa.option_id IS NULL
-                                    )
+       LEFT JOIN survey_answer sa ON (
+         (sa.question_id = sq.question_id AND sa.option_id = so.option_id)
+         OR (sq.question_type = 'Rating' AND sa.question_id = sq.question_id AND sa.option_id IS NULL)
+       ) AND sa.response_id IN (
+                                      SELECT sr.response_id FROM survey_response sr
+                                      WHERE sr.survey_id = $1
+                                        AND ($2::date IS NULL OR (sr.submitted_at >= $2::date AND sr.submitted_at < $3::date + INTERVAL '1 day'))
+       )
        WHERE sq.survey_id = $1
        GROUP BY sq.question_id, sq.question_text, sq.question_type,
                 so.option_id, so.option_text, rating_value
        ORDER BY sq.display_order, so.display_order, rating_value`,
-      [req.params.id]
+      [req.params.id, rangeFrom, rangeTo]
     );
 
     // Nhóm theo câu hỏi

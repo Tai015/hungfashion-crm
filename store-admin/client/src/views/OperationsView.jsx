@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { createPortal } from 'react-dom';
+import { Search } from 'lucide-react';
+import { useModalEffects } from '../hooks/useModalEffects';
 import { apiFetch } from '../api';
 import StatusBadge from '../components/StatusBadge';
 import Spinner from '../components/Spinner';
+import FilterPopover from '../components/FilterPopover';
+import DatePicker from '../components/DatePicker';
 import { fmtVND } from '../utils/formatters';
+import { showErrorAlert, showSuccessAlert } from '../utils/notifications';
 
 const ROLE_LABELS = { ADMIN:'Quản trị hệ thống', QL_NHAN_SU:'Quản lý nhân sự', QL_KHO:'Quản lý kho', QL_BAN_HANG:'Quản lý bán hàng', QL_KHACH_HANG:'Quản lý khách hàng', KHACH_HANG:'Khách hàng' };
 
@@ -10,7 +17,7 @@ const OPERATION_CONFIG = {
   employees:  { title:'Danh sách nhân viên', endpoint:'/api/employees', fields:[['employee_id','Mã'],['full_name','Họ tên'],['position','Chức vụ'],['email','Email'],['phone','Điện thoại'],['is_active','Trạng thái']] },
   inventory:  { title:'Theo dõi tồn kho', endpoint:'/api/inventory', fields:[['sku','SKU'],['product_name','Sản phẩm'],['category_name','Danh mục'],['size_name','Size'],['color_name','Màu'],['quantity','Tồn kho']] },
   receipts:   { title:'Phiếu nhập và xuất kho', endpoint:'/api/inventory/receipts', fields:[['receipt_id','Mã phiếu'],['receipt_type','Loại phiếu'],['supplier_name','Nhà cung cấp'],['employee_name','Nhân viên'],['total_amount','Tổng tiền'],['receipt_date','Ngày tạo']] },
-  orders:     { title:'Quản lý đơn hàng', endpoint:'/api/orders?limit=100', fields:[['order_id','Mã đơn'],['customer_name','Khách hàng'],['order_channel','Kênh bán'],['total_amount','Tổng tiền'],['order_status','Trạng thái'],['ordered_at','Ngày tạo']] },
+  orders:     { title:'Quản lý đơn hàng', endpoint:'/api/orders', fields:[['order_id','Mã đơn'],['customer_name','Khách hàng'],['order_channel','Kênh bán'],['total_amount','Tổng tiền'],['order_status','Trạng thái'],['ordered_at','Ngày tạo']] },
   promotions: { title:'Chương trình khuyến mãi', endpoint:'/api/promotions?limit=100', fields:[['code','Mã'],['name','Tên chương trình'],['promo_type','Loại'],['value','Giá trị'],['start_date','Bắt đầu'],['end_date','Kết thúc']] },
 };
 
@@ -25,6 +32,7 @@ const PAYMENT_STATUSES = ['Pending','Paid','Failed','Refunded'];
 const EYEBROW_ROLE = { employees:'QL_NHAN_SU', inventory:'QL_KHO', receipts:'QL_KHO', orders:'QL_BAN_HANG', promotions:'QL_BAN_HANG' };
 
 function CounterOrderForm({ onClose, onCreated }) {
+  useModalEffects(true, onClose);
   const [customerSearch, setCustomerSearch] = useState('');
   const [customers, setCustomers] = useState([]);
   const [customerId, setCustomerId] = useState('');
@@ -34,7 +42,6 @@ function CounterOrderForm({ onClose, onCreated }) {
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -45,7 +52,7 @@ function CounterOrderForm({ onClose, onCreated }) {
       if (!active) return;
       setCustomers(customerRows);
       setProducts(productResult.data || []);
-    }).catch(e => { if (active) setError(e.message); })
+    }).catch(e => { if (active) showErrorAlert(e.message); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
@@ -54,7 +61,7 @@ function CounterOrderForm({ onClose, onCreated }) {
     const timer = setTimeout(() => {
       apiFetch(`/api/orders/customers?search=${encodeURIComponent(customerSearch.trim())}`)
         .then(setCustomers)
-        .catch(e => setError(e.message));
+        .catch(e => showErrorAlert(e.message));
     }, 250);
     return () => clearTimeout(timer);
   }, [customerSearch]);
@@ -64,7 +71,7 @@ function CounterOrderForm({ onClose, onCreated }) {
     try {
       const product = await apiFetch(`/api/products/${productId}`);
       setVariants(current => ({ ...current, [productId]: product.variants || [] }));
-    } catch (e) { setError(e.message); }
+    } catch (e) { showErrorAlert(e.message); }
   };
 
   const updateLine = (key, changes) => setLines(current => current.map(line =>
@@ -72,10 +79,9 @@ function CounterOrderForm({ onClose, onCreated }) {
 
   const submit = async (event) => {
     event.preventDefault();
-    setError('');
-    if (!customerId) { setError('Vui lòng chọn khách hàng.'); return; }
+    if (!customerId) { showErrorAlert('Vui lòng chọn khách hàng.'); return; }
     if (!lines.length || lines.some(line => !line.variantId || !Number.isInteger(Number(line.quantity)) || Number(line.quantity) < 1)) {
-      setError('Vui lòng chọn biến thể và nhập số lượng hợp lệ cho từng sản phẩm.'); return;
+      showErrorAlert('Vui lòng chọn biến thể và nhập số lượng hợp lệ cho từng sản phẩm.'); return;
     }
     const overStockLine = lines.find(line => {
       const selectedVariant = variants[line.productId]?.find(variant => String(variant.variant_id) === line.variantId);
@@ -83,7 +89,7 @@ function CounterOrderForm({ onClose, onCreated }) {
     });
     if (overStockLine) {
       const selectedVariant = variants[overStockLine.productId].find(variant => String(variant.variant_id) === overStockLine.variantId);
-      setError(`Số lượng vượt tồn kho hiện tại (${selectedVariant.quantity}). Vui lòng giảm số lượng.`);
+      showErrorAlert(`Số lượng vượt tồn kho hiện tại (${selectedVariant.quantity}). Vui lòng giảm số lượng.`);
       return;
     }
     setBusy(true);
@@ -98,14 +104,15 @@ function CounterOrderForm({ onClose, onCreated }) {
         },
       });
       onCreated(order);
-    } catch (e) { setError(e.message); }
+    } catch (e) { showErrorAlert(e.message); }
     finally { setBusy(false); }
   };
 
   const inputClass = 'h-10 px-3 bg-white/[0.07] border border-white/[0.12] rounded-xl text-[#f5f0eb] text-sm outline-none focus:border-orange-500/50 dark-input';
 
-  return (
-    <form onSubmit={submit} className={`${PANEL} mb-5`}>
+  return createPortal((
+    <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/55 backdrop-blur-md p-4" onClick={onClose}>
+    <form onSubmit={submit} onClick={event => event.stopPropagation()} className={`${PANEL} popup-surface w-full max-w-5xl max-h-[92vh] overflow-y-auto`}>
       <div className="flex items-center justify-between gap-3">
         <h2 className="m-0 text-lg font-semibold">Tạo đơn hàng tại quầy</h2>
         <button type="button" className={BTN_GREEN} onClick={onClose}>Đóng</button>
@@ -164,13 +171,13 @@ function CounterOrderForm({ onClose, onCreated }) {
                 <option value="BankTransfer" style={{ background:'#1a1410', color:'#f5f0eb' }}>Chuyển khoản QR</option>
               </select>
             </label>
-            <button type="submit" className={BTN_GREEN} disabled={busy}>{busy ? 'Đang tạo đơn...' : 'Tạo đơn hàng'}</button>
+            <button type="submit" className={`${BTN_GREEN} admin-primary-action`} disabled={busy}>{busy ? 'Đang tạo đơn...' : 'Tạo đơn hàng'}</button>
           </div>
         </>
       )}
-      {error && <p className="m-0 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm" role="alert">{error}</p>}
     </form>
-  );
+    </motion.div>
+  ), document.body);
 }
 
 export default function OperationsView({ type }) {
@@ -182,44 +189,62 @@ export default function OperationsView({ type }) {
   const [pdfLoadingId, setPdfLoadingId] = useState(null);
   const [paymentLoadingId, setPaymentLoadingId] = useState(null);
   const [showCreateOrder, setShowCreateOrder] = useState(false);
-  const [notice, setNotice] = useState('');
-  const [error, setError]     = useState('');
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderTotal, setOrderTotal] = useState(0);
+  const [orderFilters, setOrderFilters] = useState({ status: '', channel: '', from: '', to: '' });
+  const orderPageSize = 20;
 
   const load = () => {
-    setLoading(true); setError('');
+    setLoading(true);
     let url = config.endpoint;
     if (type==='employees') url += `?limit=100&search=${encodeURIComponent(search)}`;
     if (type==='inventory') url += `?search=${encodeURIComponent(search)}${lowStock?'&low_stock=true':''}`;
+    if (type==='orders') {
+      const params = new URLSearchParams({ page: String(orderPage), limit: String(orderPageSize) });
+      if (search.trim()) params.set('search', search.trim());
+      if (orderFilters.status) params.set('status', orderFilters.status);
+      if (orderFilters.channel) params.set('channel', orderFilters.channel);
+      if (orderFilters.from) params.set('from', orderFilters.from);
+      if (orderFilters.to) params.set('to', `${orderFilters.to}T23:59:59.999`);
+      url += `?${params}`;
+    }
     apiFetch(url)
-      .then(r => setRows(Array.isArray(r) ? r : r.data||[]))
-      .catch(e => setError(e.message))
+      .then(r => {
+        setRows(Array.isArray(r) ? r : r.data||[]);
+        if (type==='orders') setOrderTotal(Number(r.total)||0);
+      })
+      .catch(e => showErrorAlert(e.message))
       .finally(() => setLoading(false));
   };
-  useEffect(() => { load(); }, [search, lowStock, type]);
+  useEffect(() => { load(); }, [search, lowStock, type, orderPage, orderFilters]);
+
+  const updateOrderFilter = (key, value) => {
+    setOrderFilters(current => ({ ...current, [key]: value }));
+    setOrderPage(1);
+  };
 
   const updateOrderStatus = async (row, status) => {
-    setError('');
     try { await apiFetch(`/api/orders/${row.order_id}/status`, { method:'PATCH', body:{ status } }); load(); }
-    catch(e) { setError(e.message); }
+    catch(e) { showErrorAlert(e.message); }
   };
 
   const updatePaymentStatus = async (row, status) => {
-    setError(''); setPaymentLoadingId(row.order_id);
+    setPaymentLoadingId(row.order_id);
     try {
       await apiFetch(`/api/orders/${row.order_id}/payment`, { method:'PATCH', body:{ status } });
       setRows(current => current.map(item => item.order_id === row.order_id ? { ...item, payment_status:status } : item));
-    } catch(e) { setError(e.message); }
+    } catch(e) { showErrorAlert(e.message); }
     finally { setPaymentLoadingId(null); }
   };
 
   const printInvoice = async row => {
-    setError(''); setPdfLoadingId(row.order_id);
+    setPdfLoadingId(row.order_id);
     try {
       const order = await apiFetch(`/api/orders/${row.order_id}`);
       const { generateInvoicePDF } = await import('../utils/pdfGenerator');
       await generateInvoicePDF(order);
     }
-    catch(e) { setError(e.message); }
+    catch(e) { showErrorAlert(e.message); }
     finally { setPdfLoadingId(null); }
   };
 
@@ -249,25 +274,54 @@ export default function OperationsView({ type }) {
           <input type="search" className="flex-1 h-9 px-3 bg-white/[0.07] border border-white/[0.12] rounded-xl text-[#f5f0eb] text-sm placeholder-white/22 outline-none focus:border-orange-500/50 dark-input transition-all"
             placeholder="Nhập từ khóa..." value={search} onChange={e => setSearch(e.target.value)} />
           {type==='inventory' && (
-            <label className="flex items-center gap-2 text-sm text-white/55 cursor-pointer whitespace-nowrap">
-              <input type="checkbox" checked={lowStock} onChange={e => setLowStock(e.target.checked)} className="w-4 h-4 accent-orange-500"/>
-              Chỉ hiện tồn kho thấp (≤ 5)
-            </label>
+            <FilterPopover title="Lọc tồn kho" activeCount={[search, lowStock].filter(Boolean).length} onClear={() => { setLowStock(false); setSearch(''); }}>
+              <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer"><input type="checkbox" checked={lowStock} onChange={e => setLowStock(e.target.checked)} className="h-4 w-4 accent-orange-500"/>Chỉ hiện tồn kho thấp (≤ 5)</label>
+            </FilterPopover>
           )}
         </div>
       )}
 
-      {error && <p className="p-3 px-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm">{error}</p>}
-
-      {notice && <p className="p-3 px-4 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-300 text-sm" role="status">{notice}</p>}
 
       {type==='orders' && (
-        <div>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.06] px-3 text-white/45 transition-colors focus-within:border-orange-500/50">
+            <Search size={16} className="shrink-0"/>
+            <input type="search" maxLength={100} value={search}
+              onChange={event => { setSearch(event.target.value); setOrderPage(1); }}
+              placeholder="Tìm mã đơn, khách hàng, sản phẩm hoặc SKU..."
+              aria-label="Tìm đơn hàng theo mã, khách hàng, sản phẩm hoặc SKU"
+              className="h-full min-w-0 flex-1 bg-transparent text-sm text-[#f5f0eb] outline-none placeholder:text-white/30" />
+          </label>
+          <FilterPopover
+            title="Lọc đơn hàng"
+            activeCount={Object.values(orderFilters).filter(Boolean).length}
+            onClear={() => { setOrderFilters({ status: '', channel: '', from: '', to: '' }); setOrderPage(1); }}
+          >
+            <label className="flex flex-col gap-1.5 text-xs text-white/65">Trạng thái đơn
+              <select className={`${SELECT} w-full`} value={orderFilters.status} onChange={event => updateOrderFilter('status', event.target.value)}>
+                <option value="">Tất cả trạng thái</option>
+                {ORDER_STATUSES.map(status => <option key={status} value={status}>{({ Pending:'Chờ xác nhận', Confirmed:'Đã xác nhận', Processing:'Đang xử lý', Shipped:'Đang giao', Delivered:'Đã giao', Cancelled:'Đã hủy', Refunded:'Đã hoàn tiền' })[status]}</option>)}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1.5 text-xs text-white/65">Kênh bán
+              <select className={`${SELECT} w-full`} value={orderFilters.channel} onChange={event => updateOrderFilter('channel', event.target.value)}>
+                <option value="">Tất cả kênh</option>
+                <option value="Online">Trực tuyến</option>
+                <option value="Website">Website</option>
+                <option value="InStore">Tại cửa hàng</option>
+              </select>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="order-date-control flex min-w-0 flex-col gap-1.5 text-xs text-white/65">Từ ngày<DatePicker className="order-date-trigger" value={orderFilters.from} max={orderFilters.to || undefined} onChange={value => updateOrderFilter('from', value)} placeholder="Chọn ngày bắt đầu" ariaLabel="Lọc đơn từ ngày" portalPopover portalClassName="admin-order-date-popover" /></label>
+              <label className="order-date-control flex min-w-0 flex-col gap-1.5 text-xs text-white/65">Đến ngày<DatePicker className="order-date-trigger" value={orderFilters.to} min={orderFilters.from || undefined} onChange={value => updateOrderFilter('to', value)} placeholder="Chọn ngày kết thúc" ariaLabel="Lọc đơn đến ngày" portalPopover portalClassName="admin-order-date-popover" /></label>
+            </div>
+          </FilterPopover>
           {!showCreateOrder
-            ? <button type="button" className={BTN_GREEN} onClick={() => { setNotice(''); setShowCreateOrder(true); }}>+ Tạo đơn tại quầy</button>
+            ? <button type="button" className={`${BTN_GREEN} admin-primary-action`} onClick={() => { setShowCreateOrder(true); }}>+ Tạo đơn tại quầy</button>
             : <CounterOrderForm onClose={() => setShowCreateOrder(false)} onCreated={order => {
                 setShowCreateOrder(false);
-                setNotice(`Đã tạo đơn hàng #${order.order_id}.`);
+                showSuccessAlert(`Đã tạo đơn hàng #${order.order_id}.`);
+                setOrderPage(1);
                 load();
               }} />}
         </div>
@@ -320,6 +374,11 @@ export default function OperationsView({ type }) {
             </table>
           </div>
         )}
+        {type==='orders' && <div className="flex items-center justify-center gap-4 border-t border-white/[0.06] pt-4">
+          <button type="button" className={`${BTN_GREEN} disabled:opacity-35 disabled:cursor-not-allowed`} disabled={orderPage<=1 || loading} onClick={() => setOrderPage(page => Math.max(1, page-1))}>Trang trước</button>
+          <span className="text-sm text-white/55 tabular-nums">Trang {orderPage} / {Math.max(1, Math.ceil(orderTotal/orderPageSize))} · {orderTotal.toLocaleString('vi-VN')} đơn</span>
+          <button type="button" className={`${BTN_GREEN} disabled:opacity-35 disabled:cursor-not-allowed`} disabled={orderPage>=Math.ceil(orderTotal/orderPageSize) || loading} onClick={() => setOrderPage(page => page+1)}>Trang sau</button>
+        </div>}
       </div>
     </div>
   );

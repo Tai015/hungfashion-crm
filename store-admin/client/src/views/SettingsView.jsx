@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Database, Download, RefreshCw, Shield, Upload } from 'lucide-react';
+import { Database, Download, RefreshCw, Shield, Upload, Play } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { apiFetch, authHeaders, TOKEN_KEY } from '../api';
 import Spinner from '../components/Spinner';
+import { useSweetAlertMessages } from '../utils/notifications';
+import Pagination from '../components/Pagination';
 
 const BTN_PRIMARY = 'inline-flex items-center gap-1.5 h-10 px-5 bg-gradient-to-br from-orange-500 to-orange-600 border border-orange-500/50 text-white text-sm font-semibold rounded-xl shadow-[0_8px_20px_rgba(249,115,22,0.3)] hover:shadow-[0_10px_26px_rgba(249,115,22,0.45)] hover:-translate-y-px transition-all disabled:opacity-55 disabled:cursor-not-allowed cursor-pointer';
 const BTN_GHOST   = 'inline-flex items-center gap-1.5 h-9 px-4 bg-white/[0.07] border border-white/15 text-white/65 text-sm font-medium rounded-xl transition-all hover:bg-white/[0.12] hover:text-white/90 cursor-pointer disabled:opacity-50';
@@ -27,8 +30,11 @@ function DL({ items }) {
 export default function SettingsView() {
   const [settings, setSettings]   = useState(null);
   const [products, setProducts]   = useState([]);
+  const [catalogPage, setCatalogPage] = useState(1);
+  const [catalogTotal, setCatalogTotal] = useState(0);
   const [loading, setLoading]     = useState(true);
   const [scraping, setScraping]   = useState(false);
+  const [seeding, setSeeding]     = useState(false);
   const [backingUp, setBackingUp] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [restoreFile, setRestoreFile] = useState(null);
@@ -38,6 +44,10 @@ export default function SettingsView() {
   const [error, setError]         = useState('');
   const [loadError, setLoadError] = useState('');
   const [productsLoading, setProductsLoading] = useState(false);
+  const [activeOperation, setActiveOperation] = useState(null);
+  const [operationProgress, setOperationProgress] = useState(null);
+  const catalogSeedRunningRef = useRef(false);
+  useSweetAlertMessages({ error, success: message, warning: loadError });
 
   const loadSettings = useCallback(async ({ initial=false }={}) => {
     if (initial) setLoading(true); else setProductsLoading(true);
@@ -45,26 +55,115 @@ export default function SettingsView() {
     try {
       const [statusResult, productsResult] = await Promise.allSettled([
         apiFetch('/api/settings/status'),
-        apiFetch('/api/settings/catalog-products?limit=50'),
+        apiFetch(`/api/settings/catalog-products?page=${catalogPage}&limit=20`),
       ]);
       const failures = [];
-      if (statusResult.status==='fulfilled')  setSettings(statusResult.value);
+      if (statusResult.status==='fulfilled') {
+        setSettings(statusResult.value);
+        setActiveOperation(statusResult.value.activeOperation || null);
+        setOperationProgress(statusResult.value.operationProgress || null);
+      }
       else failures.push(`Thông tin hệ thống: ${statusResult.reason?.message}`);
-      if (productsResult.status==='fulfilled') setProducts(productsResult.value.products||[]);
+      if (productsResult.status==='fulfilled') {
+        setProducts(productsResult.value.products||[]);
+        setCatalogTotal(productsResult.value.total||0);
+      }
       else failures.push(`Danh sách sản phẩm: ${productsResult.reason?.message}`);
       if (failures.length) setLoadError(failures.join(' '));
     } finally { setLoading(false); setProductsLoading(false); }
-  }, []);
+  }, [catalogPage]);
 
   useEffect(() => { loadSettings({ initial:true }); }, [loadSettings]);
 
+  useEffect(() => {
+    if (!activeOperation) return undefined;
+    const interval = setInterval(async () => {
+      try {
+        const status = await apiFetch('/api/settings/status');
+        setSettings(current => current ? { ...current, ...status } : status);
+        setActiveOperation(status.activeOperation || null);
+        setOperationProgress(status.operationProgress || null);
+      } catch {
+        // Keep the busy state until the server can confirm that the operation ended.
+      }
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [activeOperation]);
+
+  const operationBusy = Boolean(activeOperation || scraping || seeding || backingUp || restoring);
+  const isScraping = scraping || activeOperation === 'scrape';
+  const isSeeding = seeding || activeOperation === 'seed';
+  const isBackingUp = backingUp || activeOperation === 'backup';
+  const isRestoring = restoring || activeOperation === 'restore';
+  const operationPercent = operationProgress?.total > 0
+    ? Math.min(100, Math.floor(((operationProgress.step - 1
+      + (operationProgress.detailTotal > 0 ? operationProgress.detailStep / operationProgress.detailTotal : 0))
+      / operationProgress.total) * 100))
+    : 0;
+
   const scrapeProducts = async () => {
+    if (catalogSeedRunningRef.current) return;
+    catalogSeedRunningRef.current = true;
+    setActiveOperation('scrape');
     setScraping(true); setError(''); setMessage('');
     try {
       const r = await apiFetch('/api/settings/scrape', { method:'POST' });
       await loadSettings();
-      setMessage(`Đã thêm ${r.insertedCount} sản phẩm mới, cập nhật ${r.updatedCount} sản phẩm từ ${r.sourceName}.`);
-    } catch(e) { setError(e.message); } finally { setScraping(false); }
+      await Swal.fire({
+        icon: 'success',
+        title: 'Cào dữ liệu hoàn tất',
+        text: `Đã thêm ${r.insertedCount} sản phẩm mới, cập nhật ${r.updatedCount} sản phẩm từ ${r.sourceName}.`,
+        confirmButtonText: 'Đóng',
+        confirmButtonColor: '#7c3aed',
+      });
+    } catch(e) { setError(e.message); } finally {
+      catalogSeedRunningRef.current = false;
+      setScraping(false);
+      apiFetch('/api/settings/status').then(status => {
+        setSettings(current => current ? { ...current, ...status } : status);
+        setActiveOperation(status.activeOperation || null);
+        setOperationProgress(status.operationProgress || null);
+      }).catch(() => {});
+    }
+  };
+
+  const seedDemoData = async () => {
+    const confirmation = await Swal.fire({
+      icon: 'warning',
+      title: 'Tạo dữ liệu mẫu?',
+      text: 'Seed sẽ thêm hoặc cập nhật dữ liệu demo trong cơ sở dữ liệu. Dữ liệu hiện có không bị xóa.',
+      showCancelButton: true,
+      confirmButtonText: 'Chạy seed',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#ea580c',
+    });
+    if (!confirmation.isConfirmed) return;
+    if (catalogSeedRunningRef.current) return;
+
+    catalogSeedRunningRef.current = true;
+    setActiveOperation('seed');
+    setSeeding(true); setError(''); setMessage('');
+    try {
+      const result = await apiFetch('/api/settings/seed', { method: 'POST' });
+      await loadSettings();
+      await Swal.fire({
+        icon: 'success',
+        title: 'Tạo dữ liệu mẫu hoàn tất',
+        text: result.message || 'Đã tạo/cập nhật dữ liệu mẫu thành công.',
+        confirmButtonText: 'Đóng',
+        confirmButtonColor: '#7c3aed',
+      });
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      catalogSeedRunningRef.current = false;
+      setSeeding(false);
+      apiFetch('/api/settings/status').then(status => {
+        setSettings(current => current ? { ...current, ...status } : status);
+        setActiveOperation(status.activeOperation || null);
+        setOperationProgress(status.operationProgress || null);
+      }).catch(() => {});
+    }
   };
 
   const downloadBackup = async () => {
@@ -120,13 +219,32 @@ export default function SettingsView() {
         </div>
       </div>
 
-      {error     && <p className="p-3 px-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-300 text-sm" role="alert">{error}</p>}
-      {message   && <p className="p-3 px-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-sm" role="status">{message}</p>}
-      {loadError && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-xl text-amber-300 text-sm flex items-start justify-between gap-3">
-          <p className="m-0">{loadError}</p>
-          <button className={BTN_GHOST} onClick={() => loadSettings({ initial:true })} disabled={loading}>{loading?'Đang tải...':'Thử tải lại'}</button>
-        </div>
+      {loadError && <button className={BTN_GHOST} onClick={() => loadSettings({ initial:true })} disabled={loading}>{loading?'Đang tải...':'Thử tải lại'}</button>}
+
+      {operationProgress && ['scrape', 'seed'].includes(operationProgress.operation) && (
+        <section className="p-4 bg-violet-500/10 border border-violet-300/20 rounded-2xl" aria-live="polite" aria-label="Tiến trình thao tác">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="m-0 text-sm font-semibold text-white">
+              {operationProgress.operation === 'scrape' ? 'Tiến trình cào dữ liệu' : 'Tiến trình tạo dữ liệu mẫu'}
+            </h2>
+            <span className="text-xs text-white/60">Bước {operationProgress.step} / {operationProgress.total}</span>
+          </div>
+          <p className="m-0 mt-2 text-sm text-violet-100">{operationProgress.message}</p>
+          <div className="mt-3 flex items-center gap-3">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10" role="progressbar"
+              aria-valuemin={0} aria-valuemax={100} aria-valuenow={operationPercent}
+              aria-label={`Tiến trình ${operationPercent}%`}>
+              <div className="h-full rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-300 transition-[width] duration-300"
+                style={{ width: `${operationPercent}%` }} />
+            </div>
+            <span className="min-w-10 text-right text-xs font-semibold tabular-nums text-white/75">{operationPercent}%</span>
+          </div>
+          {operationProgress.detailTotal > 0 && (
+            <p className="m-0 mt-1 text-xs text-white/60" aria-label="Số sản phẩm đã nhập">
+              Đã xử lý {operationProgress.detailStep} / {operationProgress.detailTotal} sản phẩm
+            </p>
+          )}
+        </section>
       )}
 
       {loading ? <Spinner /> : (
@@ -140,7 +258,7 @@ export default function SettingsView() {
           </div>
 
           {/* Settings cards */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             {/* Scrape */}
             <div className={`${PANEL} justify-between`}>
               <div className="flex flex-col gap-3.5">
@@ -152,8 +270,24 @@ export default function SettingsView() {
                 </div>
                 <DL items={[['Nguồn', settings?.sourceName||'—'], ['Trong catalog', settings?.catalogProductCount??0], ['Nhập gần nhất', fmtDate(settings?.lastCatalogImportAt)]]} />
               </div>
-              <button className={BTN_PRIMARY} type="button" onClick={scrapeProducts} disabled={scraping}>
-                <Download size={14}/> {scraping ? 'Đang cào dữ liệu...' : 'Cào và nhập sản phẩm'}
+              <button className={`${BTN_PRIMARY} admin-primary-action`} type="button" onClick={scrapeProducts} disabled={operationBusy}>
+                <Download size={14}/> {isScraping ? 'Đang cào dữ liệu...' : 'Cào và nhập sản phẩm'}
+              </button>
+            </div>
+
+            {/* Demo seed */}
+            <div className={`${PANEL} justify-between`}>
+              <div className="flex flex-col gap-3.5">
+                <div className="grid w-10 h-10 place-items-center rounded-[14px] bg-emerald-500/15 border border-emerald-500/25 text-emerald-400"><Play size={18}/></div>
+                <div>
+                  <p className="m-0 text-white/40 text-xs font-semibold tracking-widest uppercase mb-1">Dữ liệu demo</p>
+                  <h2 className="m-0 text-base font-bold mb-1.5">Tạo dữ liệu mẫu</h2>
+                  <p className="m-0 text-white/40 text-xs leading-relaxed">Chạy seed của dự án để thêm hoặc cập nhật tài khoản demo, catalog, đơn hàng, phản hồi và khảo sát.</p>
+                </div>
+                <p className="m-0 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-300/70 text-xs">Dữ liệu hiện có không bị xóa; một số bản ghi demo được cập nhật lại.</p>
+              </div>
+              <button className={`${BTN_PRIMARY} admin-primary-action`} type="button" onClick={seedDemoData} disabled={operationBusy}>
+                <Play size={14}/> {isSeeding ? 'Đang chạy seed...' : 'Tạo dữ liệu mẫu'}
               </button>
             </div>
 
@@ -168,8 +302,8 @@ export default function SettingsView() {
                 </div>
                 <DL items={[['Cơ sở dữ liệu', settings?.databaseName||'—'], ['Kích thước', settings?.databaseSize||'—']]} />
               </div>
-              <button className={BTN_PRIMARY} type="button" onClick={downloadBackup} disabled={backingUp}>
-                <Upload size={14}/> {backingUp ? 'Đang tạo bản sao lưu...' : 'Tải bản sao lưu'}
+              <button className={BTN_PRIMARY} type="button" onClick={downloadBackup} disabled={operationBusy}>
+                <Upload size={14}/> {isBackingUp ? 'Đang tạo bản sao lưu...' : 'Tải bản sao lưu'}
               </button>
             </div>
 
@@ -184,7 +318,7 @@ export default function SettingsView() {
                 </div>
                 {!settings?.restoreEnabled && (
                   <p className="m-0 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-300/70 text-xs">
-                    Chức năng đang tắt. Đặt <code className="font-mono">ENABLE_DATABASE_RESTORE=true</code> trong cấu hình server.
+                    Máy chủ đang tắt chức năng phục hồi. Bạn vẫn có thể chọn tệp để xem trước; muốn thực hiện phục hồi cần đặt <code className="font-mono">ENABLE_DATABASE_RESTORE=true</code> trong cấu hình server.
                   </p>
                 )}
                 <div className="flex flex-col gap-2.5">
@@ -192,7 +326,7 @@ export default function SettingsView() {
                     <span>Tệp sao lưu (.dump, tối đa {Math.round((settings?.maxRestoreBytes||0)/1024/1024)} MB)</span>
                     <input ref={restoreInput} type="file" accept=".dump,application/octet-stream"
                       className="text-white/40 text-xs file:mr-3 file:h-8 file:px-3 file:rounded-lg file:border file:border-white/15 file:bg-white/[0.07] file:text-white/65 file:text-xs file:cursor-pointer hover:file:bg-white/[0.12] transition-all"
-                      onChange={e => handleRestoreFile(e.target.files?.[0]||null)} disabled={!settings?.restoreEnabled||restoring} />
+                      onChange={e => handleRestoreFile(e.target.files?.[0]||null)} disabled={restoring} />
                     {restoreFile && <small className="text-white/35">{restoreFile.name} · {(restoreFile.size/1024/1024).toFixed(2)} MB</small>}
                   </label>
                   <label className="flex flex-col gap-1.5 text-white/50 text-xs font-medium">
@@ -203,8 +337,8 @@ export default function SettingsView() {
                 </div>
               </div>
               <button className={BTN_DANGER} type="button" onClick={restoreBackup}
-                disabled={!settings?.restoreEnabled||!restoreFile||restoreFile?.size>(settings?.maxRestoreBytes||0)||dbConfirm!==settings?.databaseName||restoring}>
-                {restoring ? 'Đang phục hồi...' : 'Phục hồi và thay thế dữ liệu'}
+                disabled={!settings?.restoreEnabled||!restoreFile||restoreFile?.size>(settings?.maxRestoreBytes||0)||dbConfirm!==settings?.databaseName||operationBusy}>
+                {isRestoring ? 'Đang phục hồi...' : 'Phục hồi và thay thế dữ liệu'}
               </button>
             </div>
           </div>
@@ -236,6 +370,7 @@ export default function SettingsView() {
                 </tbody>
               </table>
             </div>
+            <Pagination page={catalogPage} total={catalogTotal} limit={20} loading={productsLoading} onChange={setCatalogPage} />
           </div>
         </>
       )}
