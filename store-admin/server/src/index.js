@@ -422,15 +422,32 @@ app.get('/api/events/status', (_req, res) => {
   res.json({ kafkaReady, message: kafkaReady ? 'Kafka connected' : 'Kafka connecting...' });
 });
 
-if (process.env.SERVE_CLIENT === 'true') {
-  const clientDist = path.resolve(serverDir, '../client/dist');
-  if (!existsSync(path.join(clientDist, 'index.html'))) {
-    throw new Error('SERVE_CLIENT=true but client/dist/index.html was not found. Build the client before starting the server.');
-  }
+const clientDist = path.resolve(serverDir, '../client/dist');
+const clientIndex = path.join(clientDist, 'index.html');
+const hasClientBuild = existsSync(clientIndex);
+const shouldServeClient = process.env.NODE_ENV === 'production' || hasClientBuild;
+
+if (!hasClientBuild) {
+  console.warn(`⚠️ Frontend build not found at ${clientIndex}; Express will serve API routes only.`);
+} else if (shouldServeClient) {
   app.use(express.static(clientDist, { index: false, maxAge: '1h' }));
-  app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api/')) return next();
-    return res.sendFile(path.join(clientDist, 'index.html'));
+}
+
+// Must remain after every API route so unknown API URLs keep their API 404 response.
+if (shouldServeClient && hasClientBuild) {
+  app.use((req, res, next) => {
+    if (req.method !== 'GET') return next();
+
+    const requestPath = req.path;
+    const isApiPath = requestPath === '/api' || requestPath.startsWith('/api/');
+    const isSpecialPath = ['/uploads', '/pay', '/chat', '/events'].some(prefix =>
+      requestPath === prefix || requestPath.startsWith(`${prefix}/`)
+    );
+    if (isApiPath || isSpecialPath) return next();
+
+    return res.sendFile(clientIndex, error => {
+      if (error) next(error);
+    });
   });
 }
 
