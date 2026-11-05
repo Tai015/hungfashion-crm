@@ -132,7 +132,7 @@ export default function FeedbacksView() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="m-0 text-white/40 text-xs font-semibold tracking-[0.08em] uppercase">CRM</p>
+          <p className="m-0 text-white/40 text-xs font-semibold tracking-[0.08em] uppercase">Chăm sóc khách hàng</p>
           <h1 className="m-0 mt-1 text-[clamp(1.5rem,2.5vw,2rem)] font-bold tracking-tight">Phản hồi khách hàng</h1>
         </div>
       </div>

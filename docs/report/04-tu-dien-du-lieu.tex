@@ -1,0 +1,526 @@
+\chapter{Từ điển dữ liệu chi tiết}
+Từ điển này được sinh từ schema-only dump hiện hành \texttt{database/schema.sql}, gồm 40 bảng như bảng đối chiếu số dòng tại Mục~\ref{sec:backup-restore}. Kiểu, giá trị mặc định, khóa và chỉ mục lấy từ dump; ý nghĩa cột được diễn giải theo nghiệp vụ ứng dụng.
+Bảng \texttt{customer\_interest\_map} chỉ là bảng chuyển tiếp trong migration cũ; sau khi chuyển đổi, bảng chính thức là \texttt{customer\_interest} và không được tính như một bảng riêng.
+\small
+\section{Bảng account}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+account\_id & integer NOT NULL DEFAULT nextval('public.account\_account\_id\_seq'::regclass) PRIMARY KEY & Liên kết tài khoản\\\hline
+role\_id & integer NOT NULL REFERENCES role(role\_id) & Liên kết vai trò\\\hline
+username & character varying(100) NOT NULL UNIQUE & Tên đăng nhập\\\hline
+password\_hash & character varying(255) NOT NULL & Hash mật khẩu\\\hline
+email & character varying(150) UNIQUE & Email\\\hline
+phone & character varying(20) & Số điện thoại\\\hline
+status & public.account\_status DEFAULT 'Active'::public.account\_status NOT NULL & Trạng thái\\\hline
+last\_login & timestamp with time zone & Last login\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+updated\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm cập nhật\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: account\_created\_at\_idx (btree: created\_at DESC); account\_email\_idx (btree: email); account\_role\_idx (btree: role\_id); account\_status\_idx (btree: status); account\_username\_lower\_uidx (UNIQUE, btree: lower((username)::text))}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng brand}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+brand\_id & integer NOT NULL DEFAULT nextval('public.brand\_brand\_id\_seq'::regclass) PRIMARY KEY & Liên kết thương hiệu\\\hline
+brand\_name & character varying(150) NOT NULL UNIQUE & Brand name\\\hline
+description & text & Mô tả\\\hline
+is\_active & boolean DEFAULT true NOT NULL & Cờ hoạt động\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: brand\_active\_idx (btree: is\_active)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng category}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+category\_id & integer NOT NULL DEFAULT nextval('public.category\_category\_id\_seq'::regclass) PRIMARY KEY & Liên kết danh mục\\\hline
+category\_name & character varying(100) NOT NULL UNIQUE & Category name\\\hline
+description & text & Mô tả\\\hline
+parent\_id & integer REFERENCES category(category\_id) & Khóa liên kết đến bản ghi liên quan\\\hline
+is\_active & boolean DEFAULT true NOT NULL & Cờ hoạt động\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: category\_active\_idx (btree: is\_active); category\_parent\_idx (btree: parent\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng chat\_message}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+message\_id & integer NOT NULL DEFAULT nextval('public.chat\_message\_message\_id\_seq'::regclass) PRIMARY KEY & Liên kết tin nhắn\\\hline
+conversation\_id & integer NOT NULL REFERENCES conversation(conversation\_id) ON DELETE CASCADE & Liên kết hội thoại\\\hline
+sender\_account\_id & integer NOT NULL REFERENCES account(account\_id) ON DELETE CASCADE & Tài khoản gửi tin\\\hline
+content & text NOT NULL & Nội dung\\\hline
+sent\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm gửi\\\hline
+is\_read & boolean DEFAULT false NOT NULL & Cờ đã đọc\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: idx\_chat\_message\_conv\_id (btree: conversation\_id); idx\_chat\_message\_sent\_at (btree: sent\_at)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng chat\_message\_attachment}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+attachment\_id & bigint NOT NULL DEFAULT nextval('public.chat\_message\_attachment\_attachment\_id\_seq'::regclass) PRIMARY KEY & Mã tệp đính kèm\\\hline
+message\_id & integer NOT NULL REFERENCES chat\_message(message\_id) ON DELETE CASCADE & Liên kết tin nhắn\\\hline
+storage\_name & character varying(100) NOT NULL UNIQUE & Tên tệp lưu trữ\\\hline
+original\_name & character varying(255) NOT NULL & Tên tệp gốc\\\hline
+mime\_type & character varying(100) NOT NULL & Kiểu MIME\\\hline
+file\_size & bigint NOT NULL & Dung lượng byte\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: chat\_message\_attachment\_message\_idx (btree: message\_id, attachment\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng color}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+color\_id & integer NOT NULL DEFAULT nextval('public.color\_color\_id\_seq'::regclass) PRIMARY KEY & Khóa liên kết đến bản ghi liên quan\\\hline
+color\_name & character varying(50) NOT NULL UNIQUE & Tên màu\\\hline
+hex\_code & character(7) & Mã màu HEX\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng conversation}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+conversation\_id & integer NOT NULL DEFAULT nextval('public.conversation\_conversation\_id\_seq'::regclass) PRIMARY KEY & Liên kết hội thoại\\\hline
+customer\_id & integer NOT NULL REFERENCES customer(customer\_id) ON DELETE CASCADE & Liên kết khách hàng\\\hline
+assigned\_to & integer REFERENCES employee(employee\_id) ON DELETE SET NULL & Nhân viên được phân công\\\hline
+subject & character varying(300) DEFAULT 'Hỗ trợ khách hàng'::character varying NOT NULL & Chủ đề hội thoại\\\hline
+status & character varying(20) DEFAULT 'Open'::character varying NOT NULL & Trạng thái\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+updated\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm cập nhật\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: idx\_conversation\_customer\_id (btree: customer\_id); idx\_conversation\_status (btree: status); idx\_conversation\_updated\_at (btree: updated\_at DESC)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng customer}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+customer\_id & integer NOT NULL DEFAULT nextval('public.customer\_customer\_id\_seq'::regclass) PRIMARY KEY & Liên kết khách hàng\\\hline
+account\_id & integer UNIQUE REFERENCES account(account\_id) ON DELETE SET NULL & Liên kết tài khoản\\\hline
+full\_name & character varying(150) NOT NULL & Họ tên\\\hline
+gender & public.gender\_type & Giới tính\\\hline
+date\_of\_birth & date & Ngày sinh\\\hline
+phone & character varying(20) & Số điện thoại\\\hline
+email & character varying(150) & Email\\\hline
+address & text & Địa chỉ\\\hline
+loyalty\_point & integer DEFAULT 0 NOT NULL & Điểm tích lũy\\\hline
+customer\_tier & character varying(20) DEFAULT 'New'::character varying NOT NULL & Hạng khách hàng\\\hline
+registered\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm đăng ký\\\hline
+updated\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm cập nhật\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: customer\_dob\_idx (btree: date\_of\_birth); customer\_email\_idx (btree: email); customer\_gender\_idx (btree: gender); customer\_name\_idx (btree: full\_name); customer\_phone\_idx (btree: phone); customer\_tier\_idx (btree: customer\_tier)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng customer\_interest}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+customer\_id & integer NOT NULL PRIMARY KEY REFERENCES customer(customer\_id) ON DELETE CASCADE & Liên kết khách hàng\\\hline
+interest\_id & integer NOT NULL PRIMARY KEY REFERENCES interest(interest\_id) ON DELETE CASCADE & Liên kết sở thích\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: customer\_interest\_cust\_idx (btree: customer\_id); customer\_interest\_interest\_idx (btree: interest\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng demo\_payment\_tokens}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+demo\_payment\_token\_id & bigint NOT NULL ADD GENERATED ALWAYS AS IDENTITY PRIMARY KEY & Mã định danh bản ghi token thanh toán demo\\\hline
+order\_id & integer NOT NULL UNIQUE REFERENCES order(order\_id) ON DELETE CASCADE & Mã đơn hàng được phép xác nhận bằng token\\\hline
+token\_hash & character(64) NOT NULL UNIQUE & Giá trị băm của token; không lưu token gốc\\\hline
+expires\_at & timestamp with time zone NOT NULL & Thời điểm token hết hạn\\\hline
+used\_at & timestamp with time zone & Thời điểm token được sử dụng; NULL nếu chưa dùng\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi token\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: demo\_payment\_tokens\_expiry\_idx (btree: expires\_at WHERE (used\_at IS NULL))}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng employee}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+employee\_id & integer NOT NULL DEFAULT nextval('public.employee\_employee\_id\_seq'::regclass) PRIMARY KEY & Liên kết nhân viên\\\hline
+account\_id & integer UNIQUE REFERENCES account(account\_id) ON DELETE SET NULL & Liên kết tài khoản\\\hline
+full\_name & character varying(150) NOT NULL & Họ tên\\\hline
+gender & public.gender\_type & Giới tính\\\hline
+date\_of\_birth & date & Ngày sinh\\\hline
+phone & character varying(20) & Số điện thoại\\\hline
+email & character varying(150) & Email\\\hline
+address & text & Địa chỉ\\\hline
+hire\_date & date DEFAULT CURRENT\_DATE NOT NULL & Ngày vào làm\\\hline
+is\_active & boolean DEFAULT true NOT NULL & Cờ hoạt động\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: employee\_active\_idx (btree: is\_active); employee\_name\_idx (btree: full\_name)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng feedback}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+feedback\_id & integer NOT NULL DEFAULT nextval('public.feedback\_feedback\_id\_seq'::regclass) PRIMARY KEY & Liên kết phản hồi\\\hline
+customer\_id & integer REFERENCES customer(customer\_id) ON DELETE SET NULL & Liên kết khách hàng\\\hline
+product\_id & integer REFERENCES product(product\_id) ON DELETE SET NULL & Liên kết sản phẩm\\\hline
+order\_id & integer REFERENCES order(order\_id) ON DELETE SET NULL & Liên kết đơn hàng\\\hline
+employee\_id & integer REFERENCES employee(employee\_id) ON DELETE SET NULL & Liên kết nhân viên\\\hline
+feedback\_type & public.feedback\_type DEFAULT 'Product'::public.feedback\_type NOT NULL & Loại phản hồi\\\hline
+rating & smallint & Điểm đánh giá\\\hline
+content & text NOT NULL & Nội dung\\\hline
+reply & text & Phản hồi của cửa hàng\\\hline
+status & public.feedback\_status DEFAULT 'New'::public.feedback\_status NOT NULL & Trạng thái\\\hline
+replied\_at & timestamp with time zone & Thời điểm/ngày nghiệp vụ\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: feedback\_created\_at\_idx (btree: created\_at DESC); feedback\_customer\_idx (btree: customer\_id); feedback\_product\_idx (btree: product\_id); feedback\_rating\_idx (btree: rating); feedback\_status\_idx (btree: status)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng feedback\_attachment}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+attachment\_id & bigint NOT NULL DEFAULT nextval('public.feedback\_attachment\_attachment\_id\_seq'::regclass) PRIMARY KEY & Mã tệp đính kèm\\\hline
+feedback\_id & integer NOT NULL REFERENCES feedback(feedback\_id) ON DELETE CASCADE & Liên kết phản hồi\\\hline
+media\_url & text NOT NULL & Đường dẫn media\\\hline
+media\_type & character varying(10) NOT NULL & Loại media\\\hline
+mime\_type & character varying(100) NOT NULL & Kiểu MIME\\\hline
+original\_name & text NOT NULL & Tên tệp gốc\\\hline
+file\_size & bigint NOT NULL & Dung lượng byte\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: feedback\_attachment\_feedback\_idx (btree: feedback\_id, attachment\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng import\_detail}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+detail\_id & integer NOT NULL DEFAULT nextval('public.import\_detail\_detail\_id\_seq'::regclass) PRIMARY KEY & Mã dòng chi tiết\\\hline
+receipt\_id & integer NOT NULL REFERENCES import\_receipt(receipt\_id) ON DELETE CASCADE & Liên kết phiếu kho\\\hline
+variant\_id & integer NOT NULL REFERENCES product\_variant(variant\_id) & Liên kết biến thể\\\hline
+quantity & integer NOT NULL & Số lượng\\\hline
+unit\_price & numeric(15,2) NOT NULL & Unit price\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: import\_detail\_receipt\_idx (btree: receipt\_id); import\_detail\_variant\_idx (btree: variant\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng import\_receipt}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+receipt\_id & integer NOT NULL DEFAULT nextval('public.import\_receipt\_receipt\_id\_seq'::regclass) PRIMARY KEY & Liên kết phiếu kho\\\hline
+supplier\_id & integer REFERENCES supplier(supplier\_id) & Liên kết nhà cung cấp\\\hline
+employee\_id & integer REFERENCES employee(employee\_id) & Liên kết nhân viên\\\hline
+receipt\_type & public.receipt\_type DEFAULT 'Import'::public.receipt\_type NOT NULL & Loại phiếu\\\hline
+note & text & Ghi chú\\\hline
+total\_amount & numeric(15,2) DEFAULT 0 NOT NULL & Tổng tiền\\\hline
+receipt\_date & timestamp with time zone DEFAULT now() NOT NULL & Ngày lập phiếu\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: receipt\_date\_idx (btree: receipt\_date DESC); receipt\_employee\_idx (btree: employee\_id); receipt\_supplier\_idx (btree: supplier\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng interest}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+interest\_id & integer NOT NULL DEFAULT nextval('public.interest\_interest\_id\_seq'::regclass) PRIMARY KEY & Liên kết sở thích\\\hline
+interest\_name & character varying(100) NOT NULL UNIQUE & Tên sở thích\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng loyalty\_point\_transaction}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+loyalty\_transaction\_id & bigint NOT NULL DEFAULT nextval('public.loyalty\_point\_transaction\_loyalty\_transaction\_id\_seq'::regclass) PRIMARY KEY & Mã giao dịch điểm\\\hline
+customer\_id & integer NOT NULL REFERENCES customer(customer\_id) ON DELETE CASCADE & Liên kết khách hàng\\\hline
+order\_id & integer REFERENCES order(order\_id) ON DELETE SET NULL & Liên kết đơn hàng\\\hline
+transaction\_type & character varying(32) NOT NULL & Transaction type\\\hline
+points\_delta & integer NOT NULL & Biến động điểm\\\hline
+balance\_after & integer NOT NULL & Số dư điểm sau giao dịch\\\hline
+note & text & Ghi chú\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: loyalty\_point\_transaction\_customer\_created\_idx (btree: customer\_id, created\_at DESC, loyalty\_transaction\_id DESC); loyalty\_point\_transaction\_order\_type\_idx (UNIQUE, btree: order\_id, transaction\_type WHERE (order\_id IS NOT NULL))}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng order}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+order\_id & integer NOT NULL DEFAULT nextval('public.order\_order\_id\_seq'::regclass) PRIMARY KEY & Liên kết đơn hàng\\\hline
+customer\_id & integer REFERENCES customer(customer\_id) ON DELETE SET NULL & Liên kết khách hàng\\\hline
+employee\_id & integer REFERENCES employee(employee\_id) ON DELETE SET NULL & Liên kết nhân viên\\\hline
+promotion\_id & integer REFERENCES promotion(promotion\_id) & Liên kết khuyến mãi\\\hline
+order\_status & public.order\_status DEFAULT 'Pending'::public.order\_status NOT NULL & Trạng thái đơn hàng\\\hline
+subtotal & numeric(15,2) DEFAULT 0 NOT NULL & Tạm tính\\\hline
+discount\_amt & numeric(15,2) DEFAULT 0 NOT NULL & Số tiền giảm\\\hline
+total\_amount & numeric(15,2) DEFAULT 0 NOT NULL & Tổng tiền\\\hline
+note & text & Ghi chú\\\hline
+shipping\_address & text & Shipping address\\\hline
+order\_channel & character varying(50) DEFAULT 'InStore'::character varying NOT NULL & Kênh bán\\\hline
+ordered\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm đặt đơn\\\hline
+updated\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm cập nhật\\\hline
+loyalty\_points\_redeemed & integer DEFAULT 0 NOT NULL & Loyalty points redeemed\\\hline
+loyalty\_discount & numeric(15,2) DEFAULT 0 NOT NULL & Loyalty discount\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: order\_customer\_idx (btree: customer\_id); order\_date\_idx (btree: ordered\_at DESC); order\_employee\_idx (btree: employee\_id); order\_status\_idx (btree: order\_status)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng order\_detail}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+detail\_id & integer NOT NULL DEFAULT nextval('public.order\_detail\_detail\_id\_seq'::regclass) PRIMARY KEY & Mã dòng chi tiết\\\hline
+order\_id & integer NOT NULL REFERENCES order(order\_id) ON DELETE CASCADE & Liên kết đơn hàng\\\hline
+variant\_id & integer NOT NULL REFERENCES product\_variant(variant\_id) & Liên kết biến thể\\\hline
+quantity & integer NOT NULL & Số lượng\\\hline
+unit\_price & numeric(15,2) NOT NULL & Unit price\\\hline
+subtotal & numeric(15,2) GENERATED ALWAYS AS (((quantity)::numeric * unit\_price)) STORED & Tạm tính\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: order\_detail\_order\_idx (btree: order\_id); order\_detail\_variant\_idx (btree: variant\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng outbox\_events}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+event\_id & text NOT NULL PRIMARY KEY & Mã sự kiện chống ghi trùng\\\hline
+topic & text NOT NULL & Kafka topic\\\hline
+partition\_key & text & Khóa phân vùng Kafka\\\hline
+payload & jsonb NOT NULL & Nội dung sự kiện JSON\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+published\_at & timestamp with time zone & Thời điểm relay công bố\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: outbox\_events\_unpublished\_idx (btree: created\_at, event\_id WHERE (published\_at IS NULL))}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng payment}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+payment\_id & integer NOT NULL DEFAULT nextval('public.payment\_payment\_id\_seq'::regclass) PRIMARY KEY & Mã thanh toán\\\hline
+order\_id & integer NOT NULL UNIQUE REFERENCES order(order\_id) ON DELETE CASCADE & Liên kết đơn hàng\\\hline
+method & public.payment\_method DEFAULT 'Cash'::public.payment\_method NOT NULL & Phương thức\\\hline
+status & public.payment\_status DEFAULT 'Pending'::public.payment\_status NOT NULL & Trạng thái\\\hline
+amount & numeric(15,2) NOT NULL & Số tiền\\\hline
+transaction\_ref & character varying(200) & Mã tham chiếu giao dịch\\\hline
+paid\_at & timestamp with time zone & Thời điểm thanh toán\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: payment\_order\_idx (btree: order\_id); payment\_status\_idx (btree: status)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng permission}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+permission\_id & integer NOT NULL DEFAULT nextval('public.permission\_permission\_id\_seq'::regclass) PRIMARY KEY & Liên kết quyền\\\hline
+permission\_code & character varying(80) NOT NULL UNIQUE & Mã quyền\\\hline
+description & text & Mô tả\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng product}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+product\_id & integer NOT NULL DEFAULT nextval('public.product\_product\_id\_seq'::regclass) PRIMARY KEY & Liên kết sản phẩm\\\hline
+category\_id & integer NOT NULL REFERENCES category(category\_id) & Liên kết danh mục\\\hline
+brand\_id & integer REFERENCES brand(brand\_id) & Liên kết thương hiệu\\\hline
+product\_name & character varying(200) NOT NULL & Tên sản phẩm\\\hline
+description & text & Mô tả\\\hline
+import\_price & numeric(15,2) NOT NULL & Giá nhập\\\hline
+selling\_price & numeric(15,2) NOT NULL & Giá bán\\\hline
+image\_url & text & Đường dẫn ảnh\\\hline
+is\_active & boolean DEFAULT true NOT NULL & Cờ hoạt động\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+updated\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm cập nhật\\\hline
+supplier\_id & integer REFERENCES supplier(supplier\_id) & Liên kết nhà cung cấp\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: product\_active\_idx (btree: is\_active); product\_brand\_idx (btree: brand\_id); product\_category\_idx (btree: category\_id); product\_created\_at\_idx (btree: created\_at DESC); product\_name\_idx (gin: to\_tsvector('simple'::regconfig, (product\_name)::text)); product\_price\_idx (btree: selling\_price); product\_supplier\_idx (btree: supplier\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng product\_image}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+image\_id & integer NOT NULL DEFAULT nextval('public.product\_image\_image\_id\_seq'::regclass) PRIMARY KEY & Khóa liên kết đến bản ghi liên quan\\\hline
+product\_id & integer NOT NULL REFERENCES product(product\_id) ON DELETE CASCADE & Liên kết sản phẩm\\\hline
+image\_url & text NOT NULL & Đường dẫn ảnh\\\hline
+is\_primary & boolean DEFAULT false NOT NULL & Cờ ảnh chính\\\hline
+display\_order & smallint DEFAULT 1 NOT NULL & Thứ tự hiển thị\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: product\_image\_product\_idx (btree: product\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng product\_variant}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+variant\_id & integer NOT NULL DEFAULT nextval('public.product\_variant\_variant\_id\_seq'::regclass) PRIMARY KEY & Liên kết biến thể\\\hline
+product\_id & integer NOT NULL REFERENCES product(product\_id) ON DELETE CASCADE & Liên kết sản phẩm\\\hline
+size\_id & integer NOT NULL REFERENCES size(size\_id) & Khóa liên kết đến bản ghi liên quan\\\hline
+color\_id & integer NOT NULL REFERENCES color(color\_id) & Khóa liên kết đến bản ghi liên quan\\\hline
+sku & character varying(100) UNIQUE & Mã SKU\\\hline
+quantity & integer DEFAULT 0 NOT NULL & Số lượng\\\hline
+selling\_price & numeric(15,2) & Giá bán\\\hline
+is\_active & boolean DEFAULT true NOT NULL & Cờ hoạt động\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Ràng buộc: UNIQUE (product\_id, size\_id, color\_id)}\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: variant\_active\_idx (btree: is\_active); variant\_color\_idx (btree: color\_id); variant\_product\_idx (btree: product\_id); variant\_size\_idx (btree: size\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng promotion}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+promotion\_id & integer NOT NULL DEFAULT nextval('public.promotion\_promotion\_id\_seq'::regclass) PRIMARY KEY & Liên kết khuyến mãi\\\hline
+code & character varying(50) NOT NULL UNIQUE & Mã\\\hline
+name & character varying(200) NOT NULL & Tên\\\hline
+promo\_type & public.promotion\_type DEFAULT 'Percent'::public.promotion\_type NOT NULL & Loại ưu đãi\\\hline
+value & numeric(10,2) NOT NULL & Giá trị ưu đãi\\\hline
+min\_order & numeric(15,2) DEFAULT 0 NOT NULL & Giá trị đơn tối thiểu\\\hline
+max\_discount & numeric(15,2) & Mức giảm tối đa\\\hline
+usage\_limit & integer & Giới hạn lượt dùng\\\hline
+used\_count & integer DEFAULT 0 NOT NULL & Số lượt đã dùng\\\hline
+start\_date & date NOT NULL & Ngày bắt đầu\\\hline
+end\_date & date NOT NULL & Ngày kết thúc\\\hline
+is\_active & boolean DEFAULT true NOT NULL & Cờ hoạt động\\\hline
+created\_by & integer REFERENCES employee(employee\_id) & Nhân viên tạo\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng role}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+role\_id & integer NOT NULL DEFAULT nextval('public.role\_role\_id\_seq'::regclass) PRIMARY KEY & Liên kết vai trò\\\hline
+role\_name & character varying(50) NOT NULL UNIQUE & Tên vai trò\\\hline
+description & text & Mô tả\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng role\_permission}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+role\_id & integer NOT NULL PRIMARY KEY REFERENCES role(role\_id) ON DELETE CASCADE & Liên kết vai trò\\\hline
+permission\_id & integer NOT NULL PRIMARY KEY REFERENCES permission(permission\_id) ON DELETE CASCADE & Liên kết quyền\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng size}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+size\_id & integer NOT NULL DEFAULT nextval('public.size\_size\_id\_seq'::regclass) PRIMARY KEY & Khóa liên kết đến bản ghi liên quan\\\hline
+size\_name & character varying(20) NOT NULL UNIQUE & Tên kích cỡ\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng store\_admin\_schema\_migrations}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+version & character varying(32) NOT NULL PRIMARY KEY & Phiên bản migration đã áp dụng\\\hline
+name & text NOT NULL & Tên migration đã áp dụng\\\hline
+applied\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm áp dụng migration\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng supplier}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+supplier\_id & integer NOT NULL DEFAULT nextval('public.supplier\_supplier\_id\_seq'::regclass) PRIMARY KEY & Liên kết nhà cung cấp\\\hline
+supplier\_name & character varying(200) NOT NULL & Tên nhà cung cấp\\\hline
+contact\_name & character varying(150) & Tên người liên hệ\\\hline
+phone & character varying(20) & Số điện thoại\\\hline
+email & character varying(150) & Email\\\hline
+address & text & Địa chỉ\\\hline
+is\_active & boolean DEFAULT true NOT NULL & Cờ hoạt động\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: supplier\_active\_idx (btree: is\_active); supplier\_name\_idx (btree: supplier\_name)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng survey}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+survey\_id & integer NOT NULL DEFAULT nextval('public.survey\_survey\_id\_seq'::regclass) PRIMARY KEY & Liên kết khảo sát\\\hline
+created\_by & integer REFERENCES employee(employee\_id) ON DELETE SET NULL & Nhân viên tạo\\\hline
+title & character varying(300) NOT NULL & Tiêu đề\\\hline
+description & text & Mô tả\\\hline
+target\_gender & public.gender\_type & Giới tính mục tiêu\\\hline
+target\_tier & character varying(20) & Hạng mục tiêu\\\hline
+min\_age & integer & Tuổi tối thiểu\\\hline
+max\_age & integer & Tuổi tối đa\\\hline
+status & public.survey\_status DEFAULT 'Draft'::public.survey\_status NOT NULL & Trạng thái\\\hline
+start\_date & date & Ngày bắt đầu\\\hline
+end\_date & date & Ngày kết thúc\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+updated\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm cập nhật\\\hline
+target\_interest\_id & integer REFERENCES interest(interest\_id) ON DELETE SET NULL & Sở thích mục tiêu\\\hline
+reward\_promotion\_id & integer REFERENCES promotion(promotion\_id) ON DELETE SET NULL & Khuyến mãi thưởng\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: survey\_created\_at\_idx (btree: created\_at DESC); survey\_status\_idx (btree: status)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng survey\_answer}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+answer\_id & integer NOT NULL DEFAULT nextval('public.survey\_answer\_answer\_id\_seq'::regclass) PRIMARY KEY & Mã câu trả lời\\\hline
+response\_id & integer NOT NULL REFERENCES survey\_response(response\_id) ON DELETE CASCADE & Liên kết lượt trả lời\\\hline
+question\_id & integer NOT NULL REFERENCES survey\_question(question\_id) & Liên kết câu hỏi\\\hline
+option\_id & integer REFERENCES survey\_option(option\_id) & Liên kết lựa chọn\\\hline
+answer\_text & text & Nội dung trả lời\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: sa\_question\_idx (btree: question\_id); sa\_response\_idx (btree: response\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng survey\_invitation}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+invitation\_id & integer NOT NULL DEFAULT nextval('public.survey\_invitation\_invitation\_id\_seq'::regclass) PRIMARY KEY & Mã lời mời khảo sát\\\hline
+survey\_id & integer NOT NULL REFERENCES survey(survey\_id) ON DELETE CASCADE & Liên kết khảo sát\\\hline
+customer\_id & integer NOT NULL REFERENCES customer(customer\_id) ON DELETE CASCADE & Liên kết khách hàng\\\hline
+invited\_by & integer REFERENCES employee(employee\_id) ON DELETE SET NULL & Nhân viên gửi lời mời\\\hline
+status & character varying(20) DEFAULT 'Sent'::character varying NOT NULL & Trạng thái\\\hline
+invited\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm mời\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Ràng buộc: UNIQUE (survey\_id, customer\_id)}\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: survey\_invitation\_customer\_idx (btree: customer\_id); survey\_invitation\_survey\_idx (btree: survey\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng survey\_option}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+option\_id & integer NOT NULL DEFAULT nextval('public.survey\_option\_option\_id\_seq'::regclass) PRIMARY KEY & Liên kết lựa chọn\\\hline
+question\_id & integer NOT NULL REFERENCES survey\_question(question\_id) ON DELETE CASCADE & Liên kết câu hỏi\\\hline
+option\_text & character varying(300) NOT NULL & Nội dung lựa chọn\\\hline
+display\_order & smallint DEFAULT 1 NOT NULL & Thứ tự hiển thị\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Ràng buộc: UNIQUE (question\_id, option\_id)}\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: so\_question\_idx (btree: question\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng survey\_question}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+question\_id & integer NOT NULL DEFAULT nextval('public.survey\_question\_question\_id\_seq'::regclass) PRIMARY KEY & Liên kết câu hỏi\\\hline
+survey\_id & integer NOT NULL REFERENCES survey(survey\_id) ON DELETE CASCADE & Liên kết khảo sát\\\hline
+question\_text & text NOT NULL & Nội dung câu hỏi\\\hline
+question\_type & public.question\_type DEFAULT 'SingleChoice'::public.question\_type NOT NULL & Loại câu hỏi\\\hline
+display\_order & smallint DEFAULT 1 NOT NULL & Thứ tự hiển thị\\\hline
+is\_required & boolean DEFAULT true NOT NULL & Câu hỏi bắt buộc\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: sq\_survey\_idx (btree: survey\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng survey\_response}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+response\_id & integer NOT NULL DEFAULT nextval('public.survey\_response\_response\_id\_seq'::regclass) PRIMARY KEY & Liên kết lượt trả lời\\\hline
+survey\_id & integer NOT NULL REFERENCES survey(survey\_id) ON DELETE CASCADE & Liên kết khảo sát\\\hline
+customer\_id & integer REFERENCES customer(customer\_id) ON DELETE SET NULL & Liên kết khách hàng\\\hline
+submitted\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm gửi câu trả lời\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Ràng buộc: UNIQUE (survey\_id, customer\_id)}\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: sr\_survey\_idx (btree: survey\_id)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng transactions}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+id & bigint NOT NULL ADD GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY & Khóa định danh nội bộ\\\hline
+source & text NOT NULL & Nguồn dữ liệu\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+event\_id & text & Mã sự kiện chống ghi trùng\\\hline
+session\_id & text & Mã phiên\\\hline
+event\_type & text NOT NULL & Loại sự kiện\\\hline
+transaction\_id & text & Mã giao dịch nghiệp vụ\\\hline
+benchmark\_run\_id & text & Mã lần benchmark\\\hline
+amount & numeric(15,2) & Số tiền\\\hline
+currency & text & Đơn vị tiền tệ\\\hline
+status & text & Trạng thái\\\hline
+item\_count & integer & Số mặt hàng\\\hline
+page & text & Trang phát sinh sự kiện\\\hline
+action & text & Hành động\\\hline
+producer\_source & text & Nguồn phát sự kiện\\\hline
+occurred\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm sự kiện\\\hline
+user\_id & text & Mã người dùng\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: transactions\_created\_at\_idx (btree: created\_at DESC); transactions\_event\_id\_unique\_idx (UNIQUE, btree: event\_id); transactions\_transaction\_id\_idx (btree: transaction\_id); transactions\_type\_occurred\_idx (btree: event\_type, occurred\_at DESC)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng user\_events}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+id & bigint NOT NULL ADD GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY & Khóa định danh nội bộ\\\hline
+source & text NOT NULL & Nguồn dữ liệu\\\hline
+created\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm tạo bản ghi\\\hline
+event\_id & text & Mã sự kiện chống ghi trùng\\\hline
+session\_id & text & Mã phiên\\\hline
+event\_type & text NOT NULL & Loại sự kiện\\\hline
+page & text & Trang phát sinh sự kiện\\\hline
+section & text & Khu vực phát sinh sự kiện\\\hline
+action & text & Hành động\\\hline
+source\_check & text & Dấu kiểm tra nguồn\\\hline
+occurred\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm sự kiện\\\hline
+user\_id & text & Mã người dùng\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: user\_events\_created\_at\_idx (btree: created\_at DESC); user\_events\_event\_id\_unique\_idx (UNIQUE, btree: event\_id); user\_events\_type\_occurred\_idx (btree: event\_type, occurred\_at DESC)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng user\_promotion}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+user\_promo\_id & integer NOT NULL DEFAULT nextval('public.user\_promotion\_user\_promo\_id\_seq'::regclass) PRIMARY KEY & Mã khuyến mãi được cấp\\\hline
+customer\_id & integer NOT NULL REFERENCES customer(customer\_id) ON DELETE CASCADE & Liên kết khách hàng\\\hline
+promotion\_id & integer NOT NULL REFERENCES promotion(promotion\_id) ON DELETE CASCADE & Liên kết khuyến mãi\\\hline
+status & public.user\_promo\_status DEFAULT 'Available'::public.user\_promo\_status NOT NULL & Trạng thái\\\hline
+assigned\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm phân bổ\\\hline
+used\_at & timestamp with time zone & Thời điểm sử dụng\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Ràng buộc: UNIQUE (customer\_id, promotion\_id)}\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: user\_promo\_customer\_idx (btree: customer\_id); user\_promo\_status\_idx (btree: status)}\\\hline
+\end{longtable}
+\normalsize

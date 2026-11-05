@@ -115,7 +115,7 @@ function VariantModal({ product, onAdd, onClose }) {
 }
 
 /* ── Catalog sản phẩm ── */
-function CustomerCatalog({ onGoCart }) {
+function CustomerCatalog({ onGoCart, guest = false, onLogin }) {
   const [products, setProducts] = useState([]);
   const [search, setSearch]     = useState('');
   const [sort, setSort]         = useState('created_at');
@@ -189,9 +189,9 @@ function CustomerCatalog({ onGoCart }) {
                   <strong className="portal-price text-base font-bold">{Number(p.selling_price).toLocaleString('vi-VN')}đ</strong>
                   <small className="portal-stock text-xs">Còn {p.total_stock} sản phẩm</small>
                   <button className={`${CATALOG_PRIMARY} mt-1 w-full justify-center text-xs h-9 px-3`}
-                    disabled={p.total_stock <= 0}
-                    onClick={() => setModalProduct(p)}>
-                    <ShoppingCart size={13}/> {p.total_stock>0?'Thêm vào giỏ':'Hết hàng'}
+                    disabled={!guest && p.total_stock <= 0}
+                    onClick={() => guest ? onLogin?.() : setModalProduct(p)}>
+                    <ShoppingCart size={13}/> {guest ? 'Đăng nhập để mua' : p.total_stock>0?'Thêm vào giỏ':'Hết hàng'}
                   </button>
                 </div>
               </article>
@@ -209,7 +209,7 @@ function CustomerCatalog({ onGoCart }) {
           )}
         </>
       )}
-      {modalProduct && (
+      {!guest && modalProduct && (
         <VariantModal product={modalProduct} onAdd={handleAdded} onClose={() => setModalProduct(null)} />
       )}
     </div>
@@ -722,7 +722,7 @@ function PortalInner({ user, onUserUpdated, onLogout }) {
     ['loyalty','Điểm thưởng'],
     ['feedback','Gửi phản hồi'],
     ['surveys','Khảo sát'],
-    ['chat','Chat hỗ trợ', unreadChatCount],
+    ['chat','Trò chuyện hỗ trợ', unreadChatCount],
   ];
 
   useEffect(() => {
@@ -779,5 +779,26 @@ export default function CustomerPortal({ user, onUserUpdated, onLogout }) {
     <CartProvider key={user.account_id} accountId={user.account_id}>
       <PortalInner user={user} onUserUpdated={onUserUpdated} onLogout={onLogout} />
     </CartProvider>
+  );
+}
+
+export function GuestStorefront({ onLogin, onRegister }) {
+  return (
+    <div className="customer-portal-shell" data-theme="light">
+      <main className="customer-portal-main">
+        <header className="customer-portal-header">
+          <div className="customer-portal-header-left">
+            <span className="customer-portal-brand-mark" aria-hidden="true">H</span>
+            <div className="customer-portal-page-title"><span>Hung Fashion <i>/</i></span><strong>Cửa hàng</strong></div>
+          </div>
+          <div className="customer-portal-header-actions">
+            <button type="button" className="guest-auth-button" onClick={onLogin}>Đăng nhập</button>
+            <button type="button" className="guest-auth-button guest-auth-button-primary" onClick={onRegister}>Đăng ký</button>
+          </div>
+          <span className="customer-portal-header-glow" aria-hidden="true" />
+        </header>
+        <div className="customer-portal-content"><CustomerCatalog guest onLogin={onLogin} /></div>
+      </main>
+    </div>
   );
 }

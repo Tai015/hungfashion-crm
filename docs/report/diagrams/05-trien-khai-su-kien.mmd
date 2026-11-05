@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph Local[Phát triển local]
+      Browser[React/Vite browser]
+      API[Express API]
+      PG[(PostgreSQL Docker)]
+      K[Kafka Docker]
+      UI[Kafka UI]
+    end
+    subgraph Managed[Môi trường managed theo cấu hình triển khai]
+      App[Express API container]
+      DB[(PostgreSQL managed, SSL CA)]
+      Broker[(Kafka managed, TLS client certificate)]
+    end
+    Browser -->|HTTP /api, JWT| API
+    API --> PG
+    API -->|business transaction + outbox| PG
+    PG -->|poll unpublished; SKIP LOCKED| API
+    API -->|user-events / transaction-events| K
+    K --> API
+    K --> UI
+    Browser -->|HTTPS| App
+    App --> DB
+    App -->|outbox relay producer| Broker
+    Broker -->|consumer group store-admin-group| App
+    App -->|insert idempotent| DB
+    Browser -->|DEMO QR URL, no bank| App

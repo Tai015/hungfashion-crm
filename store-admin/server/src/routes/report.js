@@ -35,9 +35,104 @@ function optionalReportRange(req, res) {
   return { from, to };
 }
 
+function requireReportRole(req, res, roles) {
+  if (req.user.role_name === 'ADMIN' || roles.includes(req.user.role_name)) return true;
+  res.status(403).json({ message: 'Bạn không có quyền xem mục này.' });
+  return false;
+}
+
+// GET /api/reports/warehouse/movements – nhập/xuất theo ngày, chỉ QL_KHO/ADMIN.
+router.get('/warehouse/movements', async (req, res) => {
+  if (!requireReportRole(req, res, ['QL_KHO'])) return;
+  const dateRange = optionalReportRange(req, res);
+  if (!dateRange) return;
+  try {
+    const { rows } = await pool.query(
+      `SELECT DATE_TRUNC('day', r.receipt_date)::date AS period,
+              r.receipt_type,
+              COALESCE(SUM(d.quantity), 0)::int AS quantity,
+              COALESCE(SUM(d.quantity * d.unit_price), 0)::numeric AS value
+       FROM import_receipt r
+       LEFT JOIN import_detail d ON d.receipt_id = r.receipt_id
+       WHERE r.receipt_type IN ('Import', 'Export')
+         AND ($1::date IS NULL OR (r.receipt_date >= $1::date AND r.receipt_date < $2::date + INTERVAL '1 day'))
+       GROUP BY period, r.receipt_type
+       ORDER BY period, r.receipt_type`,
+      [dateRange.from, dateRange.to],
+    );
+    res.json(rows);
+  } catch (err) { return fail(res, err, 'warehouse-movements', 'Không thể tải biến động kho.'); }
+});
+
+router.get('/warehouse/summary', async (req, res) => {
+  if (!requireReportRole(req, res, ['QL_KHO'])) return;
+  const threshold = clampInt(req.query.threshold, { fallback: 10, min: 0, max: 1000000 });
+  if (threshold === null) return res.status(400).json({ message: 'threshold phải là số nguyên từ 0 đến 1000000.' });
+  try {
+    const [valueResult, lowStockResult] = await Promise.all([
+      pool.query(`SELECT COALESCE(SUM(pv.quantity * p.import_price), 0)::numeric AS inventory_value
+                  FROM product_variant pv JOIN product p ON p.product_id = pv.product_id
+                  WHERE pv.is_active = TRUE AND p.is_active = TRUE`),
+      pool.query(`SELECT pv.variant_id, p.product_name, pv.sku, s.size_name, c.color_name,
+                         pv.quantity, $1::int AS threshold
+                  FROM product_variant pv JOIN product p ON p.product_id = pv.product_id
+                  LEFT JOIN size s ON s.size_id = pv.size_id
+                  LEFT JOIN color c ON c.color_id = pv.color_id
+                  WHERE pv.is_active = TRUE AND p.is_active = TRUE AND pv.quantity <= $1
+                  ORDER BY pv.quantity, p.product_name, pv.variant_id`, [threshold]),
+    ]);
+    res.json({ inventoryValue: Number(valueResult.rows[0].inventory_value), threshold, lowStock: lowStockResult.rows });
+  } catch (err) { return fail(res, err, 'warehouse-summary', 'Không thể tải tổng hợp kho.'); }
+});
+
+router.get('/warehouse/suppliers', async (req, res) => {
+  if (!requireReportRole(req, res, ['QL_KHO'])) return;
+  const dateRange = optionalReportRange(req, res);
+  if (!dateRange) return;
+  try {
+    const { rows } = await pool.query(
+      `SELECT COALESCE(s.supplier_name, 'Không xác định') AS supplier_name,
+              COUNT(DISTINCT r.receipt_id)::int AS receipt_count,
+              COALESCE(SUM(d.quantity), 0)::int AS imported_quantity,
+              COALESCE(SUM(d.quantity * d.unit_price), 0)::numeric AS imported_value
+       FROM import_receipt r
+       LEFT JOIN supplier s ON s.supplier_id = r.supplier_id
+       LEFT JOIN import_detail d ON d.receipt_id = r.receipt_id
+       WHERE r.receipt_type = 'Import'
+         AND ($1::date IS NULL OR (r.receipt_date >= $1::date AND r.receipt_date < $2::date + INTERVAL '1 day'))
+       GROUP BY s.supplier_id, s.supplier_name
+       ORDER BY imported_value DESC, supplier_name`,
+      [dateRange.from, dateRange.to],
+    );
+    res.json(rows);
+  } catch (err) { return fail(res, err, 'warehouse-suppliers', 'Không thể tải thống kê nhập theo nhà cung cấp.'); }
+});
+
+router.get('/hr/summary', async (req, res) => {
+  if (!requireReportRole(req, res, ['QL_NHAN_SU'])) return;
+  const dateRange = optionalReportRange(req, res);
+  if (!dateRange) return;
+  try {
+    const [status, positions, hires] = await Promise.all([
+      pool.query(`SELECT CASE WHEN is_active THEN 'Đang làm việc' ELSE 'Ngừng hoạt động' END AS status,
+                         COUNT(*)::int AS count
+                  FROM employee GROUP BY is_active ORDER BY is_active DESC`),
+      pool.query(`SELECT COALESCE(position, 'Chưa phân chức vụ') AS position, COUNT(*)::int AS count
+                  FROM employee GROUP BY position ORDER BY count DESC, position`),
+      pool.query(`SELECT DATE_TRUNC('month', hire_date)::date AS month, COUNT(*)::int AS count
+                  FROM employee
+                  WHERE ($1::date IS NULL OR (hire_date >= $1::date AND hire_date < $2::date + INTERVAL '1 day'))
+                  GROUP BY month ORDER BY month`, [dateRange.from, dateRange.to]),
+    ]);
+    const { rows: [total] } = await pool.query('SELECT COUNT(*)::int AS total FROM employee');
+    res.json({ total: total.total, statuses: status.rows, positions: positions.rows, hiresByMonth: hires.rows });
+  } catch (err) { return fail(res, err, 'hr-summary', 'Không thể tải báo cáo nhân sự.'); }
+});
+
 // GET /api/reports/summary?days=7|30|365 – số liệu cho dashboard bán hàng.
 // Chỉ đơn có payment.status = 'Paid' được tính vào doanh thu, số đơn và chuyển đổi.
 router.get('/summary', async (req, res) => {
+  if (!requireReportRole(req, res, ['QL_BAN_HANG'])) return;
   const days = req.query.days === undefined ? 30 : Number(req.query.days);
   if (![7, 30, 365].includes(days)) {
     return res.status(400).json({ message: 'days chỉ nhận 7, 30 hoặc 365.' });
@@ -118,6 +213,7 @@ router.get('/summary', async (req, res) => {
 
 // GET /api/reports/dashboard – tổng quan CRM dashboard
 router.get('/dashboard', async (req, res) => {
+  if (!requireReportRole(req, res, ['QL_KHACH_HANG'])) return;
   const dateRange = optionalReportRange(req, res);
   if (!dateRange) return;
   try {
@@ -199,6 +295,7 @@ router.get('/dashboard', async (req, res) => {
 
 // GET /api/reports/revenue – doanh thu theo khoảng thời gian
 router.get('/revenue', async (req, res) => {
+  if (!requireReportRole(req, res, ['QL_BAN_HANG'])) return;
   const { from, to } = req.query;
   const groupBy = req.query.group_by ?? 'day';
   if ((from !== undefined && !isDateOnly(from)) || (to !== undefined && !isDateOnly(to))) {
@@ -238,6 +335,7 @@ router.get('/revenue', async (req, res) => {
 
 // GET /api/reports/top-products – sản phẩm bán chạy
 router.get('/top-products', async (req, res) => {
+  if (!requireReportRole(req, res, ['QL_BAN_HANG'])) return;
   const limit = clampInt(req.query.limit, { fallback: 10, min: 1, max: 100 });
   if (limit === null) return res.status(400).json({ message: 'limit phải là số nguyên từ 1 đến 100.' });
   const { from, to } = req.query;
@@ -335,6 +433,7 @@ router.get('/customer-ages', async (req, res) => {
 
 // GET /api/reports/customer-segments – phân khúc khách hàng theo chi tiêu
 router.get('/customer-segments', async (req, res) => {
+  if (!requireReportRole(req, res, ['QL_KHACH_HANG'])) return;
   const dateRange = optionalReportRange(req, res);
   if (!dateRange) return;
   try {
@@ -367,6 +466,7 @@ router.get('/customer-segments', async (req, res) => {
 
 // GET /api/reports/interests – thống kê sở thích khách hàng
 router.get('/interests', async (req, res) => {
+  if (!requireReportRole(req, res, ['QL_KHACH_HANG'])) return;
   const dateRange = optionalReportRange(req, res);
   if (!dateRange) return;
   try {

@@ -266,7 +266,7 @@ export default function SettingsView() {
                 <div>
                   <p className="m-0 text-white/40 text-xs font-semibold tracking-widest uppercase mb-1">Danh mục sản phẩm</p>
                   <h2 className="m-0 text-base font-bold mb-1.5">Cào dữ liệu thời trang mẫu</h2>
-                  <p className="m-0 text-white/40 text-xs leading-relaxed">Python cào trang HTML Fashion Studio, chuẩn hóa rồi thêm/cập nhật sản phẩm, biến thể trong catalog CRM.</p>
+                  <p className="m-0 text-white/40 text-xs leading-relaxed">Thu thập dữ liệu sản phẩm từ trang Fashion Studio, chuẩn hóa rồi thêm hoặc cập nhật sản phẩm và biến thể trong danh mục.</p>
                 </div>
                 <DL items={[['Nguồn', settings?.sourceName||'—'], ['Trong catalog', settings?.catalogProductCount??0], ['Nhập gần nhất', fmtDate(settings?.lastCatalogImportAt)]]} />
               </div>

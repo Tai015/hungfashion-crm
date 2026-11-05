@@ -8,14 +8,12 @@ import { confirmDestructiveAction } from '../utils/confirmAction';
 import { useSweetAlertMessages } from '../utils/notifications';
 import PaymentCountdown from '../components/PaymentCountdown';
 import QRCode from 'qrcode';
+import { ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '../utils/viLabels';
 
 const fmtVND  = n => Number(n).toLocaleString('vi-VN') + 'đ';
 const fmtDate = v => v ? new Date(v).toLocaleString('vi-VN') : '—';
 
-const STATUS_LABEL = {
-  Pending:'Chờ xác nhận', Confirmed:'Đã xác nhận', Processing:'Đang xử lý',
-  Shipped:'Đang giao', Delivered:'Đã giao', Cancelled:'Đã hủy', Refunded:'Đã hoàn tiền',
-};
+const STATUS_LABEL = ORDER_STATUS_LABELS;
 const STATUS_COLOR = {
   Pending:   'bg-amber-500/15 text-amber-400 border-amber-500/25',
   Confirmed: 'bg-sky-500/15 text-sky-400 border-sky-500/25',
@@ -234,7 +232,7 @@ function OrderDetail({ orderId, onBack, onReviewProduct }) {
               <h2 className="m-0 text-[1.05rem] font-semibold">Thông tin thanh toán</h2>
               <dl className="grid grid-cols-2 gap-2 text-sm">
                 <dt className="text-white/45">Phương thức</dt><dd className="m-0 font-medium">{order.payment.method==='BankTransfer'?'Chuyển khoản QR':order.payment.method==='Cash'?'Tiền mặt khi nhận':'Phương thức khác'}</dd>
-                <dt className="text-white/45">Trạng thái</dt><dd className="m-0"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${order.payment.status==='Paid'?'bg-emerald-500/15 text-emerald-400':order.payment.status==='Pending'?'bg-amber-500/15 text-amber-400':'bg-slate-500/15 text-slate-400'}`}>{({ Paid:'Đã thanh toán', Pending:'Chờ thanh toán', Failed:'Thanh toán chưa hoàn tất', Refunded:'Đã hoàn tiền' })[order.payment.status] || order.payment.status}</span></dd>
+                <dt className="text-white/45">Trạng thái</dt><dd className="m-0"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${order.payment.status==='Paid'?'bg-emerald-500/15 text-emerald-400':order.payment.status==='Pending'?'bg-amber-500/15 text-amber-400':'bg-slate-500/15 text-slate-400'}`}>{PAYMENT_STATUS_LABELS[order.payment.status] || order.payment.status}</span></dd>
                 <dt className="text-white/45">Số tiền</dt><dd className="m-0 tabular-nums font-bold text-orange-400">{fmtVND(order.payment.amount)}</dd>
               </dl>
               {order.payment.method==='BankTransfer' && order.payment.status==='Pending' && (
@@ -369,8 +367,8 @@ export default function CustomerOrdersView({ onReviewProduct }) {
               value={statusFilter} onChange={event => { setPage(1); setStatusFilter(event.target.value); }}>
               <option value="">Tất cả trạng thái</option>
               <option value="Pending">Chờ xác nhận</option><option value="Confirmed">Đã xác nhận</option>
-              <option value="Processing">Đang xử lý</option><option value="Shipped">Đang giao</option>
-              <option value="Delivered">Đã giao</option><option value="Cancelled">Đã hủy</option>
+              <option value="Processing">Đang xử lý</option><option value="Shipped">Đang giao hàng</option>
+              <option value="Delivered">Đã giao hàng</option><option value="Cancelled">Đã hủy</option>
               <option value="Refunded">Đã hoàn tiền</option>
             </select>
           </label>

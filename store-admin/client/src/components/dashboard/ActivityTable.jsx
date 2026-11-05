@@ -1,11 +1,12 @@
 import SectionState from './SectionState';
 import { formatRelativeDate, formatVnd } from '../../utils/dashboardFormatters';
 import GlassCard from './GlassCard';
+import { ORDER_CHANNEL_LABELS, ORDER_STATUS_LABELS } from '../../utils/viLabels';
 
 const ORDER_STATUS = {
-  Pending: ['Chờ xác nhận', 'processing'], Confirmed: ['Đã xác nhận', 'completed'],
-  Processing: ['Đang xử lý', 'processing'], Shipped: ['Đang giao', 'processing'],
-  Delivered: ['Đã giao', 'completed'], Cancelled: ['Đã hủy', 'failed'], Refunded: ['Đã hoàn tiền', 'failed'],
+  Pending: [ORDER_STATUS_LABELS.Pending, 'processing'], Confirmed: [ORDER_STATUS_LABELS.Confirmed, 'completed'],
+  Processing: [ORDER_STATUS_LABELS.Processing, 'processing'], Shipped: [ORDER_STATUS_LABELS.Shipped, 'processing'],
+  Delivered: [ORDER_STATUS_LABELS.Delivered, 'completed'], Cancelled: [ORDER_STATUS_LABELS.Cancelled, 'failed'], Refunded: [ORDER_STATUS_LABELS.Refunded, 'failed'],
 };
 const FEEDBACK_STATUS = { New: ['Mới tiếp nhận', 'processing'], Processing: ['Đang xử lý', 'processing'], Resolved: ['Đã giải quyết', 'completed'], Rejected: ['Đã từ chối', 'failed'] };
 const FEEDBACK_TYPE = { Product: 'Sản phẩm', Service: 'Dịch vụ', Staff: 'Nhân viên', Complaint: 'Khiếu nại', Suggestion: 'Góp ý' };
@@ -31,7 +32,7 @@ export default function ActivityTable({ type, rows = [], status, onRetry }) {
         const name = row.customer_name || '—';
         const id = isOrders ? row.order_id : row.feedback_id;
         const rowStatus = statusInfo(isOrders ? row.order_status : row.status, type);
-        const details = isOrders ? row.order_channel : row.feedback_type ? FEEDBACK_TYPE[row.feedback_type] || row.feedback_type : '—';
+        const details = isOrders ? ORDER_CHANNEL_LABELS[row.order_channel] || row.order_channel : row.feedback_type ? FEEDBACK_TYPE[row.feedback_type] || row.feedback_type : '—';
         const subject = isOrders ? `#${id}` : row.product_name || 'Phản hồi chung';
         const value = isOrders ? (row.total_amount == null ? '—' : formatVnd(row.total_amount)) : (row.rating == null ? '—' : `${row.rating}/5`);
         const occurredAt = isOrders ? row.ordered_at : row.created_at;
@@ -45,7 +46,7 @@ export default function ActivityTable({ type, rows = [], status, onRetry }) {
         const name = row.customer_name || '—';
         const id = isOrders ? row.order_id : row.feedback_id;
         const rowStatus = statusInfo(isOrders ? row.order_status : row.status, type);
-        const title = isOrders ? (row.order_channel || 'Đơn hàng') : FEEDBACK_TYPE[row.feedback_type] || row.feedback_type || 'Phản hồi';
+        const title = isOrders ? (ORDER_CHANNEL_LABELS[row.order_channel] || row.order_channel || 'Đơn hàng') : FEEDBACK_TYPE[row.feedback_type] || row.feedback_type || 'Phản hồi';
         const detail = isOrders ? (row.total_amount == null ? '—' : formatVnd(row.total_amount)) : row.product_name || (row.rating == null ? '—' : `${row.rating}/5`);
         return <article key={id ?? `${name}-${index}`} className="dashboard-activity-mobile">
           <div className="dashboard-mobile-row"><span className={`dashboard-table-avatar avatar-${['purple', 'blue', 'pink', 'mint'][index % 4]}`}>{initials(name)}</span><div><strong>{name}</strong><small>{isOrders ? `Đơn #${id}` : `Phản hồi #${id}`} · {formatRelativeDate(isOrders ? row.ordered_at : row.created_at)}</small></div><b>{detail}</b></div>

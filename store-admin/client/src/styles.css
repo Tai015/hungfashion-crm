@@ -81,6 +81,16 @@ input, select, textarea { font: inherit; }
   box-shadow: 0 24px 70px rgba(71, 55, 42, 0.18), 0 4px 16px rgba(71, 55, 42, 0.08);
   backdrop-filter: blur(24px);
 }
+.customer-auth-screen {
+  background:
+    radial-gradient(ellipse at 10% 15%, rgba(167, 139, 250, 0.34), transparent 39%),
+    radial-gradient(ellipse at 92% 82%, rgba(249, 115, 22, 0.22), transparent 43%),
+    linear-gradient(135deg, #17132c 0%, #241a3b 52%, #172033 100%);
+}
+.customer-auth-card {
+  border-color: rgba(196, 181, 253, 0.35);
+  box-shadow: 0 28px 90px rgba(3, 2, 14, 0.48), 0 0 55px rgba(124, 58, 237, 0.12);
+}
 .app-loading-screen {
   display: grid;
   min-width: 100%;
@@ -418,7 +428,7 @@ body:has(.customer-support-chat) { background-attachment: scroll; }
 .customer-portal-brand > span:nth-child(2), .customer-portal-user-card > span:last-child, .customer-portal-header-user > span:nth-child(2) { display: grid; gap: 3px; min-width: 0; }
 .customer-portal-brand strong { color: white; font-size: 12px; letter-spacing: .12em; white-space: nowrap; }
 .customer-portal-brand small { color: #c4b5fd; font-size: 9px; letter-spacing: .13em; white-space: nowrap; }
-.customer-portal-brand-mark { display: grid; flex: 0 0 auto; width: 42px; height: 42px; place-items: center; border-radius: 14px; color: white; background: linear-gradient(145deg,#a78bfa,#6d28d9); box-shadow: 0 8px 28px #7c3aed66; font-size: 19px; font-weight: 800; }
+.customer-portal-brand-mark { display: grid; flex: 0 0 auto; width: 42px; height: 42px; place-items: center; padding: 0; border: 0; border-radius: 14px; color: white; background: linear-gradient(145deg,#a78bfa,#6d28d9); box-shadow: 0 8px 28px #7c3aed66; font-size: 19px; font-weight: 800; cursor: pointer; }
 .customer-portal-nav-label { margin: 28px 10px 10px; color: #aaa4bf; font-size: 10px; font-weight: 700; letter-spacing: .16em; }
 .customer-portal-nav { display: grid; gap: 7px; min-height: 0; overflow-y: auto; align-content: start; }
 .customer-portal-nav-item { position: relative; display: flex; align-items: center; gap: 13px; width: 100%; min-height: 46px; padding: 0 13px; border: 1px solid transparent; border-radius: 14px; color: #d1cde0; background: transparent; text-align: left; cursor: pointer; transition: background-color 250ms ease,color 250ms ease,border-color 250ms ease; }
@@ -439,6 +449,13 @@ body:has(.customer-support-chat) { background-attachment: scroll; }
 .customer-portal-header { position: relative; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 70px; margin: 12px 25px 0; padding: 10px 15px 11px 19px; border: 1px solid rgba(255,255,255,.15); border-radius: 18px; background: rgba(21,20,42,.82); box-shadow: 0 18px 50px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.12); backdrop-filter: blur(22px); }
 .customer-portal-header::after { position: absolute; right: 16px; bottom: -1px; left: 16px; height: 1px; background: linear-gradient(90deg,transparent,rgba(196,181,253,.5),rgba(168,85,247,.35),transparent); content: ''; pointer-events: none; }
 .customer-portal-header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.customer-portal-header-brand { display: grid; flex: 0 0 auto; place-items: center; padding: 0; border: 0; border-radius: 14px; background: transparent; cursor: pointer; transition: transform 180ms ease; }
+.customer-portal-header-brand:hover { transform: translateY(-1px); }
+.guest-auth-button { min-height: 38px; padding: 0 14px; border: 1px solid var(--portal-border); border-radius: 11px; color: var(--portal-text-primary); background: var(--portal-card-bg); font-size: .875rem; font-weight: 650; cursor: pointer; transition: background 160ms ease, transform 160ms ease; }
+.guest-auth-button:hover { background: var(--portal-hover-bg); transform: translateY(-1px); }
+.guest-auth-button-primary { border-color: var(--portal-accent-strong); color: #fff; background: var(--portal-accent-strong); }
+.guest-auth-button-primary:hover { color: #fff; filter: brightness(1.08); }
+.customer-portal-header-brand .customer-portal-brand-mark { width: 38px; height: 38px; font-size: 16px; }
 .customer-portal-page-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; white-space: nowrap; }
 .customer-portal-page-title > span { color: #cbc5d9; font-size: 10px; font-weight: 550; }
 .customer-portal-page-title i { padding-left: 5px; color: #8f88a4; font-style: normal; }

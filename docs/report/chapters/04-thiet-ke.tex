@@ -1,0 +1,66 @@
+\chapter{Thiết kế hệ thống}
+\label{chap:design}
+\section{Thiết kế cơ sở dữ liệu}
+\subsection{Lược đồ quan hệ và ERD}
+Lược đồ được tổng hợp từ baseline \texttt{\detokenize{server/sql/schema.sql}} và migrations 001--015. Những bảng event ban đầu được migration 002 chuyển từ payload JSON sang cột cấu trúc; bản mô tả phải đọc schema baseline cùng migration theo thứ tự để thấy phiên bản ứng dụng hiện tại. Hình 4.1 trình bày quan hệ nghiệp vụ chính; các bảng vai trò/quyền, lookup và bảng chi tiết được mô tả đầy đủ trong Phụ lục A.
+\IfFileExists{diagrams/04-erd.pdf}{\begin{figure}[htbp]\centering\includegraphics[width=\textwidth]{diagrams/04-erd.pdf}\caption{ERD các quan hệ nghiệp vụ chính rút từ SQL}\label{fig:erd}\end{figure}}{\begin{figure}[htbp]\centering\fbox{\parbox[c][2cm][c]{0.82\textwidth}{\centering Cần kết xuất Mermaid từ \texttt{diagrams/04-erd.mmd}}}\caption{ERD các quan hệ nghiệp vụ chính rút từ SQL}\label{fig:erd}\end{figure}}
+
+\subsection{Nguyên tắc thiết kế thể hiện trong DDL}
+Các bảng nghiệp vụ dùng khóa chính số nguyên/identity; quan hệ được khai báo bằng khóa ngoại; bảng nối như \texttt{\detokenize{role_permission}}, \texttt{\detokenize{customer_interest}}, \texttt{\detokenize{user_promotion}} có khóa ghép/unique chống liên kết trùng. Giá, số lượng, điểm đánh giá và miền trạng thái được giới hạn bằng CHECK/ENUM. \texttt{\detokenize{outbox_events.event_id}}, event mirror và payment order được thiết kế để nhận diện sự kiện/thanh toán duy nhất. Chi tiết từng trường, kiểu, khóa và index nằm ở Phụ lục A, được sinh từ file SQL trong repo.
+
+\subsection{Từ điển dữ liệu}
+Phụ lục A có bảng mô tả mọi bảng/thuộc tính. \texttt{\detokenize{database/schema.sql}} là bản schema-only xuất bằng \texttt{\detokenize{pg_dump}} từ database demo PostgreSQL tạm sau khi áp dụng schema và migrations 001--015. \texttt{\detokenize{customer_interest_map}} xuất hiện trong migration chuyển đổi cũ; bảng sử dụng sau migration được đổi tên thành \texttt{\detokenize{customer_interest}}, nên lịch sử chuyển đổi được nêu riêng, không xem hai tên là hai miền dữ liệu độc lập.
+
+\section{Thiết kế giao diện}
+Giao diện quản trị React dùng bộ điều hướng theo vai trò trong \texttt{\detokenize{client/src/App.jsx}}. Các nhóm có route hash riêng nhưng tái sử dụng dashboard shell và view module. Khách hàng dùng customer portal riêng. Ảnh được tự động nhúng khi nhóm đặt đúng tên file vào \texttt{\detokenize{docs/report/images}}; hiện chưa có ảnh giao diện xác thực.
+
+\ReportScreenshot{4.1}{Tổng quan quản trị ADMIN}{fig:ui-dashboard}
+\ReportScreenshot{4.2}{Quản lý tài khoản và quyền}{fig:ui-accounts}
+\ReportScreenshot{4.3}{Tra cứu sản phẩm}{fig:ui-products}
+\ReportScreenshot{4.4}{Quản lý nhà cung cấp và tồn kho}{fig:ui-inventory}
+\ReportScreenshot{4.5}{Quản lý khách hàng CRM}{fig:ui-customers}
+\ReportScreenshot{4.6}{Tiếp nhận phản hồi}{fig:ui-feedback}
+\ReportScreenshot{4.7}{Quản lý khảo sát CRM}{fig:ui-surveys}
+\ReportScreenshot{4.8}{Hồ sơ khách hàng}{fig:ui-profile}
+\ReportScreenshot{4.9}{Khách hàng gửi đánh giá}{fig:ui-feedback-customer}
+\ReportScreenshot{4.10}{Khách hàng trả lời khảo sát}{fig:ui-survey-customer}
+\ReportScreenshot{4.11}{Trò chuyện CSKH}{fig:ui-chat}
+
+\subsection{Vai trò giao diện và tìm kiếm}
+ADMIN có menu quản trị chung và các view tài khoản, sản phẩm, kho, đơn, CRM, báo cáo, nhật ký, cài đặt. QL\_NHAN\_SU, QL\_KHO, QL\_BAN\_HANG và QL\_KHACH\_HANG nhìn thấy các module theo phân quyền trong \texttt{\detokenize{App.jsx}}; phần mềm hiện chưa có ứng dụng HRM chuyên trách nghỉ phép/chấm công/lương. Các màn hình khách hàng là portal độc lập về luồng sử dụng.
+
+API product hỗ trợ tìm kiếm, danh mục, thương hiệu, nhà cung cấp, khoảng giá, sắp xếp theo ngày/tên/giá/danh mục. API supplier hỗ trợ từ khóa, lọc có/thiếu email/điện thoại và sắp xếp tên/liên hệ/ngày tạo. Giao diện cụ thể cần chụp lại để xác nhận tất cả tùy chọn hiển thị đúng; không dùng khả năng API để khẳng định UI có mọi loại lọc.
+
+\subsection{Báo cáo kho và nhân sự}
+Mục Báo cáo hiển thị nội dung theo vai trò. Quản lý kho (\texttt{QL\_KHO}) và ADMIN xem biến động nhập/xuất theo ngày trong khoảng được chọn, giá trị tồn kho hiện tại tính bằng số lượng biến thể nhân giá nhập của sản phẩm, danh sách biến thể có tồn không vượt ngưỡng, và tổng nhập theo nhà cung cấp. Schema chưa có trường tồn tối thiểu riêng; màn hình cho nhập ngưỡng, mặc định 10. Mỗi bảng có thể xuất CSV riêng. Các API tương ứng là \texttt{GET /api/reports/warehouse/movements}, \texttt{/warehouse/summary} và \texttt{/warehouse/suppliers}; truy vấn lọc theo ngày dùng tham số.
+
+Quản lý nhân sự (\texttt{QL\_NHAN\_SU}) và ADMIN xem tổng số hồ sơ, phân bố theo trạng thái hoạt động và chức vụ, cùng số nhân viên mới theo tháng dựa trên \texttt{employee.hire\_date}; có thể xuất CSV. API \texttt{GET /api/reports/hr/summary} chỉ tổng hợp hồ sơ hiện có. Hệ thống chưa có chấm công, tính lương hoặc nghỉ phép và các báo cáo này không tạo ra các nghiệp vụ đó. Backend kiểm tra vai trò trên từng API báo cáo; ADMIN được truy cập tất cả, các vai trò còn lại chỉ truy cập báo cáo thuộc phạm vi của mình.
+
+\subsection{Ma trận độ bao phủ CRM}
+\label{subsec:crm-coverage}
+Trạng thái “Có” nghĩa là có màn hình và route liên quan trong source; không đồng nghĩa đã nghiệm thu nghiệp vụ thực tế. “Có điều kiện” nghĩa là thao tác bị giới hạn bởi quy tắc bảo vệ dữ liệu.
+\small
+\begingroup
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{|p{0.23\textwidth}|p{0.18\textwidth}|p{0.36\textwidth}|p{0.16\textwidth}|}\hline
+\textbf{Yêu cầu CRM}&\textbf{Màn hình}&\textbf{API liên quan}&\textbf{Trạng thái}\\\hline\endhead
+Thêm khách hàng&Khách hàng&POST \texttt{\detokenize{/api/customers}}; POST \texttt{\detokenize{/api/auth/register}} cho khách tự đăng ký&Có\\\hline
+Xóa khách hàng&Khách hàng&DELETE \path{/api/customers/:id}&Có điều kiện\\\hline
+Khóa tài khoản khách&Khách hàng&PATCH \texttt{/api/customers/:id/}\linebreak\texttt{account-status}&Có\\\hline
+Tiếp nhận và xử lý feedback&Phản hồi&GET \texttt{\detokenize{/api/feedbacks}}, GET \texttt{\detokenize{/:id}}, PATCH \texttt{\detokenize{/:id/reply}}, PATCH \texttt{\detokenize{/:id/status}}; POST khách&Có\\\hline
+Báo cáo tuổi khách&Reports&GET \path{/api/customers/stats/overview} (\texttt{byAge}); GET \path{/api/reports/customer-ages}&Có\\\hline
+Báo cáo sở thích&Reports&GET \texttt{\detokenize{/api/reports/interests}}, \texttt{\detokenize{/customer-segments}}&Có\\\hline
+Tạo khảo sát&Khảo sát&POST \texttt{\detokenize{/api/surveys}}&Có\\\hline
+Gửi khảo sát/mời khách&Khảo sát&GET \texttt{\detokenize{/:id/recipients-preview}}, POST \texttt{\detokenize{/:id/send}}&Có\\\hline
+Thống kê kết quả khảo sát&Khảo sát&GET \texttt{\detokenize{/api/surveys/:id/results}}&Có\\\hline
+Khách đăng ký/đăng nhập&Auth&POST \texttt{\detokenize{/api/auth/register}}, POST \texttt{\detokenize{/api/auth/login}}&Có\\\hline
+Sửa hồ sơ&Customer Portal&PUT \texttt{\detokenize{/api/auth/me}}&Có\\\hline
+Khách gửi đánh giá&Customer Portal&POST \texttt{\detokenize{/api/feedbacks}}&Có\\\hline
+Khách nhận/trả lời khảo sát&Customer Portal&GET \texttt{\detokenize{/api/surveys/mine}}, GET \texttt{\detokenize{/:id}}, POST \texttt{\detokenize{/:id/respond}}&Có\\\hline
+Chat trực tuyến&Customer Portal/Chat CSKH&\path{/api/chat/my-conversation/*}, \path{/api/chat/:id/messages}, \path{/api/chat/events}&Có\\\hline
+\end{longtable}
+\endgroup
+\normalsize
+Chức năng xóa hồ sơ khách hàng chỉ thực hiện được khi hồ sơ không còn liên kết tài khoản đăng nhập và không có dữ liệu liên quan (đơn hàng, phản hồi, kết quả và lời mời khảo sát, mã ưu đãi, hội thoại, lịch sử điểm thưởng); việc kiểm tra và xóa nằm trong cùng một giao dịch, trả mã 409 kèm thông báo khi không đủ điều kiện. Với khách đã có tài khoản hoặc lịch sử, hệ thống khuyến nghị khóa tài khoản.
+Khi hồ sơ được xóa hợp lệ, các sở thích của khách hàng được xóa kèm theo nhờ ràng buộc khóa ngoại \texttt{ON DELETE CASCADE}.
+Chức năng xóa tài khoản được kiểm soát nhằm bảo toàn tính toàn vẹn dữ liệu và quyền quản trị. Hệ thống không cho phép người dùng tự xóa tài khoản đang đăng nhập, xóa tài khoản còn dữ liệu liên quan, hoặc xóa quản trị viên đang hoạt động cuối cùng; trong trường hợp tài khoản đã phát sinh dữ liệu, hệ thống khuyến nghị khóa thay vì xóa.

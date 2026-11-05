@@ -1,0 +1,44 @@
+flowchart LR
+    Customer[Khách hàng]
+    Admin[ADMIN]
+    CRM[QL KHÁCH HÀNG]
+    Sales[QL BÁN HÀNG]
+    Warehouse[QL KHO]
+    P1((1. Quản lý tài khoản và hồ sơ))
+    P2((2. Quản lý catalog và tồn kho))
+    P3((3. Xử lý đơn và thanh toán))
+    P4((4. CRM: phản hồi, chat, khảo sát))
+    P5((5. Báo cáo và sự kiện))
+    D1[(D1 Account, role, employee, customer)]
+    D2[(D2 Product, variant, supplier, receipts)]
+    D3[(D3 Order, detail, payment)]
+    D4[(D4 Feedback, survey, chat, loyalty)]
+    D5[(D5 Outbox, user_events, transactions)]
+    Customer --> P1
+    P1 <--> D1
+    P1 --> Customer
+    Warehouse <--> P2
+    P2 <--> D2
+    P2 --> P3
+    Customer --> P3
+    Sales <--> P3
+    P3 <--> D3
+    P3 --> D5
+    Customer <--> P4
+    CRM <--> P4
+    P4 <--> D4
+    P4 --> D5
+    Admin --> P1
+    Admin --> P5
+    Sales --> P5
+    Warehouse --> P5
+    CRM --> P5
+    D1 --> P5
+    D2 --> P5
+    D3 --> P5
+    D4 --> P5
+    D5 --> P5
+    P5 --> Admin
+    P5 --> Sales
+    P5 --> Warehouse
+    P5 --> CRM

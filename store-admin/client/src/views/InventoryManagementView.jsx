@@ -75,6 +75,16 @@ function ReceiptForm({ onCancel, onDone }) {
     setLines(updated);
   };
 
+  const changeReceiptType = nextType => {
+    setType(nextType);
+    setLines(current => current.map(line => {
+      const product = products.find(item => String(item.product_id) === String(line.product_id));
+      if (!product) return line;
+      return { ...line, unit_price: Number(nextType === 'Import' ? product.import_price : product.selling_price) || 0 };
+    }));
+    if (nextType === 'Export') setSupplierId('');
+  };
+
   const submit = async event => {
     event.preventDefault();
     if (type === 'Import' && !supplierId) return showErrorAlert('Phiếu nhập cần chọn nhà cung cấp.');
@@ -85,24 +95,25 @@ function ReceiptForm({ onCancel, onDone }) {
         receipt_type: type, supplier_id: supplierId || null, note: note.trim() || null,
         details: lines.map(line => ({ variant_id: Number(line.variant_id), quantity: Number(line.quantity), unit_price: Number(line.unit_price) })),
       } });
-      showSuccessAlert('Đã xác nhận phiếu kho và cập nhật tồn kho.'); onDone();
+      showSuccessAlert(type === 'Import' ? 'Đã nhập kho và cập nhật tồn kho.' : 'Đã xuất kho và cập nhật tồn kho.'); onDone();
     } catch (error) { showErrorAlert(error.message); } finally { setBusy(false); }
   };
 
   return <form className={`${PANEL} popup-surface w-full max-w-5xl max-h-[90vh] overflow-y-auto`} onClick={event => event.stopPropagation()} onSubmit={submit}>
-    <div className="flex items-center justify-between gap-3"><h2 className="m-0 text-lg font-semibold">Tạo phiếu kho</h2><select className={FIELD} value={type} onChange={e => setType(e.target.value)}><option value="Import">Nhập kho</option><option value="Export">Xuất kho</option></select></div>
-    {type === 'Import' && <select className={FIELD} required value={supplierId} onChange={e => setSupplierId(e.target.value)}><option value="">Chọn nhà cung cấp *</option>{suppliers.map(s => <option key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</option>)}</select>}
-    {lines.map((line, index) => <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_100px_140px_auto] gap-2 items-center">
-      <select className={FIELD} value={line.product_id} onChange={e => updateLine(index, 'product_id', e.target.value)}><option value="">Chọn sản phẩm</option>{products.map(p => <option key={p.product_id} value={p.product_id}>{p.product_name}</option>)}</select>
-      <select className={FIELD} value={line.variant_id} disabled={!line.variants.length} onChange={e => updateLine(index, 'variant_id', e.target.value)}><option value="">Chọn biến thể</option>{line.variants.map(v => <option key={v.variant_id} value={v.variant_id}>{v.size_name} / {v.color_name} · tồn {v.quantity}</option>)}</select>
-      <input className={FIELD} type="number" min="1" step="1" value={line.quantity} aria-label="Số lượng" onChange={e => updateLine(index, 'quantity', e.target.value)} />
-      <input className={FIELD} type="number" min="0" step="1000" value={line.unit_price} aria-label="Đơn giá" onChange={e => updateLine(index, 'unit_price', e.target.value)} />
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"><h2 className="m-0 text-lg font-semibold">Lập phiếu {type === 'Import' ? 'nhập kho' : 'xuất kho'}</h2><label className="flex items-center gap-2 text-xs text-white/60">Loại phiếu<select className={FIELD} value={type} onChange={e => changeReceiptType(e.target.value)}><option value="Import">Nhập kho</option><option value="Export">Xuất kho</option></select></label></div>
+    {type === 'Import' && <label className="flex flex-col gap-1 text-xs text-white/60">Nhà cung cấp nhập<select className={FIELD} required value={supplierId} onChange={e => setSupplierId(e.target.value)}><option value="">Chọn nhà cung cấp *</option>{suppliers.map(s => <option key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</option>)}</select></label>}
+    <p className="m-0 text-sm text-white/55">{type === 'Import' ? 'Nhập số lượng nhận và giá nhập cho từng biến thể. Giá nhập được gợi ý từ giá vốn sản phẩm, bạn có thể chỉnh theo hóa đơn.' : 'Nhập số lượng cần xuất. Đơn giá ghi nhận được gợi ý từ giá bán; thao tác xuất chỉ trừ số lượng tồn.'}</p>
+    {lines.map((line, index) => <div key={index} className="grid grid-cols-1 md:grid-cols-[1.2fr_1.2fr_120px_180px_auto] gap-2 items-end">
+      <label className="flex flex-col gap-1 text-xs text-white/60">Sản phẩm<select className={FIELD} value={line.product_id} onChange={e => updateLine(index, 'product_id', e.target.value)}><option value="">Chọn sản phẩm</option>{products.map(p => <option key={p.product_id} value={p.product_id}>{p.product_name}</option>)}</select></label>
+      <label className="flex flex-col gap-1 text-xs text-white/60">Biến thể<select className={FIELD} value={line.variant_id} disabled={!line.variants.length} onChange={e => updateLine(index, 'variant_id', e.target.value)}><option value="">Chọn biến thể</option>{line.variants.map(v => <option key={v.variant_id} value={v.variant_id}>{v.size_name} / {v.color_name} · tồn {v.quantity}</option>)}</select></label>
+      <label className="flex flex-col gap-1 text-xs text-white/60">{type === 'Import' ? 'SL nhập' : 'SL xuất'}<input className={FIELD} type="number" min="1" step="1" value={line.quantity} aria-label={type === 'Import' ? 'Số lượng nhập' : 'Số lượng xuất'} onChange={e => updateLine(index, 'quantity', e.target.value)} /></label>
+      <label className="flex flex-col gap-1 text-xs text-white/60">{type === 'Import' ? 'Giá nhập / đơn vị (₫)' : 'Đơn giá ghi nhận (₫)'}<input className={FIELD} type="number" min="0" step="1000" value={line.unit_price} aria-label={type === 'Import' ? 'Giá nhập mỗi đơn vị' : 'Đơn giá ghi nhận mỗi đơn vị'} onChange={e => updateLine(index, 'unit_price', e.target.value)} /></label>
       <button type="button" className={`${BTN} admin-secondary-action`} disabled={lines.length < 2} onClick={() => setLines(current => current.filter((_, i) => i !== index))}>Xóa</button>
     </div>)}
     <button type="button" className={`${BTN} admin-secondary-action`} onClick={() => setLines(current => [...current, emptyLine()])}>+ Thêm dòng</button>
     <textarea className={FIELD} rows={2} maxLength={500} placeholder="Ghi chú phiếu" value={note} onChange={e => setNote(e.target.value)} />
-    <p className="m-0 text-white/50 text-sm">Tổng giá trị: {fmt(lines.reduce((sum, line) => sum + Number(line.quantity || 0) * Number(line.unit_price || 0), 0))}. Xác nhận sẽ ghi phiếu và cập nhật tồn kho trong cùng giao dịch.</p>
-    <div className="flex gap-2"><button className="admin-primary-action inline-flex h-9 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold disabled:opacity-50" disabled={busy}>{busy ? 'Đang xác nhận...' : 'Xác nhận phiếu'}</button><button type="button" className={`${BTN} admin-secondary-action`} onClick={onCancel}>Đóng</button></div>
+    <p className="m-0 text-white/50 text-sm">{type === 'Import' ? 'Tổng tiền nhập' : 'Tổng giá trị xuất'}: {fmt(lines.reduce((sum, line) => sum + Number(line.quantity || 0) * Number(line.unit_price || 0), 0))}. {type === 'Import' ? 'Xác nhận sẽ cộng số lượng tồn.' : 'Xác nhận sẽ trừ số lượng tồn; không thể xuất vượt tồn kho.'}</p>
+    <div className="flex gap-2"><button className="admin-primary-action inline-flex h-9 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold disabled:opacity-50" disabled={busy}>{busy ? 'Đang xác nhận...' : `Xác nhận ${type === 'Import' ? 'nhập kho' : 'xuất kho'}`}</button><button type="button" className={`${BTN} admin-secondary-action`} onClick={onCancel}>Đóng</button></div>
   </form>;
 }
 
@@ -164,7 +175,7 @@ export default function InventoryManagementView({ initialTab = 'stock' }) {
       </FilterPopover>}
     </div>}
     <section className={PANEL}>
-      {loading ? <Spinner /> : !rows.length ? <p className="m-0 text-center text-white/40">Chưa có dữ liệu.</p> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>{(tab === 'stock' ? ['Sản phẩm', 'SKU', 'Size / màu', 'Tồn'] : tab === 'suppliers' ? ['Nhà cung cấp', 'Người liên hệ', 'Điện thoại', 'Email', 'Địa chỉ', ''] : ['Mã phiếu', 'Loại', 'Nhà cung cấp', 'Nhân viên', 'Tổng tiền', 'Ngày tạo']).map(h => <th key={h} className="p-3 text-left text-white/45">{h}</th>)}</tr></thead><tbody>{rows.map(row => <tr className="border-t border-white/10" key={row.variant_id || row.supplier_id || row.receipt_id}>
+      {loading ? <Spinner /> : !rows.length ? <p className="m-0 text-center text-white/40">Chưa có dữ liệu.</p> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>{(tab === 'stock' ? ['Sản phẩm', 'Mã SKU', 'Kích cỡ / màu', 'Tồn'] : tab === 'suppliers' ? ['Nhà cung cấp', 'Người liên hệ', 'Điện thoại', 'Email', 'Địa chỉ', ''] : ['Mã phiếu', 'Loại', 'Nhà cung cấp', 'Nhân viên', 'Tổng tiền', 'Ngày tạo']).map(h => <th key={h} className="p-3 text-left text-white/45">{h}</th>)}</tr></thead><tbody>{rows.map(row => <tr className="border-t border-white/10" key={row.variant_id || row.supplier_id || row.receipt_id}>
         {tab === 'stock' && <><td className="p-3">{row.product_name}</td><td className="p-3">{row.sku}</td><td className="p-3">{row.size_name} / {row.color_name}</td><td className="p-3">{row.quantity}</td></>}
         {tab === 'suppliers' && <><td className="p-3">{row.supplier_name}</td><td className="p-3">{row.contact_name || '—'}</td><td className="p-3">{row.phone || '—'}</td><td className="p-3">{row.email || '—'}</td><td className="p-3">{row.address || '—'}</td><td className="p-3"><button className={`${BTN} admin-secondary-action`} onClick={() => setSupplierForm(row)}>Sửa</button></td></>}
         {tab === 'receipts' && <><td className="p-3">#{row.receipt_id}</td><td className="p-3">{{ Import: 'Nhập', Export: 'Xuất', Adjustment: 'Điều chỉnh' }[row.receipt_type]}</td><td className="p-3">{row.supplier_name || '—'}</td><td className="p-3">{row.employee_name || '—'}</td><td className="p-3">{fmt(row.total_amount)}</td><td className="p-3">{new Date(row.receipt_date).toLocaleString('vi-VN')}</td></>}

@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { apiFetch, checkRuntimeServices, subscribeToChatEvents, TOKEN_KEY } from './api';
 import AuthScreen from './AuthScreen';
 const CustomerPortal = lazy(() => import('./CustomerPortal'));
+const GuestStorefront = lazy(() => import('./CustomerPortal').then(module => ({ default: module.GuestStorefront })));
 
 import Spinner from './components/Spinner';
 
@@ -87,8 +88,15 @@ function App() {
   const [view, setView] = useState(sectionFromHash);
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [authRoute, setAuthRoute] = useState(window.location.hash);
   const [staffUnreadChatCount, setStaffUnreadChatCount] = useState(0);
   const pageViewTracked = useRef(null);
+
+  useEffect(() => {
+    const syncAuthRoute = () => setAuthRoute(window.location.hash);
+    window.addEventListener('hashchange', syncAuthRoute);
+    return () => window.removeEventListener('hashchange', syncAuthRoute);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -218,6 +226,12 @@ function App() {
   };
 
   if (authLoading) return <main className="app-loading-screen"><Spinner /></main>;
+  if (!user && (!authRoute || authRoute === '#/')) {
+    return <Suspense fallback={<main className="app-loading-screen"><Spinner /></main>}><GuestStorefront
+      onLogin={() => { window.location.hash = '#/khach-hang/login'; }}
+      onRegister={() => { window.location.hash = '#/khach-hang/register'; }}
+    /></Suspense>;
+  }
   if (!user) return <AuthScreen onAuthenticated={authenticatedUser => {
     setUser(authenticatedUser);
     setView(authenticatedUser.role === 'KHACH_HANG' ? 'catalog' : 'dashboard');

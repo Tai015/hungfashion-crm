@@ -127,7 +127,7 @@ export default function CskhChatView({ user }) {
     <div className={`customer-chat-view flex min-h-0 flex-col gap-5 text-[#f5f0eb] h-full${hasLoadedOnce ? ' app-page-enter' : ''}`}>
       <div>
         <p className="m-0 text-white/40 text-xs font-semibold tracking-[0.08em] uppercase">Hỗ trợ</p>
-        <h1 className="m-0 mt-1 text-[clamp(1.5rem,2.5vw,2rem)] font-bold tracking-tight">Chat hỗ trợ trực tuyến</h1>
+        <h1 className="m-0 mt-1 text-[clamp(1.5rem,2.5vw,2rem)] font-bold tracking-tight">Trò chuyện hỗ trợ trực tuyến</h1>
       </div>
 
       {loading ? <Spinner /> : (

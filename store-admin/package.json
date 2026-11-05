@@ -17,7 +17,8 @@
     "db:restore": "node scripts/restore-db.mjs",
     "db:reset": "node scripts/reset-db.mjs",
     "catalog:scrape": "node scripts/scrape-catalog.mjs",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "tree:generate": "node scripts/generate-project-tree.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.0.1",

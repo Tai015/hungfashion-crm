@@ -1,0 +1,2295 @@
+                         TRƯỜNG ĐẠI HỌC SÀI GÒN
+                      KHOA CÔNG NGHỆ THÔNG TIN
+
+
+
+
+                      BÁO CÁO ĐỒ ÁN GIỮA KỲ
+         Học phần: Hệ thống thông tin doanh nghiệp – Mã HP 841065
+
+
+
+
+  XÂY DỰNG HỆ THỐNG THÔNG TIN
+            QUẢN LÝ
+ KHÁCH HÀNG CHO HUNG FASHION
+
+
+
+
+Nhóm: Nhóm 10
+
+Lớp học phần: DCT123C6
+
+Giảng viên: [CẦN BỔ SUNG: họ tên giảng viên]
+
+Thành viên: [CẦN BỔ SUNG: họ tên và MSSV]
+
+
+
+
+                             TP. Hồ Chí Minh, năm 2026
+                                   Kế hoạch thực hiện 10 tuần
+
+
+Lịch dưới đây là khung kế hoạch theo yêu cầu học phần, không phải nhật ký công việc đã được
+xác minh. Nhóm cần thay người thực hiện, kết quả và tự đánh giá bằng thông tin thật.
+
+   Tuần   Công việc                           Người thực hiện       Kết quả                                           Tự    đánh
+                                                                                                                      giá
+   1      Chọn đề tài, xác nhận phạm vi       [CẦN BỔ SUNG]         Phạm vi đề tài, phiếu khảo sát và biên bản thật   [CẦN BỔ
+          CRM; khảo sát quy trình và HTTT                                                                             SUNG]
+          doanh nghiệp
+   2      Tổng hợp yêu cầu, tác nhân và vấn   [CẦN BỔ SUNG]         Đặc tả yêu cầu, sơ đồ chức năng, ngữ cảnh và      [CẦN BỔ
+          đề; phân tích chức năng và luồng                          DFD                                               SUNG]
+          dữ liệu
+   3      Thiết kế cơ sở dữ liệu              [CẦN BỔ SUNG]         ERD và từ điển dữ liệu                            [CẦN BỔ
+                                                                                                                      SUNG]
+   4      Thiết kế giao diện và phân quyền;   [CẦN BỔ SUNG]         Luồng màn hình, phân quyền và ứng dụng            [CẦN BỔ
+          cài đặt nền tảng, xác thực                                chạy local                                        SUNG]
+   5      Phát triển quản lý tài khoản, sản   [CẦN BỔ SUNG]         Các màn hình nghiệp vụ và luồng cơ bản            [CẦN BỔ
+          phẩm, đơn hàng và tồn kho                                                                                   SUNG]
+   6      Phát triển CRM khách hàng           [CẦN BỔ SUNG]         CRUD, khóa/mở, tìm kiếm và thống kê khách         [CẦN BỔ
+                                                                    hàng                                              SUNG]
+   7      Phát triển phản hồi và chat CSKH    [CẦN BỔ SUNG]         Feedback, tệp đính kèm và chat                    [CẦN BỔ
+                                                                                                                      SUNG]
+   8      Phát triển khảo sát; tích hợp báo   [CẦN BỔ SUNG]         Tạo/gửi/trả lời khảo sát, dashboard và luồng      [CẦN BỔ
+          cáo, sự kiện và thanh toán demo                           thanh toán demo                                   SUNG]
+   9      Hoàn     thiện     triển   khai,    [CẦN BỔ SUNG]         Hướng dẫn triển khai và kết quả restore drill     [CẦN BỔ
+          backup/restore và đóng gói                                                                                  SUNG]
+   10     Viết báo cáo, chụp giao diện; rà    [CẦN BỔ SUNG]         Bản báo cáo, ảnh thật và bộ hồ sơ nộp cuối        [CẦN BỔ
+          soát, nghiệm thu và đóng gói                                                                                SUNG]
+
+
+
+
+                                                                1
+                                   Bảng đóng góp thành viên
+
+
+
+ STT        MSSV                Họ tên                      Khối lượng công việc       Điểm   Ký tên
+                                                            %
+ 1
+ 2
+ 3
+ 4
+ 5
+
+
+
+Nội dung từng thành viên đã thực hiện
+     •   Thành viên 1: [CẦN BỔ SUNG: họ tên, MSSV, hạng mục và bằng chứng đóng góp].
+     •   Thành viên 2: [CẦN BỔ SUNG: họ tên, MSSV, hạng mục và bằng chứng đóng góp].
+     •   Thành viên 3: [CẦN BỔ SUNG: họ tên, MSSV, hạng mục và bằng chứng đóng góp].
+     •   Thành viên 4: [CẦN BỔ SUNG: họ tên, MSSV, hạng mục và bằng chứng đóng góp].
+     •   Thành viên 5: [CẦN BỔ SUNG: họ tên, MSSV, hạng mục và bằng chứng đóng góp].
+
+
+
+
+                                                             i
+                                                             Mục lục
+
+
+Kế hoạch thực hiện 10 tuần                                                                                                                 1
+
+Bảng đóng góp thành viên                                                                                                                    i
+
+1 Giới thiệu doanh nghiệp                                                                                                                  1
+  1.1 Phạm vi thông tin và giả định . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      1
+  1.2 Hoạt động và mô hình nghiệp vụ thể hiện trong phần mềm . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         1
+  1.3 Nhóm nhân sự và vai trò hệ thống . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       1
+  1.4 Cơ cấu tổ chức . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     1
+
+2 Khảo sát hệ thống thông tin                                                                                                              2
+  2.1 Mục tiêu và cách tiến hành . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     2
+  2.2 Phiếu khảo sát đề xuất . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     2
+  2.3 Mẫu tổng hợp kết quả . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       2
+  2.4 Kết luận khảo sát . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    3
+
+3 Phân tích hệ thống thông tin                                                                                                             4
+  3.1 Bài toán và các hoạt động nghiệp vụ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      4
+  3.2 Sơ đồ chức năng . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      4
+  3.3 Sơ đồ ngữ cảnh . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     5
+  3.4 Sơ đồ luồng dữ liệu mức đỉnh . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       6
+  3.5 DFD mức 1: CRM . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         7
+  3.6 DFD mức 1: đơn hàng và thanh toán . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        8
+
+4 Thiết kế hệ thống                                                                                                                         9
+  4.1 Thiết kế cơ sở dữ liệu . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      9
+       4.1.1 Lược đồ quan hệ và ERD . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .           9
+       4.1.2 Nguyên tắc thiết kế thể hiện trong DDL . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         9
+       4.1.3 Từ điển dữ liệu . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      9
+  4.2 Thiết kế giao diện . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     10
+       4.2.1 Vai trò giao diện và tìm kiếm . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     10
+       4.2.2 Báo cáo kho và nhân sự . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        10
+       4.2.3 Ma trận độ bao phủ CRM . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .          13
+
+5 Cài đặt, vận hành và bảo trì                                                                                                             15
+  5.1 Kiến trúc triển khai . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   15
+  5.2 Cài đặt môi trường local . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     15
+  5.3 Cấu hình biến môi trường . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       16
+  5.4 Chạy migration và khởi tạo dữ liệu . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     17
+  5.5 Backup, phục hồi và an toàn dữ liệu . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      17
+  5.6 Kế hoạch chuyển đổi và triển khai môi trường demo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        18
+  5.7 Vận hành Kafka và thanh toán demo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        19
+       5.7.1 Ảnh minh chứng triển khai . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       20
+  5.8 Giới hạn free tier . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   20
+  5.9 Ma trận chức năng theo vai trò . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     21
+  5.10 Hướng dẫn sử dụng . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     21
+  5.11 Troubleshooting . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     23
+
+6 Kết luận và hướng phát triển                                                                                                             24
+
+
+
+                                                                      ii
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                                     HUNG FASHION CRM
+
+
+   6.1   Kết quả . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   24
+   6.2   Hạn chế . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     24
+   6.3   Hướng phát triển . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    24
+   6.4   Đối chiếu tiêu chí đánh giá . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   25
+
+Tài liệu tham khảo                                                                                                                           26
+
+A Phụ lục vận hành                                                                                                                           27
+  A.1 Lệnh thường dùng . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         27
+  A.2 Tài khoản demo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         27
+  A.3 Môi trường và giới hạn free tier . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       27
+  A.4 Nguồn sơ đồ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        28
+  A.5 Bảng API và schema đầy đủ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .          28
+
+B Từ điển dữ liệu chi tiết                                                                                                                   29
+  B.1 Bảng account . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       29
+  B.2 Bảng brand . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       29
+  B.3 Bảng category . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        30
+  B.4 Bảng chat_message . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        30
+  B.5 Bảng chat_message_attachment . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .           30
+  B.6 Bảng color . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       31
+  B.7 Bảng conversation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        31
+  B.8 Bảng customer . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        31
+  B.9 Bảng customer_interest . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       32
+  B.10 Bảng demo_payment_tokens . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .          32
+  B.11 Bảng employee . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       32
+  B.12 Bảng feedback . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       33
+  B.13 Bảng feedback_attachment . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        33
+  B.14 Bảng import_detail . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      34
+  B.15 Bảng import_receipt . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       34
+  B.16 Bảng interest . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     34
+  B.17 Bảng loyalty_point_transaction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      34
+  B.18 Bảng order . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      35
+  B.19 Bảng order_detail . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       35
+  B.20 Bảng outbox_events . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        36
+  B.21 Bảng payment . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        36
+  B.22 Bảng permission . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       36
+  B.23 Bảng product . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      36
+  B.24 Bảng product_image . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        37
+  B.25 Bảng product_variant . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      37
+  B.26 Bảng promotion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        38
+  B.27 Bảng role . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     38
+  B.28 Bảng role_permission . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        38
+  B.29 Bảng size . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     38
+  B.30 Bảng store_admin_schema_migrations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .          39
+  B.31 Bảng supplier . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       39
+  B.32 Bảng survey . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       39
+  B.33 Bảng survey_answer . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        40
+  B.34 Bảng survey_invitation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      40
+  B.35 Bảng survey_option . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        40
+  B.36 Bảng survey_question . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        41
+  B.37 Bảng survey_response . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .        41
+  B.38 Bảng transactions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     41
+  B.39 Bảng user_events . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      42
+  B.40 Bảng user_promotion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       42
+
+
+
+
+                                                                      iii
+                                              Danh sách hình vẽ
+
+
+3.1   Sơ đồ phân rã chức năng theo module đã cài đặt . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     4
+3.2   Sơ đồ ngữ cảnh HTTT Hung Fashion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         5
+3.3   DFD mức đỉnh: tiến trình, tác nhân và kho dữ liệu . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    6
+3.4   DFD mức 1 cho nhóm chức năng CRM . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .           7
+3.5   DFD mức 1 cho đơn hàng và thanh toán . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       8
+
+4.1 ERD các quan hệ nghiệp vụ chính rút từ SQL . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .          9
+4.2 Tổng quan quản trị ADMIN . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         10
+4.3 Quản lý tài khoản và quyền . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     10
+4.4 Tra cứu sản phẩm . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     10
+4.5 Quản lý nhà cung cấp và tồn kho . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      11
+4.6 Quản lý khách hàng CRM . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         11
+4.7 Tiếp nhận phản hồi . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     11
+4.8 Quản lý khảo sát CRM . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       11
+4.9 Hồ sơ khách hàng . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       11
+4.10 Khách hàng gửi đánh giá . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     12
+4.11 Khách hàng trả lời khảo sát . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   12
+4.12 Trò chuyện CSKH . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .       12
+
+5.1   Triển khai và luồng sự kiện outbox/Kafka . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     15
+5.2   Sơ đồ môi trường triển khai dùng cho buổi demo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     20
+5.3   Checkout QR DEMO và trang xác nhận không phải giao dịch thật . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .         20
+5.4   Giới hạn gói hiển thị trong console tại ngày demo (Chờ ảnh) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    20
+
+
+
+
+                                                                  iv
+                                                               CHƯƠNG 1
+
+
+
+                                          Giới thiệu doanh nghiệp
+
+
+1.1 Phạm vi thông tin và giả định
+Repository mô tả sản phẩm quần áo, phụ kiện, biến thể size/màu, nhà cung cấp, phiếu nhập kho, đơn bán hàng và các hoạt động chăm sóc khách
+hàng. Từ các dữ liệu này, báo cáo tạm xem Hung Fashion là doanh nghiệp/cửa hàng bán lẻ thời trang có bán trực tiếp và trực tuyến. Đây là suy
+luận từ catalog và seed trong mã nguồn, chưa phải mô tả đã được doanh nghiệp xác nhận.
+         Tên pháp lý, địa chỉ, năm thành lập, số lượng nhân viên, doanh thu và sơ đồ tổ chức thực tế chưa có trong repository. Các thông tin
+này để tại TODO-can-bo-sung.md; không đưa số liệu giả định thành sự thật.
+
+
+
+
+1.2 Hoạt động và mô hình nghiệp vụ thể hiện trong phần mềm
+Ứng dụng hiện quản lý danh mục/sản phẩm và nhà cung cấp; theo dõi biến thể cùng lượng tồn; lập phiếu nhập, xuất hoặc điều chỉnh; tạo đơn
+bán tại cửa hàng hoặc kênh website; lưu thanh toán và trạng thái giao hàng. Phần CRM quản lý hồ sơ khách hàng, hạng/điểm tích lũy, sở thích,
+phản hồi sản phẩm/dịch vụ, khảo sát và trao đổi hỗ trợ.
+         Mô hình doanh thu được phần mềm phản ánh là bán sản phẩm thời trang trực tiếp và qua website. Mã nguồn không chứng minh doanh
+nghiệp có cửa hàng, website sản xuất hay liên kết ngân hàng thực tế; kênh Website và InStore là dữ liệu nghiệp vụ trong schema.
+
+
+
+
+1.3 Nhóm nhân sự và vai trò hệ thống
+Các vai trò dưới đây khớp với danh mục role trong SQL và quyền tại Express; tên phòng ban thực tế cần doanh nghiệp xác nhận.
+
+   Vai trò hệ thống                      Trách nhiệm phần mềm
+   ADMIN                                 Quản lý tài khoản và phân quyền; truy cập các module quản trị; thao tác cấu hình, báo cáo và dữ
+                                         liệu.
+   QL_NHAN_SU                            Quản lý hồ sơ nhân viên, xem báo cáo được cấp quyền. Phần mềm hiện không có đơn nghỉ phép,
+                                         chấm công hoặc tính lương.
+   QL_KHO                                Quản lý sản phẩm, tồn kho, nhà cung cấp và phiếu kho.
+   QL_BAN_HANG                           Quản lý đơn, trạng thái thanh toán, hóa đơn và khuyến mãi.
+   QL_KHACH_HANG                         Quản lý khách hàng, phản hồi, khảo sát, trò chuyện hỗ trợ và báo cáo CRM.
+   KHACH_HANG                            Đăng ký/đăng nhập, duyệt sản phẩm, đặt và theo dõi đơn, cập nhật hồ sơ, gửi đánh giá, trả lời
+                                         khảo sát và chat.
+
+
+
+
+1.4 Cơ cấu tổ chức
+Sơ đồ tổ chức thật: [CẦN BỔ SUNG: sơ đồ do doanh nghiệp cung cấp]. Có thể dùng nhóm vai trò trong phần mềm làm bản đồ chức năng ở
+Hình 3.1; không xem sơ đồ chức năng này là sơ đồ nhân sự thực.
+
+
+
+
+                                                                     1
+                                                                 CHƯƠNG 2
+
+
+
+                                       Khảo sát hệ thống thông tin
+
+
+2.1 Mục tiêu và cách tiến hành
+Bảng hỏi tập trung vào HTTT hiện tại: công cụ, dữ liệu, quy trình đơn hàng/tồn kho/khách hàng/nhân sự, phân quyền, báo cáo và khó khăn.
+Đây là bộ câu hỏi đề xuất, chưa có câu trả lời thực tế. Nhóm cần chọn người trả lời có hiểu biết về quy trình và ghi nhận mẫu khảo sát trước khi
+viết kết luận.
+
+
+
+
+2.2 Phiếu khảo sát đề xuất
+Với câu chọn nhiều phương án, ghi rõ tất cả phương án được chọn. Không điền thông tin cá nhân nếu không cần thiết.
+      1. Hiện doanh nghiệp sử dụng những phần mềm hoặc công cụ nào để quản lý hoạt động?
+      2. Dữ liệu khách hàng hiện được lưu ở đâu và ai được quyền cập nhật?
+      3. Doanh nghiệp có quy định mã định danh khách hàng thống nhất không? Nếu có, mã được tạo ở bước nào?
+      4. Quy trình tiếp nhận một đơn hàng từ lúc khách đặt đến khi hoàn tất gồm những bước nào?
+      5. Đơn hàng phát sinh từ những kênh nào và dữ liệu giữa các kênh được đồng bộ ra sao?
+      6. Nhân viên kiểm tra tình trạng thanh toán bằng cách nào? Ai được phép xác nhận đã thanh toán?
+      7. Quy trình cập nhật tồn kho khi nhập hàng, bán hàng, đổi trả hoặc kiểm kê hiện nay như thế nào?
+      8. Làm thế nào để tìm nhanh sản phẩm theo tên, mã, danh mục, size, màu hoặc nhà cung cấp?
+      9. Doanh nghiệp theo dõi thông tin và lịch sử tương tác khách hàng ở những hệ thống nào?
+     10. Khách hàng có thể yêu cầu cập nhật hoặc xóa thông tin cá nhân bằng cách nào?
+     11. Phản hồi/khiếu nại của khách được tiếp nhận, phân loại, giao xử lý và đóng như thế nào?
+     12. Doanh nghiệp đang gửi khảo sát khách hàng bằng kênh nào? Có theo dõi người nhận và trạng thái trả lời không?
+     13. Những báo cáo về doanh thu, đơn hàng, khách hàng, tồn kho hoặc nhân sự nào được sử dụng thường xuyên?
+     14. Báo cáo hiện được tổng hợp thủ công hay tự động? Mất bao lâu để có báo cáo cần thiết?
+     15. Tài khoản người dùng được cấp, khóa và thu hồi quyền theo quy trình nào?
+     16. Dữ liệu được sao lưu với tần suất nào? Đã thử phục hồi bản sao lưu gần đây chưa?
+     17. Khó khăn hoặc lỗi nào thường gặp khi tìm kiếm, nhập liệu, đồng bộ hoặc lập báo cáo?
+     18. Theo người trả lời, thay đổi nào trong HTTT sẽ giúp quy trình hiện tại tốt hơn? Vì sao?
+
+
+
+
+2.3 Mẫu tổng hợp kết quả
+
+  Câu           Chủ đề                                                          Số trả lời hợp lệ            Kết quả/tỷ lệ thật
+  1–3           Công cụ và quản lý dữ liệu                                      [CẦN BỔ SUNG]                [CẦN BỔ SUNG]
+  4–8           Đơn hàng và tồn kho                                             [CẦN BỔ SUNG]                [CẦN BỔ SUNG]
+  9–12          Khách hàng, phản hồi và khảo sát                                [CẦN BỔ SUNG]                [CẦN BỔ SUNG]
+  13–14         Báo cáo                                                         [CẦN BỔ SUNG]                [CẦN BỔ SUNG]
+  15–16         Bảo mật và sao lưu                                              [CẦN BỔ SUNG]                [CẦN BỔ SUNG]
+  17–18         Khó khăn và nhu cầu cải tiến                                    [CẦN BỔ SUNG]                [CẦN BỔ SUNG]
+
+         Tổng số người tham gia: [CẦN BỔ SUNG]. Số phiếu hợp lệ: [CẦN BỔ SUNG]. Thời gian/phương thức khảo sát: [CẦN BỔ SUNG].
+Tỷ lệ câu trả lời = số lượt chọn phương án / số phiếu hợp lệ có trả lời câu hỏi; nếu câu hỏi cho phép chọn nhiều, tổng tỷ lệ có thể vượt 100%.
+
+
+                                                                      2
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                               HUNG FASHION CRM
+
+
+2.4 Kết luận khảo sát
+[CẦN BỔ SUNG: chỉ viết kết luận sau khi thu thập dữ liệu thật; nêu điểm mạnh, hạn chế được nhiều người xác nhận, nhu cầu ưu tiên và giới
+hạn mẫu khảo sát. Không dùng số liệu seed/demo để thay thế.]
+
+
+
+
+                                                                   3
+                                                                              CHƯƠNG 3
+
+
+
+                                            Phân tích hệ thống thông tin
+
+
+3.1 Bài toán và các hoạt động nghiệp vụ
+Từ các luồng thực sự được cài đặt, bài toán phần mềm là tập trung hóa dữ liệu bán lẻ thời trang và hỗ trợ chăm sóc khách hàng. Nhân viên
+tạo/tra cứu sản phẩm, biến thể và tồn kho; xử lý đơn trực tuyến hoặc tại quầy; theo dõi phương thức/trạng thái thanh toán; quản trị viên phân
+quyền người dùng; bộ phận CRM duy trì hồ sơ khách, tiếp nhận phản hồi, triển khai khảo sát và trao đổi qua chat.
+          Khi khách tạo đơn, API kiểm tra thông tin đơn, tồn kho, khuyến mãi và điểm thưởng rồi lưu order, chi tiết và payment. Chuyển khoản
+QR demo tạo liên kết có token ngẫu nhiên hết hạn sau 15 phút; đây là luồng mô phỏng, không xác minh giao dịch ngân hàng. Nhân viên vẫn có
+thể xác nhận trạng thái thanh toán thủ công. Sự kiện nghiệp vụ được ghi qua outbox, relay chuyển lên Kafka, consumer lưu bản chiếu sự kiện
+trong PostgreSQL.
+          Quy trình CRM gồm quản lý hồ sơ và thuộc tính khách, liên kết sở thích, phân nhóm theo hạng/độ tuổi/giới tính, ghi phản hồi, tạo câu
+hỏi khảo sát, mời khách, nhận câu trả lời và xem thống kê. Khách tự đăng ký/đăng nhập, cập nhật hồ sơ, gửi đánh giá, thực hiện khảo sát, theo
+dõi đơn và liên hệ CSKH.
+          Các hạn chế có căn cứ trong source: không có HRM chấm công/tính lương hoặc yêu cầu nghỉ; không có MRP/BOM/sản xuất; chưa tích
+hợp xác nhận thanh toán từ ngân hàng; không có bằng chứng CRM automation hay gửi thông báo marketing ngoài các route khảo sát/voucher.
+Repository không có kết quả đo tải; không kết luận hệ thống đã đạt SLA.
+
+
+
+
+3.2 Sơ đồ chức năng
+
+
+                                                           Hệ thống thông
+                                                           tin Hung Fashion
+
+
+
+
+             Quản lý tài      Quản lý sản      Quản lý tồn kho            Quản lý đơn                                                              Báo cáo, nhật ký
+            khoản và phân    phẩm và danh      và nhà cung cấp           hàng và thanh                                 Quản lý quan hệ               và cấu hình
+                quyền            mục                                         toán                                        khách hàng
+
+
+
+
+                                                            Checkout và QR               Khuyến mãi   Hồ sơ, hạng và            Phản hồi và chat               Khảo sát và
+                                                                 demo                                    sở thích                     CSKH                      thống kê
+
+
+
+
+                               Hình 3.1: Sơ đồ phân rã chức năng theo module đã cài đặt
+
+
+
+
+                                                                                    4
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                                 HUNG FASHION CRM
+
+
+3.3 Sơ đồ ngữ cảnh
+Hình 3.2 liệt kê sáu tác nhân bên ngoài gồm Khách hàng, Quản trị viên, Nhân viên CSKH, Quản lý bán hàng, Quản lý kho và Quản lý nhân sự.
+Đọc các mũi tên để thấy dữ liệu chính mỗi tác nhân gửi vào hệ thống và thông tin hệ thống trả lại.
+
+
+                                                                                       Danh sách, trạng thái, báo
+                                                                                              cáo, nhật ký
+                                                                                                                       Quản trị viên
+                                                                                       Tài khoản, quyền, cấu hình,
+                                                                                             yêu cầu báo cáo
+
+                                                                                        Hồ sơ khách, trạng thái,
+                                                                                                thống kê
+                                                                                                                      Nhân viên CSKH
+                                                                                      Phản hồi, khảo sát, hội thoại
+
+                                                                                       Đơn, thanh toán, hóa đơn,
+              Hồ sơ, đơn mua, đánh giá,
+                                                                                                báo cáo
+              trả lời khảo sát, tin nhắn                           HTTT Hung
+      Khách hàng                                                                                                      Quản lý bán hàng
+                                            Catalog, trạng thái đơn, Fashion            Đơn tại quầy, trạng thái
+                                            voucher, khảo sát, trả lời                  thanh toán, khuyến mãi
+                                                      chat
+                                                                                       Tồn kho, catalog, cảnh báo
+                                                                                                                        Quản lý kho
+                                                                                       Sản phẩm, phiếu kho, nhà
+                                                                                               cung cấp
+
+                                                                                       Danh sách nhân viên, báo
+                                                                                          cáo được cấp quyền
+                                                                                                                      Quản lý nhân sự
+                                                                                             Hồ sơ nhân sự
+
+
+
+                                           Hình 3.2: Sơ đồ ngữ cảnh HTTT Hung Fashion
+
+
+
+
+                                                                               5
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                                             HUNG FASHION CRM
+
+
+3.4 Sơ đồ luồng dữ liệu mức đỉnh
+Hình 3.3 trình bày năm tiến trình (1–5), năm kho dữ liệu (D1–D5), các tác nhân và luồng dữ liệu chính kết nối chúng. Đọc từ tác nhân qua tiến
+trình tới kho dữ liệu để theo dõi nơi dữ liệu được tiếp nhận, xử lý và lưu trữ.
+
+
+
+
+                                                                                                                     D4 Feedback,      D3 Order, detail,
+                                                                                                                     survey, chat,         payment
+                                                                                                                        loyalty
+
+                                                                                                 4. CRM: phản
+                                                                                                hồi, chat, khảo
+                                                                                                       sát
+
+
+
+
+                                                                                                                     D2 Product,
+                                                                                                                      variant,
+                                                                                                                      supplier,
+                                                                                                                      receipts
+                                                                                                  2. Quản lý
+                                                                                   QL KHO       catalog và tồn
+                                                                                                      kho
+
+
+
+                                         D1 Account,     5. Báo cáo và sự       QL KHÁCH HÀNG
+                                       role, employee,         kiện
+                                                                                                                     3. Xử lý đơn và
+                                          customer
+                                                                                                                       thanh toán
+                                                                                 QL BÁN HÀNG                                             D5 Outbox,
+                                                                                                                                        user_events,
+                                                                                                                                        transactions
+                      1. Quản lý tài
+                      khoản và hồ sơ
+    Khách hàng
+
+
+                                                                                   ADMIN
+
+
+
+
+                                 Hình 3.3: DFD mức đỉnh: tiến trình, tác nhân và kho dữ liệu
+
+
+
+
+                                                                            6
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                                HUNG FASHION CRM
+
+
+3.5 DFD mức 1: CRM
+Hình 3.4 mô tả năm quy trình CRM từ quản lý hồ sơ, tiếp nhận phản hồi và khảo sát đến ghi nhận kết quả, chat hỗ trợ; mỗi dòng nêu dữ liệu
+đầu vào cùng dữ liệu lưu hoặc đầu ra chính.
+
+
+       Tiến trình                  Dữ liệu vào                            Dữ liệu lưu/ra
+       4.1 Quản lý hồ sơ           Form quản lý hoặc hồ sơ                customer,             account,           interest,
+                                   khách tự cập nhật                      customer_interest; danh sách và
+                                                                          chi tiết khách
+       4.2 Tiếp nhận phản          Đánh       giá/nội     dung      từ    feedback,             feedback_attachment;
+       hồi                         khách; trả lời và trạng thái           trạng thái và nội dung phản hồi
+                                   từ CSKH
+       4.3 Khảo sát                Tiêu chí, câu hỏi, lựa chọn,           survey,                      survey_question,
+                                   lời mời                                survey_option, survey_invitation
+       4.4 Thu thập kết            Lựa chọn/câu trả lời của               survey_response,                survey_answer;
+       quả                         khách                                  bảng thống kê kết quả
+       4.5 Chat hỗ trợ             Tin nhắn khách và nhân                 conversation,                     chat_message,
+                                   viên, metadata tệp                     chat_message_attachment;                        event
+                                                                          invalidation SSE
+
+                                   Hình 3.4: DFD mức 1 cho nhóm chức năng CRM
+
+
+
+
+                                                                   7
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                                  HUNG FASHION CRM
+
+
+3.6 DFD mức 1: đơn hàng và thanh toán
+Hình 3.5 mô tả năm bước từ lập đơn, tính tiền và ghi nhận payment đến cập nhật trạng thái, phát sự kiện; mỗi dòng nêu đầu vào và dữ liệu lưu
+hoặc kết quả chính.
+
+
+      Tiến trình                     Dữ liệu vào                                Dữ liệu lưu/ra
+      3.1 Lập đơn                    Khách chọn hàng/địa chỉ                    order, order_detail; giảm tồn theo
+                                     hoặc nhân viên tạo đơn quầy                logic đơn
+      3.2 Tính tiền                  Giá, số lượng, promotion,                  Tổng tiền, giảm giá, thông tin voucher
+                                     điểm quy đổi                               và lịch sử điểm
+      3.3 Ghi payment                Phương                           thức      payment với status ban đầu; QR demo
+                                     Cash/BankTransfer, amount                  token nếu cờ tính năng bật
+      3.4 Cập nhật trạng             Yêu cầu hủy/giao hàng hoặc                 Trạng thái order/payment; nghiệp vụ
+      thái                           xác nhận thanh toán của nhân               điểm thưởng
+                                     viên
+      3.5 Phát sự kiện               Thay đổi thanh toán đã xác                 outbox_events             trong      transaction;
+                                     nhận                                       relay     Kafka;      consumer         cập     nhật
+                                                                                transactions
+
+                                   Hình 3.5: DFD mức 1 cho đơn hàng và thanh toán
+
+
+
+
+                                                                     8
+                                                                                                          CHƯƠNG 4
+
+
+
+                                                                                   Thiết kế hệ thống
+
+
+4.1 Thiết kế cơ sở dữ liệu
+4.1.1 Lược đồ quan hệ và ERD
+
+Lược đồ được tổng hợp từ baseline server/sql/schema.sql và migrations 001–015. Những bảng event ban đầu được migration 002 chuyển
+từ payload JSON sang cột cấu trúc; bản mô tả phải đọc schema baseline cùng migration theo thứ tự để thấy phiên bản ứng dụng hiện tại. Hình
+4.1 trình bày quan hệ nghiệp vụ chính; các bảng vai trò/quyền, lookup và bảng chi tiết được mô tả đầy đủ trong Phụ lục A.
+
+
+
+                                OUTBOX_EVENTS                                                                 SURVEY                                                         ROLE
+
+
+
+
+                                    relays                                                        asks                    receives                                         grants
+
+
+
+
+          SUPPLIER              TRANSACTIONS                   CATEGORY   BRAND           SURVEY_QUESTION              SURVEY_RESPONSE                                     ACCOUNT
+
+
+
+
+       source        supplies                                  contains   labels                 offers                   contains        profile                                     profile
+
+
+
+
+   IMPORT_RECEIPT               COLOR              SIZE        PRODUCT                        SURVEY_OPTION            SURVEY_ANSWER     EMPLOYEE                                    CUSTOMER                               INTEREST
+
+
+
+
+                                colors            sizes           has                                                                    handles        places                                    contacts             has classifies
+
+
+
+
+      contains                               PRODUCT_VARIANT                                                                                   ORDER                   writes                   CONVERSATION        CUSTOMER_INTEREST
+
+
+
+
+                                                item item                                                                    contains         paid_by      referenced_by                          contains
+
+
+
+
+                      IMPORT_DETAIL                                            ORDER_DETAIL                                                   PAYMENT            FEEDBACK                       CHAT_MESSAGE
+
+
+
+
+                                                                                                                                                                  includes                        includes
+
+
+
+
+                                                                                                                                                            FEEDBACK_ATTACHMENT           CHAT_MESSAGE_ATTACHMENT
+
+
+
+
+                                                            Hình 4.1: ERD các quan hệ nghiệp vụ chính rút từ SQL
+
+
+
+4.1.2 Nguyên tắc thiết kế thể hiện trong DDL
+
+Các bảng nghiệp vụ dùng khóa chính số nguyên/identity; quan hệ được khai báo bằng khóa ngoại; bảng nối như role_permission,
+customer_interest, user_promotion có khóa ghép/unique chống liên kết trùng. Giá, số lượng, điểm đánh giá và miền trạng thái được
+giới hạn bằng CHECK/ENUM. outbox_events.event_id, event mirror và payment order được thiết kế để nhận diện sự kiện/thanh toán
+duy nhất. Chi tiết từng trường, kiểu, khóa và index nằm ở Phụ lục A, được sinh từ file SQL trong repo.
+
+
+4.1.3 Từ điển dữ liệu
+
+Phụ lục A có bảng mô tả mọi bảng/thuộc tính. database/schema.sql là bản schema-only xuất bằng pg_dump từ database demo PostgreSQL
+tạm sau khi áp dụng schema và migrations 001–015. customer_interest_map xuất hiện trong migration chuyển đổi cũ; bảng sử dụng sau
+migration được đổi tên thành customer_interest, nên lịch sử chuyển đổi được nêu riêng, không xem hai tên là hai miền dữ liệu độc lập.
+
+
+
+                                                                                                                   9
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                                   HUNG FASHION CRM
+
+
+4.2 Thiết kế giao diện
+Giao diện quản trị React dùng bộ điều hướng theo vai trò trong client/src/App.jsx. Các nhóm có route hash riêng nhưng tái sử
+dụng dashboard shell và view module. Khách hàng dùng customer portal riêng. Ảnh được tự động nhúng khi nhóm đặt đúng tên file vào
+docs/report/images; hiện chưa có ảnh giao diện xác thực.
+
+
+
+
+                                       Chờ ảnh docs/report/images/4.1.png
+
+
+
+
+                                            Hình 4.2: Tổng quan quản trị ADMIN
+
+
+
+
+                                       Chờ ảnh docs/report/images/4.2.png
+
+
+
+
+                                            Hình 4.3: Quản lý tài khoản và quyền
+
+
+
+
+                                       Chờ ảnh docs/report/images/4.3.png
+
+
+
+
+                                                   Hình 4.4: Tra cứu sản phẩm
+
+
+
+4.2.1 Vai trò giao diện và tìm kiếm
+
+ADMIN có menu quản trị chung và các view tài khoản, sản phẩm, kho, đơn, CRM, báo cáo, nhật ký, cài đặt. QL_NHAN_SU, QL_KHO, QL_
+BAN_HANG và QL_KHACH_HANG nhìn thấy các module theo phân quyền trong App.jsx; phần mềm hiện chưa có ứng dụng HRM chuyên
+trách nghỉ phép/chấm công/lương. Các màn hình khách hàng là portal độc lập về luồng sử dụng.
+         API product hỗ trợ tìm kiếm, danh mục, thương hiệu, nhà cung cấp, khoảng giá, sắp xếp theo ngày/tên/giá/danh mục. API supplier hỗ
+trợ từ khóa, lọc có/thiếu email/điện thoại và sắp xếp tên/liên hệ/ngày tạo. Giao diện cụ thể cần chụp lại để xác nhận tất cả tùy chọn hiển thị
+đúng; không dùng khả năng API để khẳng định UI có mọi loại lọc.
+
+
+4.2.2 Báo cáo kho và nhân sự
+
+Mục Báo cáo hiển thị nội dung theo vai trò. Quản lý kho (QL_KHO) và ADMIN xem biến động nhập/xuất theo ngày trong khoảng được chọn, giá
+trị tồn kho hiện tại tính bằng số lượng biến thể nhân giá nhập của sản phẩm, danh sách biến thể có tồn không vượt ngưỡng, và tổng nhập theo
+nhà cung cấp. Schema chưa có trường tồn tối thiểu riêng; màn hình cho nhập ngưỡng, mặc định 10. Mỗi bảng có thể xuất CSV riêng. Các API
+
+
+
+                                                                     10
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                         HUNG FASHION CRM
+
+
+
+
+                 Chờ ảnh docs/report/images/4.4.png
+
+
+
+
+                  Hình 4.5: Quản lý nhà cung cấp và tồn kho
+
+
+
+
+                 Chờ ảnh docs/report/images/4.5.png
+
+
+
+
+                     Hình 4.6: Quản lý khách hàng CRM
+
+
+
+
+                 Chờ ảnh docs/report/images/4.6.png
+
+
+
+
+                        Hình 4.7: Tiếp nhận phản hồi
+
+
+
+
+                 Chờ ảnh docs/report/images/4.7.png
+
+
+
+
+                      Hình 4.8: Quản lý khảo sát CRM
+
+
+
+
+                 Chờ ảnh docs/report/images/4.8.png
+
+
+
+
+                         Hình 4.9: Hồ sơ khách hàng
+
+
+                                     11
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                        HUNG FASHION CRM
+
+
+
+
+                 Chờ ảnh docs/report/images/4.9.png
+
+
+
+
+                     Hình 4.10: Khách hàng gửi đánh giá
+
+
+
+
+                 Chờ ảnh docs/report/images/4.10.png
+
+
+
+
+                    Hình 4.11: Khách hàng trả lời khảo sát
+
+
+
+
+                 Chờ ảnh docs/report/images/4.11.png
+
+
+
+
+                        Hình 4.12: Trò chuyện CSKH
+
+
+
+
+                                     12
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                                  HUNG FASHION CRM
+
+
+tương ứng là GET /api/reports/warehouse/movements, /warehouse/summary và /warehouse/suppliers; truy vấn lọc theo ngày
+dùng tham số.
+         Quản lý nhân sự (QL_NHAN_SU) và ADMIN xem tổng số hồ sơ, phân bố theo trạng thái hoạt động và chức vụ, cùng số nhân viên mới
+theo tháng dựa trên employee.hire_date; có thể xuất CSV. API GET /api/reports/hr/summary chỉ tổng hợp hồ sơ hiện có. Hệ thống
+chưa có chấm công, tính lương hoặc nghỉ phép và các báo cáo này không tạo ra các nghiệp vụ đó. Backend kiểm tra vai trò trên từng API báo
+cáo; ADMIN được truy cập tất cả, các vai trò còn lại chỉ truy cập báo cáo thuộc phạm vi của mình.
+
+
+4.2.3 Ma trận độ bao phủ CRM
+
+
+Trạng thái “Có” nghĩa là có màn hình và route liên quan trong source; không đồng nghĩa đã nghiệm thu nghiệp vụ thực tế. “Có điều kiện” nghĩa
+
+là thao tác bị giới hạn bởi quy tắc bảo vệ dữ liệu.
+
+
+  Yêu cầu CRM                         Màn hình                 API liên quan                                       Trạng thái
+  Thêm khách hàng                     Khách hàng               POST        /api/customers;               POST Có
+                                                               /api/auth/register cho khách tự
+                                                               đăng ký
+  Xóa khách hàng                      Khách hàng               DELETE /api/customers/:id                           Có điều kiện
+  Khóa tài khoản khách                Khách hàng               PATCH            /api/customers/:id/ Có
+                                                               account-status
+  Tiếp nhận và xử lý Phản hồi                                  GET /api/feedbacks, GET /:id, Có
+  feedback                                                     PATCH           /:id/reply,             PATCH
+                                                               /:id/status; POST khách
+  Báo cáo tuổi khách                  Reports                  GET          /api/customers/stats/ Có
+                                                               overview               (byAge);             GET
+                                                               /api/reports/customer-ages
+  Báo cáo sở thích                    Reports                  GET        /api/reports/interests, Có
+                                                               /customer-segments
+  Tạo khảo sát                        Khảo sát                 POST /api/surveys                                   Có
+  Gửi khảo sát/mời khách Khảo sát                              GET /:id/recipients-preview, Có
+                                                               POST /:id/send
+  Thống kê kết quả khảo Khảo sát                               GET /api/surveys/:id/results Có
+  sát
+  Khách đăng ký/đăng Auth                                      POST /api/auth/register, POST Có
+  nhập                                                         /api/auth/login
+  Sửa hồ sơ                           Customer Portal          PUT /api/auth/me                                    Có
+  Khách gửi đánh giá                  Customer Portal          POST /api/feedbacks                                 Có
+  Khách nhận/trả lời khảo Customer Portal                      GET /api/surveys/mine, GET Có
+  sát                                                          /:id, POST /:id/respond
+  Chat trực tuyến                     Customer                 /api/chat/my-conversation/*,                        Có
+                                      Portal/Chat CSKH /api/chat/:id/messages,
+                                                               /api/chat/events
+
+
+
+                                                                    13
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                 HUNG FASHION CRM
+
+
+
+
+      Chức năng xóa hồ sơ khách hàng chỉ thực hiện được khi hồ sơ không còn liên kết tài khoản
+đăng nhập và không có dữ liệu liên quan (đơn hàng, phản hồi, kết quả và lời mời khảo sát, mã
+ưu đãi, hội thoại, lịch sử điểm thưởng); việc kiểm tra và xóa nằm trong cùng một giao dịch, trả
+mã 409 kèm thông báo khi không đủ điều kiện. Với khách đã có tài khoản hoặc lịch sử, hệ thống
+khuyến nghị khóa tài khoản. Khi hồ sơ được xóa hợp lệ, các sở thích của khách hàng được xóa
+kèm theo nhờ ràng buộc khóa ngoại ON DELETE CASCADE. Chức năng xóa tài khoản được kiểm
+soát nhằm bảo toàn tính toàn vẹn dữ liệu và quyền quản trị. Hệ thống không cho phép người
+dùng tự xóa tài khoản đang đăng nhập, xóa tài khoản còn dữ liệu liên quan, hoặc xóa quản trị
+viên đang hoạt động cuối cùng; trong trường hợp tài khoản đã phát sinh dữ liệu, hệ thống khuyến
+nghị khóa thay vì xóa.
+
+
+
+
+                                              14
+                                                                                         CHƯƠNG 5
+
+                                                   Cài đặt, vận hành và bảo trì
+
+
+5.1 Kiến trúc triển khai
+
+Ứng dụng gồm SPA React/Vite trong store-admin/client, API Express trong store-admin/
+server, PostgreSQL và Kafka. Khi chạy server chế độ phục vụ client, server trả static build từ
+client/dist. Môi trường local có Docker Compose cho PostgreSQL và Kafka; Kafka UI chỉ
+phục vụ quan sát. PostgreSQL/Kafka managed có cấu hình riêng, cần cung cấp biến môi trường
+và chứng thư qua cơ chế bảo mật của nền tảng.
+                                                   Phát triển local
+
+                                                             poll unpublished; SKIP
+                                                                     LOCKED
+
+                                                            business transaction +                                                                          Môi trường managed theo cấu hình triển khai
+                                                                                       PostgreSQL
+                                                                   outbox
+                                                                                         Docker
+                  HTTP /api, JWT   Express API
+                                                                                                                                                            outbox relay producer                           Kafka managed,
+                                                                                                                                                                                    consumer group store-      TLS client
+                                                          user-events / transaction-                                                                                                    admin-group           certificate
+                                                                                       Kafka Docker    Kafka UI
+                                                                   events
+     React/Vite                                                                                                                       HTTPS
+                                                                                                                                              Express API
+      browser                                                                                                     DEMO QR URL, no bank
+                                                                                                                                               container
+
+
+                                                                                                                                                                                                              PostgreSQL
+                                                                                                                                                                          insert idempotent                 managed, SSL CA
+
+
+
+
+                                                 Hình 5.1: Triển khai và luồng sự kiện outbox/Kafka
+
+
+
+5.2 Cài đặt môi trường local
+
+Các lệnh dưới đây dựa trên scripts đã có trong store-admin/package.json. Chuẩn bị
+Node.js/npm, Docker Desktop, PostgreSQL client tools nếu cần backup/restore và file môi
+trường local do người vận hành tự tạo từ danh sách biến trong server/.env.example. Không
+đưa file môi trường thật vào source archive.
+    1. Tại thư mục store-admin, cài phụ thuộc bằng npm install.
+    2. Khởi chạy dịch vụ local PostgreSQL/Kafka và frontend/backend bằng npm run
+       dev:local; hoặc khởi động dịch vụ qua Compose rồi chạy npm run dev.
+    3. Chạy migration bằng npm run db:migrate --workspace server.
+    4. Nếu cần dữ liệu mẫu, đặt SEED_DEMO_PASSWORD trong môi trường shell (8–72 byte UTF-
+       8, không ghi vào file/log), rồi chạy npm run seed. Script chỉ in xác nhận biến đã được
+       dùng, không in giá trị mật khẩu. Seed có thể truy cập nguồn catalog bên ngoài; chỉ chạy
+       trong local/test.
+
+                                                                                                      15
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                   HUNG FASHION CRM
+
+
+   5. Để có thêm event, lịch sử điểm, gán khuyến mãi và hội thoại mẫu, chạy node
+      scripts/seed-report-demo.mjs sau seed chính; script yêu cầu các biến SEED_DB_*
+      trỏ về loopback.
+   6. Tạo production client build bằng npm run build; chạy server bằng npm start theo
+      script hiện có.
+
+
+5.3 Cấu hình biến môi trường
+
+Bảng liệt kê tên biến từ server/.env.example và cách đọc trong mã nguồn; không chứa giá
+trị. Dùng secret manager của nền tảng cho bí mật. TRUST_PROXY_HOPS mặc định local nên giữ
+0; chỉ cấu hình số hop phù hợp khi triển khai sau proxy tin cậy. Cấu hình demo payment và URL
+công khai chỉ bật trong môi trường trình diễn, tuyệt đối không coi QR demo là giao dịch ngân
+hàng.
+
+    Tên biến                                      Mục đích
+    PORT, LOCAL_HOST                              Cổng và địa chỉ bind của HTTP server.
+    JWT_SECRET                                    Chữ ký token đăng nhập; bí mật, tự cấp riêng
+                                                  cho môi trường.
+    TRUST_PROXY_HOPS                              Số proxy hop tin cậy khi xác định IP; chỉ
+                                                  tăng khi đã xác minh topology.
+    AUTH_RATE_LIMIT_WINDOW_MS,                    Cửa sổ và ngưỡng giới hạn login/đăng ký.
+    AUTH_LOGIN_RATE_LIMIT_MAX,
+    AUTH_REGISTER_RATE_LIMIT_MAX
+    POSTGRES_HOST,             POSTGRES_PORT,     Kết nối PostgreSQL; mật khẩu là bí mật.
+    POSTGRES_DB,               POSTGRES_USER,
+    POSTGRES_PASSWORD
+    POSTGRES_SSL, POSTGRES_CA_PATH                TLS và CA cho PostgreSQL managed, nếu
+                                                  cấu hình yêu cầu.
+    PG_DUMP_PATH, PG_RESTORE_PATH                 Đường dẫn PostgreSQL client tools.
+    KAFKA_BROKER,              KAFKA_BROKERS,     Bootstrap broker(s) và cổng UI local.
+    KAFKA_UI_PORT
+    KAFKA_SSL_CA,         KAFKA_SSL_CA_PATH,      TLS/mTLS Kafka; đường dẫn chứng
+    KAFKA_SSL_CERT,     KAFKA_SSL_CERT_PATH,      thư/khóa không phải dữ liệu đưa vào báo
+    KAFKA_SSL_KEY, KAFKA_SSL_KEY_PATH             cáo.
+    DEMO_PAYMENT, PUBLIC_BASE_URL                 Bật luồng thanh toán demo và URL mà điện
+                                                  thoại truy cập được. Không kết nối ngân
+                                                  hàng.
+    ENABLE_DATABASE_BROWSER,                      Bật các công cụ quản trị dữ liệu; chỉ bật có
+    ENABLE_DATABASE_RESTORE                       kiểm soát và trong môi trường phù hợp.
+
+
+                                             16
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                  HUNG FASHION CRM
+
+
+     Tên biến                                     Mục đích
+     PYTHON_EXECUTABLE                            Python executable được script catalog dùng
+                                                  khi cần.
+     EVENT_RATE_LIMIT_WINDOW_MS,                  Giới hạn route thu nhận event.
+     EVENT_RATE_LIMIT_MAX
+     OUTBOX_MAX_BACKLOG,                          Ngưỡng backlog và thời gian chờ xác nhận
+     KAFKA_DB_CONFIRM_TIMEOUT_MS                  consumer.
+     DEBUG_CHAT_SSE, CHAT_UPLOAD_DIR              Log chẩn đoán SSE và thư mục lưu file chat.
+
+
+
+5.4 Chạy migration và khởi tạo dữ liệu
+
+Schema ban đầu nằm ở server/sql/schema.sql; migrations 001–015 được thực thi theo
+runner. database/schema.sql là dump schema-only và database/demo-data.sql là dump
+data-only sinh từ database local đã seed ngày 03/11/2026. Hai file đã được nạp lần lượt vào
+database rỗng; row count khớp trên 40/40 bảng. Dump data chứa hash bcrypt của mật khẩu các
+tài khoản demo; không chứa mật khẩu dạng rõ. Mật khẩu rõ chỉ được cung cấp khi chạy seed
+qua biến môi trường.
+        Sau lần chạy riêng npm run seed trước khi bổ sung seed báo cáo, các bảng rỗng là:
+      • conversation, chat_message, chat_message_attachment, demo_payment_
+         tokens, feedback_attachment;
+      • loyalty_point_transaction, outbox_events, transactions, user_events,
+         user_promotion.
+Sau khi chạy thêm seed báo cáo, chỉ còn demo_payment_tokens (token dùng một lần, chỉ tồn
+tại trong checkout demo đang hoạt động) và hai bảng đính kèm (chỉ phát sinh khi người dùng
+tải file thật vào chat/phản hồi) rỗng. Schema hiện không có bảng task, vì vậy chưa thể tạo bản
+ghi công việc nếu không bổ sung nghiệp vụ/schema.
+
+
+5.5 Backup, phục hồi và an toàn dữ liệu
+
+Ngày 03/11/2026, nhóm thực hiện drill trên PostgreSQL 16 Alpine trong container Docker tạm
+chỉ bind vào loopback; không kết nối dịch vụ managed. Lệnh dump custom format: docker
+exec hf-report-pg-20261103 pg_dump -Fc -U report_user -d report_demo -f
+/tmp/report-demo.dump; thời gian đo tại máy chạy Docker là 0,276 giây, kích thước
+dump 161,9 KiB. Tạo database đích rỗng bằng docker exec hf-report-pg-20261103
+createdb -U report_user report_restore mất 0,186 giây. Lệnh phục hồi docker
+exec hf-report-pg-20261103 pg_restore -U report_user -d report_restore
+--no-owner --no-privileges /tmp/report-demo.dump mất 3,860 giây. Sau restore, truy
+vấn COUNT trên từng bảng public cho kết quả bằng nhau ở 40/40 bảng (0 sai khác). Đây là
+
+
+                                             17
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                               HUNG FASHION CRM
+
+
+một lần đo trên máy local, không phải cam kết RTO cho production.
+      Đối chiếu row count từng bảng (nguồn = database đã seed; đích = database restore):
+
+             Bảng                                                 Nguồn    Restore
+             account                                                 10        10
+             brand                                                    1         1
+             category                                                 9         9
+             chat_message                                             6         6
+             chat_message_attachment                                  0         0
+             color                                                    8         8
+             conversation                                             3         3
+             customer                                                26        26
+             customer_interest                                       23        23
+             demo_payment_tokens                                      0         0
+             employee                                                 6         6
+             feedback                                                12        12
+             feedback_attachment                                      0         0
+             import_detail                                           180      180
+             import_receipt                                           1         1
+             interest                                                 8         8
+             loyalty_point_transaction                               20        20
+             order                                                   41        41
+             order_detail                                            82        82
+             outbox_events                                            4         4
+             payment                                                 41        41
+             permission                                              12        12
+             product                                                 180      180
+             product_image                                           180      180
+             product_variant                                         180      180
+             promotion                                                3         3
+             role                                                     6         6
+             role_permission                                         27        27
+             size                                                    13        13
+             store_admin_schema_migrations                           16        16
+             supplier                                                 4         4
+             survey                                                   1         1
+             survey_answer                                           15        15
+             survey_invitation                                        8         8
+             survey_option                                            3         3
+             survey_question                                          3         3
+             survey_response                                          5         5
+             transactions                                             4         4
+             user_events                                              3         3
+             user_promotion                                           8         8
+
+
+
+
+5.6 Kế hoạch chuyển đổi và triển khai môi trường demo
+
+Môi trường demo sử dụng PostgreSQL managed với SSL và xác minh CA, cùng Kafka
+managed trên Aiven với xác thực client certificate qua cổng SSL. Hai topic user-events và
+
+                                             18
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                   HUNG FASHION CRM
+
+
+transaction-events được tạo trước; cấu hình auto-create topic tắt. Không ghi hostname,
+chuỗi kết nối, mật khẩu, token hay nội dung chứng thư trong tài liệu. Người vận hành lấy giá
+trị từ các biến môi trường tương ứng và kho bí mật của nền tảng.
+     1. Đóng băng thay đổi dữ liệu ở nguồn local, xác nhận phiên bản schema/migration và tạo
+        bản dump PostgreSQL dạng custom bằng pg_dump -Fc.
+     2. Kiểm tra checksum và quyền truy cập bản backup; chuẩn bị PostgreSQL đích, CA tin
+        cậy, tài khoản giới hạn quyền, Kafka SSL client credentials và tạo trước hai topic với cấu
+        hình retention/partition đã thống nhất.
+     3. Khôi phục dữ liệu lên PostgreSQL managed bằng pg_restore --no-owner
+        --no-privileges; không thay đổi bản nguồn. Cấu hình ứng dụng qua secret
+        manager/biến môi trường, xác minh CA và xác thực Kafka trước khi chuyển lưu lượng.
+     4. So sánh số hàng của từng bảng nguồn/đích, kiểm tra constraints và migration version;
+        xác nhận backlog outbox được relay, consumer xử lý được transaction event, rồi chạy
+        smoke test đăng nhập, đọc dữ liệu, tạo đơn thử nghiệm và luồng QR demo.
+     5. Chuyển lưu lượng sau khi đối chiếu hoàn tất. Theo dõi lỗi API, kết nối SSL, Kafka
+        consumer lag và outbox backlog trong thời gian đầu.
+Nếu kiểm tra sau chuyển đổi thất bại, người phụ trách triển khai tạm dừng thao tác ghi, giữ
+nguyên nguồn local và bản backup, chuyển cấu hình ứng dụng về nguồn trước đó, rồi đối chiếu
+các thay đổi phát sinh sau thời điểm dump trước khi mở lại ghi. Không phục hồi đè lên môi
+trường managed đang có dữ liệu mới mà chưa có quyết định và bản sao lưu phù hợp.
+       Phân công tối thiểu: quản trị CSDL chịu trách nhiệm backup/restore, CA, quyền truy cập
+và đối chiếu số hàng; người vận hành triển khai chịu trách nhiệm biến môi trường, chứng thư
+Kafka, topic và chuyển lưu lượng; người điều phối nhóm ghi nhận thời điểm chuyển đổi và phê
+duyệt kết quả. Tên người và biên bản thực tế cần được nhóm bổ sung.
+
+
+5.7 Vận hành Kafka và thanh toán demo
+
+Outbox writer ghi sự kiện cùng giao dịch nghiệp vụ. Relay lấy bản ghi chưa gửi bằng khóa hàng
+SKIP LOCKED, gửi theo topic, rồi đánh dấu published_at; nếu gửi thành công nhưng chưa
+kịp đánh dấu, có thể phát lại. Consumer dùng event_id để chống ghi lặp. Các topic nghiệp
+vụ hiện có là user-events và transaction-events; trong demo chúng phải được tạo trước,
+auto-create tắt.
+      Thanh toán DEMO phát token ngẫu nhiên dùng một lần, hết hạn sau 15 phút, lưu dạng
+băm; trang công khai ghi rõ đây không phải giao dịch thật. PUBLIC_BASE_URL cần trỏ tới địa
+chỉ LAN/tunnel truy cập được từ điện thoại trong buổi demo. Không bật trên môi trường giao
+dịch thật; cơ chế này không đối soát với ngân hàng.
+
+
+
+
+                                               19
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                   HUNG FASHION CRM
+
+
+5.7.1 Ảnh minh chứng triển khai
+
+Ảnh minh chứng được tự động nhúng nếu đặt trong docs/report/images theo đúng tên dưới
+đây.
+
+
+
+
+                          Chờ ảnh docs/report/images/5.1.png
+
+
+
+
+                    Hình 5.2: Sơ đồ môi trường triển khai dùng cho buổi demo
+
+
+
+
+                          Chờ ảnh docs/report/images/5.2.png
+
+
+
+
+            Hình 5.3: Checkout QR DEMO và trang xác nhận không phải giao dịch thật
+
+
+
+
+5.8 Giới hạn free tier
+
+Không ấn định một giới hạn throughput hoặc topic chung cho gói free: hạn mức thay đổi theo
+nhà cung cấp, khu vực và loại dịch vụ. Nhóm cần ghi lại các giới hạn hiển thị trong console
+đúng ngày demo: [CẦN BỔ SUNG: số liệu và ngày]. Hình 5.4 là vị trí chờ ảnh console đã che
+thông tin định danh/credential. Nếu thấy lỗi giới hạn số topic, kiểm tra quota/ACL và số topic
+thực tế, sau đó gộp hoặc xóa topic chỉ theo quyết định quản trị cluster. Không xóa topic có dữ
+liệu cần giữ.
+
+
+
+
+                          Chờ ảnh docs/report/images/5.3.png
+
+
+
+
+              Hình 5.4: Giới hạn gói hiển thị trong console tại ngày demo (Chờ ảnh)
+
+
+
+
+                                               20
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                   HUNG FASHION CRM
+
+
+5.9 Ma trận chức năng theo vai trò
+
+Ma trận giao diện lấy từ route visibility ở client/src/App.jsx; API còn kiểm tra vai trò ở
+middleware/route.
+
+    Vai trò                Phạm vi chính theo ứng dụng
+    ADMIN                  Quản trị tài khoản và phân quyền; truy cập các module quản trị, báo
+                           cáo, cài đặt theo quyền được triển khai.
+    QL_NHAN_SU             Chức năng nhân sự/tài khoản được phân quyền trong dashboard;
+                           không có bằng chứng module chấm công, lương, nghỉ phép đầy đủ.
+    QL_KHO                 Sản phẩm, kho, nhà cung cấp và các chức năng vận hành kho được
+                           router/UI cho phép.
+    QL_BAN_HANG            Đơn hàng/bán hàng theo router/UI; một số báo cáo và xử lý đơn phụ
+                           thuộc quyền API.
+    QL_KHACH_HANG          Khách hàng, phản hồi, khảo sát và chat CSKH.
+    KHACH_HANG             Portal: hồ sơ, đơn hàng, đánh giá, khảo sát và chat của chính khách
+                           hàng.
+
+
+
+5.10 Hướng dẫn sử dụng
+
+Các bước dưới đây bám theo màn hình và route hiện có. Menu có thể khác theo role; API tiếp
+tục kiểm tra quyền ở máy chủ. Tài khoản demo phải được cấp trước, đăng nhập bằng tên đăng
+nhập/email và mật khẩu do người quản trị cung cấp.
+
+Đăng nhập chung
+
+   1. Mở địa chỉ ứng dụng, nhập tên đăng nhập hoặc email cùng mật khẩu, chọn Đăng nhập.
+   2. Nếu tài khoản bị khóa hoặc thông tin không hợp lệ, liên hệ quản trị viên; không thử lặp
+      liên tục vì đăng nhập có giới hạn số lần.
+   3. Sau khi vào hệ thống, sử dụng menu đúng phạm vi vai trò; đăng xuất từ menu hồ sơ khi
+      kết thúc.
+
+ADMIN
+
+   1. Mở Tài khoản, tìm tài khoản theo tên/email, tạo tài khoản với vai trò phù hợp hoặc dùng
+      hộp xác nhận để đổi vai trò, khóa/mở khóa hay xóa khi đủ điều kiện.
+   2. Mở Sản phẩm hoặc Tồn kho để tra cứu sản phẩm/nhà cung cấp, xem thông tin và thực
+      hiện thao tác quản trị được cấp.
+   3. Mở Đơn hàng để tra cứu đơn, xem chi tiết và xác nhận thanh toán theo nghiệp vụ; chỉ
+      dùng QR DEMO nếu môi trường trình diễn đã bật.
+
+
+                                              21
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                               HUNG FASHION CRM
+
+
+  4. Mở các mục Khách hàng, Phản hồi, Khảo sát, Trò chuyện CSKH, Báo cáo hoặc Nhật
+     ký để theo dõi và xử lý dữ liệu tương ứng.
+
+QL_KHO
+
+  1. Đăng nhập và mở Sản phẩm; nhập từ khóa hoặc dùng bộ lọc đang hiển thị để tìm sản
+     phẩm.
+  2. Mở Tồn kho để tra cứu nhà cung cấp/phiếu nhập và xem số lượng tồn; chỉ xác nhận nhập
+     khi có chứng từ nghiệp vụ.
+  3. Dùng Báo cáo nếu mục này xuất hiện trong menu được cấp quyền; chức năng ngoài
+     phạm vi menu cần quản trị viên hỗ trợ.
+
+QL_BAN_HANG
+
+  1. Mở Đơn hàng, tìm đơn và xem trạng thái/chi tiết trước khi cập nhật.
+  2. Chọn phương thức thanh toán theo màn hình checkout. Với chuyển khoản demo, quét
+     QR từ thiết bị khác và chờ trạng thái đơn cập nhật; mã này không đại diện giao dịch ngân
+     hàng thật.
+  3. Mở Khuyến mãi để tra cứu hoặc quản lý khuyến mãi theo quyền; dùng Báo cáo để xem
+     số liệu được cấp.
+
+QL_KHACH_HANG
+
+  1. Mở Khách hàng, tìm hồ sơ, xem lịch sử và cập nhật thông tin theo quyền.
+  2. Mở Phản hồi để đọc, trả lời hoặc đổi trạng thái phản hồi; mở Khảo sát để tạo khảo sát,
+     xem người nhận và kết quả.
+  3. Mở Trò chuyện CSKH, chọn hội thoại, gửi nội dung hoặc tệp được hỗ trợ, rồi cập nhật
+     trạng thái xử lý.
+  4. Dùng báo cáo CRM, bao gồm thống kê tuổi ở ‘/api/customers/stats/overview‘ (trường
+     ‘byAge‘) hoặc ‘/api/reports/customer-ages‘, nếu quyền API cho phép.
+
+QL_NHAN_SU
+
+  1. Mở mục Nhân viên để tra cứu và quản lý hồ sơ nhân viên theo quyền được cấp.
+  2. Xem Báo cáo nếu có trong menu. Chức năng chấm công, tính lương và nghỉ phép chưa
+     được xác nhận trong ứng dụng: [CẦN BỔ SUNG nếu thuộc yêu cầu đồ án].
+
+KHACH_HANG
+
+  1. Đăng nhập portal khách hàng; xem/cập nhật hồ sơ cá nhân và catalog sản phẩm.
+  2. Tạo đơn hàng, chọn phương thức thanh toán được cung cấp và theo dõi trạng thái đơn.
+     QR DEMO chỉ mô phỏng: quét mã sẽ mở trang xác nhận demo, không chuyển tiền thật.
+
+                                            22
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                              HUNG FASHION CRM
+
+
+  3. Gửi đánh giá/phản hồi, trả lời khảo sát được mời và nhắn CSKH trong hội thoại của chính
+     mình.
+
+
+5.11 Troubleshooting
+
+   • Trang trống: kiểm tra console trình duyệt và terminal Vite; xác nhận build frontend và
+     URL proxy /api.
+   • API không kết nối DB: xác nhận PostgreSQL chạy, host/port local khớp và migrations
+     đã chạy; không chia sẻ thông tin kết nối khi gửi log.
+   • Kafka không kết nối: kiểm tra broker reachable, ACL/topic và tên biến TLS; không gửi
+     certificate/key trong issue hay ảnh chụp.
+   • Điện thoại không mở QR demo: PUBLIC_BASE_URL phải là IP LAN/tunnel có thể truy
+     cập; host bind server cần reachable; không dùng localhost của máy tính trong QR.
+   • Backup/restore bị từ chối: script chỉ cho phép host local; không dùng script này để tác
+     động database managed từ xa.
+
+
+
+
+                                           23
+                                        CHƯƠNG 6
+
+                        Kết luận và hướng phát triển
+
+
+6.1 Kết quả
+
+Đề tài hiện thực một ứng dụng quản lý bán lẻ thời trang có các miền tài khoản/phân quyền, sản
+phẩm và tồn kho, đơn hàng/thanh toán, khách hàng/CRM, phản hồi, khảo sát, chat, báo cáo và
+nhật ký. Backend Express cung cấp API; PostgreSQL lưu dữ liệu; outbox/Kafka hỗ trợ chuyển
+tiếp sự kiện nghiệp vụ. Luồng thanh toán QR trong phạm vi demo chỉ mô phỏng xác nhận, không
+xử lý tiền thật.
+       Phạm vi CRM được chọn để đối chiếu mục III của đề cương đánh giá. Ma trận tại Mục 4.2.3
+dùng các trạng thái Có, Có điều kiện, Một phần và Chưa có dựa trên màn hình/route trong source;
+đây chưa phải kết quả nghiệm thu từ người dùng. Đặc điểm doanh nghiệp chỉ là giả định từ tên,
+giao diện và dữ liệu catalog cho tới khi nhóm xác minh.
+
+
+6.2 Hạn chế
+
+Chưa có chứng cứ khảo sát thực tế, thử nghiệm khôi phục, đo hiệu năng đã chạy, hay ảnh giao
+diện được xác minh trong gói repo. Seed không cam kết lấp mọi bảng. Một số chức năng mô
+phỏng và các giới hạn nêu ở Chương 1 cần được ghi nhận trong demo, đặc biệt payment QR
+không xác thực giao dịch ngân hàng. Các kết luận về bảo mật/hiệu năng không vượt quá những
+gì có thể đọc từ mã nguồn.
+
+
+6.3 Hướng phát triển
+
+Ưu tiên tiếp theo là khảo sát và xác nhận quy trình với đơn vị thật; tổ chức backup tự động
+và diễn tập restore; triển khai giám sát Kafka/outbox và quota; hoàn thiện kiểm soát nội dung
+upload và lưu trữ media; thay luồng thanh toán demo bằng nhà cung cấp có webhook/chữ ký/đối
+soát nếu có nhu cầu giao dịch thật. Mọi hướng phát triển cần được đánh giá phạm vi, rủi ro và
+dữ liệu trước khi triển khai.
+
+
+
+
+                                              24
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                       HUNG FASHION CRM
+
+
+6.4 Đối chiếu tiêu chí đánh giá
+
+Đối chiếu theo phiếu đánh giá đồ án trong repository: Phần I là trình bày báo cáo (40 điểm);
+Phần II là xây dựng và cài đặt CSDL (30 điểm), gồm cài đặt CSDL kèm phương án sao lưu và
+phục hồi (10 điểm) và giao diện ADMIN (20 điểm); Phần III (30 điểm) yêu cầu chọn một trong
+HRM/CRM/MRP. Nhóm chọn CRM. Bảng dưới đây dẫn tới bằng chứng trong báo cáo và ghi
+trạng thái theo cùng hệ thuật ngữ với ma trận CRM tại Mục 4.2.3; đây là đối chiếu hồ sơ, không
+thay cho việc chấm điểm.
+
+     Phần        Tiêu chí và bằng chứng trong báo cáo                       Trạng thái
+     I           Trình bày báo cáo (40 điểm): Chương 1–6, sơ đồ, thiết      Một phần
+                 kế, cài đặt, kết luận và phụ lục. Còn thiếu khảo sát/ảnh
+                 xác thực theo danh sách bổ sung.
+     II.a        Cài đặt CSDL, phương án sao lưu và phục hồi (10 điểm): Có điều kiện
+                 Chương 4 mô tả thiết kế; Mục 5.5 ghi lại drill pg_
+                 dump/pg_restore và đối chiếu 40 bảng. Chưa phải diễn
+                 tập trên môi trường production.
+     II.b        Giao diện ADMIN (20 điểm): các mục giao diện tại           Một phần
+                 Chương 4 và ảnh minh chứng dự kiến ở các Hình 4.2–
+                 4.12. Ảnh vẫn cần nhóm cung cấp/xác minh.
+     III – CRM   Ma trận tại Mục 4.2.3; có các route/màn hình CRM, quy      Một phần
+                 trình cần được xác nhận với đơn vị.
+
+
+
+
+                                                25
+                          Tài liệu tham khảo
+
+
+1. Trường Đại học Sài Gòn, Khoa Công nghệ Thông tin, “Phiếu đánh giá đồ án giữa kỳ –
+   Hệ thống thông tin doanh nghiệp, học kỳ 1, năm học 2026–2027”, tệp PDF được cung
+   cấp trong repository.
+2. Mã nguồn Hung Fashion CRM, các route Express tại store-admin/server/src/
+   routes/, middleware và mount API tại store-admin/server/src/index.js.
+3. Lược đồ và lịch sử cấu trúc dữ liệu: store-admin/server/sql/schema.sql và
+   store-admin/server/sql/migrations/001--015.
+4. Seed và scripts vận hành: store-admin/scripts/seed.mjs, backup/restore và
+   store-admin/package.json.
+5. Giao diện và role navigation: store-admin/client/src/App.jsx, Customer Portal và
+   các view trong store-admin/client/src/views/.
+
+
+
+
+                                      26
+                                        CHƯƠNG A
+
+                                  Phụ lục vận hành
+
+
+A.1 Lệnh thường dùng
+
+Từ thư mục store-admin:
+
+npm install
+npm run dev:local
+npm run db:migrate --workspace server
+npm run seed
+npm run build
+npm run db:backup
+npm run db:restore -- backups/<file>.dump
+
+Restore có thể xóa/ghi đè schema trong database đích; chỉ thực hiện ở database test đã xác nhận.
+
+
+A.2 Tài khoản demo
+
+Không đưa mật khẩu vào báo cáo. Tạo/seed tài khoản theo cơ chế trong source ở môi trường
+local rồi ghi lại username, role, ngày tạo và người quản lý tài khoản ở bảng nội bộ của nhóm.
+Không dùng tài khoản demo mặc định trên môi trường công khai. Không coi tài khoản hoặc dữ
+liệu seed là khách hàng/nghiệp vụ thực.
+
+
+A.3 Môi trường và giới hạn free tier
+
+Lưu tên biến môi trường và mục đích ở Chương 5; giá trị cụ thể chỉ nằm trong cấu hình triển
+khai riêng. Giới hạn free tier phụ thuộc nhà cung cấp và gói tại thời điểm sử dụng. Nhóm ghi
+lại giới hạn đang hiển thị trên console vào ngày demo: [CẦN BỔ SUNG: số liệu và ngày]; cần
+đối chiếu ảnh console, che thông tin định danh và credential. Xem Hình 5.4 ở Mục 5 (Chờ ảnh
+docs/report/images/5.3.png).
+
+
+
+
+                                              27
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                               HUNG FASHION CRM
+
+
+A.4 Nguồn sơ đồ
+
+Các sơ đồ được lưu dưới dạng Mermaid trong docs/report/diagrams/*.mmd. Nếu máy có
+Mermaid CLI, kết xuất từng sơ đồ sang PDF bằng lệnh mẫu:
+
+mmdc -i docs/report/diagrams/01-chuc-nang.mmd `
+  -o docs/report/diagrams/01-chuc-nang.pdf
+
+Sau khi kết xuất, biên dịch báo cáo lại hai lượt. Nếu không có Mermaid CLI, cài công cụ theo
+quy định máy nộp hoặc sử dụng công cụ Mermaid được trường chấp thuận; không thay sơ đồ
+bằng hình tự vẽ không đối chiếu source.
+
+
+A.5 Bảng API và schema đầy đủ
+
+Danh sách route và nguồn code được kiểm kê trong docs/report/00-inventory.md. Schema-
+only SQL dump lấy từ database local demo nằm trong database/schema.sql; từ điển dữ liệu
+các bảng/thuộc tính nằm ở Phụ lục B.
+
+
+
+
+                                            28
+                                                            CHƯƠNG B
+
+
+
+                                          Từ điển dữ liệu chi tiết
+
+
+Từ điển này được sinh từ schema-only dump hiện hành database/schema.sql, gồm 40 bảng như bảng đối chiếu số dòng tại Mục 5.5. Kiểu,
+
+giá trị mặc định, khóa và chỉ mục lấy từ dump; ý nghĩa cột được diễn giải theo nghiệp vụ ứng dụng. Bảng customer_interest_map chỉ là
+
+bảng chuyển tiếp trong migration cũ; sau khi chuyển đổi, bảng chính thức là customer_interest và không được tính như một bảng riêng.
+
+
+
+
+B.1 Bảng account
+
+
+    Thuộc tính               Kiểu và ràng buộc                                                Ý nghĩa
+    account_id               integer          NOT            NULL             DEFAULT Liên kết tài khoản
+                             nextval(’public.account_account_id_
+                             seq’::regclass) PRIMARY KEY
+    role_id                  integer NOT NULL REFERENCES role(role_id) Liên kết vai trò
+    username                 character varying(100) NOT NULL UNIQUE                           Tên đăng nhập
+    password_hash            character varying(255) NOT NULL                                  Hash mật khẩu
+    email                    character varying(150) UNIQUE                                    Email
+    phone                    character varying(20)                                            Số điện thoại
+    status                   public.account_status                            DEFAULT Trạng thái
+                             ’Active’::public.account_status NOT NULL
+    last_login               timestamp with time zone                                         Last login
+    created_at               timestamp with time zone DEFAULT now() NOT Thời điểm tạo bản ghi
+                             NULL
+    updated_at               timestamp with time zone DEFAULT now() NOT Thời điểm cập nhật
+                             NULL
+    Chỉ mục: account_created_at_idx (btree: created_at DESC); account_email_idx (btree: email);
+    account_role_idx (btree: role_id); account_status_idx (btree: status); account_username_lower_
+    uidx (UNIQUE, btree: lower((username)::text))
+
+
+
+B.2 Bảng brand
+
+
+
+                                                                 29
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                            HUNG FASHION CRM
+
+
+  Thuộc tính                Kiểu và ràng buộc                                               Ý nghĩa
+  brand_id                  integer NOT NULL DEFAULT nextval(’public.brand_brand_id_ Liên kết thương hiệu
+                            seq’::regclass) PRIMARY KEY
+  brand_name                character varying(150) NOT NULL UNIQUE                          Brand name
+  description               text                                                            Mô tả
+  is_active                 boolean DEFAULT true NOT NULL                                   Cờ hoạt động
+  Chỉ mục: brand_active_idx (btree: is_active)
+
+
+
+
+B.3 Bảng category
+
+  Thuộc tính                Kiểu và ràng buộc                                               Ý nghĩa
+  category_id               integer NOT NULL DEFAULT nextval(’public.category_ Liên kết danh mục
+                            category_id_seq’::regclass) PRIMARY KEY
+  category_name             character varying(100) NOT NULL UNIQUE                          Category name
+  description               text                                                            Mô tả
+  parent_id                 integer REFERENCES category(category_id)                        Khóa liên kết đến bản ghi liên
+                                                                                            quan
+  is_active                 boolean DEFAULT true NOT NULL                                   Cờ hoạt động
+  Chỉ mục: category_active_idx (btree: is_active); category_parent_idx (btree: parent_id)
+
+
+
+
+B.4 Bảng chat_message
+
+  Thuộc tính                Kiểu và ràng buộc                                               Ý nghĩa
+  message_id                integer NOT NULL DEFAULT nextval(’public.chat_message_ Liên kết tin nhắn
+                            message_id_seq’::regclass) PRIMARY KEY
+  conversation_id           integer NOT NULL REFERENCES conversation(conversation_id) Liên kết hội thoại
+                            ON DELETE CASCADE
+  sender_account_id         integer NOT NULL REFERENCES account(account_id) ON Tài khoản gửi tin
+                            DELETE CASCADE
+  content                   text NOT NULL                                                   Nội dung
+  sent_at                   timestamp with time zone DEFAULT now() NOT NULL                 Thời điểm gửi
+  is_read                   boolean DEFAULT false NOT NULL                                  Cờ đã đọc
+  Chỉ mục: idx_chat_message_conv_id (btree: conversation_id); idx_chat_message_sent_at (btree: sent_at)
+
+
+
+
+B.5 Bảng chat_message_attachment
+
+  Thuộc tính                Kiểu và ràng buộc                                               Ý nghĩa
+  attachment_id             bigint NOT NULL DEFAULT nextval(’public.chat_message_ Mã tệp đính kèm
+                            attachment_attachment_id_seq’::regclass) PRIMARY KEY
+  message_id                integer NOT NULL REFERENCES chat_message(message_id) Liên kết tin nhắn
+                            ON DELETE CASCADE
+  storage_name              character varying(100) NOT NULL UNIQUE                          Tên tệp lưu trữ
+  original_name             character varying(255) NOT NULL                                 Tên tệp gốc
+  mime_type                 character varying(100) NOT NULL                                 Kiểu MIME
+
+
+
+
+                                                                 30
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                              HUNG FASHION CRM
+
+
+  Thuộc tính               Kiểu và ràng buộc                                                 Ý nghĩa
+  file_size                bigint NOT NULL                                                   Dung lượng byte
+  created_at               timestamp with time zone DEFAULT now() NOT NULL                   Thời điểm tạo bản ghi
+  Chỉ mục: chat_message_attachment_message_idx (btree: message_id, attachment_id)
+
+
+
+
+B.6 Bảng color
+
+    Thuộc tính               Kiểu và ràng buộc                                                  Ý nghĩa
+    color_id                 integer NOT NULL DEFAULT nextval(’public.color_color_id_ Khóa liên kết đến bản ghi liên
+                             seq’::regclass) PRIMARY KEY                              quan
+    color_name               character varying(50) NOT NULL UNIQUE                              Tên màu
+    hex_code                 character(7)                                                       Mã màu HEX
+
+
+
+
+B.7 Bảng conversation
+
+  Thuộc tính               Kiểu và ràng buộc                                                 Ý nghĩa
+  conversation_id          integer NOT NULL DEFAULT nextval(’public.conversation_ Liên kết hội thoại
+                           conversation_id_seq’::regclass) PRIMARY KEY
+  customer_id              integer NOT NULL REFERENCES customer(customer_id) ON Liên kết khách hàng
+                           DELETE CASCADE
+  assigned_to              integer REFERENCES employee(employee_id) ON DELETE SET Nhân viên được phân công
+                           NULL
+  subject                  character varying(300) DEFAULT ’Hỗ trợ khách hàng’::character Chủ đề hội thoại
+                           varying NOT NULL
+  status                   character varying(20) DEFAULT ’Open’::character varying NOT Trạng thái
+                           NULL
+  created_at               timestamp with time zone DEFAULT now() NOT NULL                   Thời điểm tạo bản ghi
+  updated_at               timestamp with time zone DEFAULT now() NOT NULL                   Thời điểm cập nhật
+  Chỉ mục: idx_conversation_customer_id (btree: customer_id); idx_conversation_status (btree: status); idx_conversation_updated_at
+  (btree: updated_at DESC)
+
+
+
+
+B.8 Bảng customer
+
+  Thuộc tính               Kiểu và ràng buộc                                                 Ý nghĩa
+  customer_id              integer NOT NULL DEFAULT nextval(’public.customer_ Liên kết khách hàng
+                           customer_id_seq’::regclass) PRIMARY KEY
+  account_id               integer UNIQUE REFERENCES              account(account_id)   ON Liên kết tài khoản
+                           DELETE SET NULL
+  full_name                character varying(150) NOT NULL                                   Họ tên
+  gender                   public.gender_type                                                Giới tính
+  date_of_birth            date                                                              Ngày sinh
+  phone                    character varying(20)                                             Số điện thoại
+  email                    character varying(150)                                            Email
+  address                  text                                                              Địa chỉ
+  loyalty_point            integer DEFAULT 0 NOT NULL                                        Điểm tích lũy
+
+
+
+                                                                31
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                                HUNG FASHION CRM
+
+
+  Thuộc tính                Kiểu và ràng buộc                                                   Ý nghĩa
+  customer_tier             character varying(20) DEFAULT ’New’::character varying NOT Hạng khách hàng
+                            NULL
+  registered_at             timestamp with time zone DEFAULT now() NOT NULL                     Thời điểm đăng ký
+  updated_at                timestamp with time zone DEFAULT now() NOT NULL                     Thời điểm cập nhật
+  Chỉ mục: customer_dob_idx (btree: date_of_birth); customer_email_idx (btree: email); customer_gender_idx (btree: gender);
+  customer_name_idx (btree: full_name); customer_phone_idx (btree: phone); customer_tier_idx (btree: customer_tier)
+
+
+
+
+B.9 Bảng customer_interest
+
+  Thuộc tính                Kiểu và ràng buộc                                                   Ý nghĩa
+  customer_id               integer NOT NULL PRIMARY KEY REFERENCES Liên kết khách hàng
+                            customer(customer_id) ON DELETE CASCADE
+  interest_id               integer NOT NULL PRIMARY KEY                      REFERENCES Liên kết sở thích
+                            interest(interest_id) ON DELETE CASCADE
+  Chỉ mục: customer_interest_cust_idx (btree: customer_id); customer_interest_interest_idx (btree: interest_id)
+
+
+
+
+B.10 Bảng demo_payment_tokens
+
+  Thuộc tính                Kiểu và ràng buộc                                                   Ý nghĩa
+  demo_payment_token_       bigint NOT NULL ADD GENERATED ALWAYS AS IDENTITY Mã định danh bản ghi token
+  id                        PRIMARY KEY                                      thanh toán demo
+  order_id                  integer NOT NULL UNIQUE REFERENCES order(order_id) ON Mã đơn hàng được phép xác
+                            DELETE CASCADE                                        nhận bằng token
+  token_hash                character(64) NOT NULL UNIQUE                                       Giá trị băm của token; không lưu
+                                                                                                token gốc
+  expires_at                timestamp with time zone NOT NULL                                   Thời điểm token hết hạn
+  used_at                   timestamp with time zone                                            Thời điểm token được sử dụng;
+                                                                                                NULL nếu chưa dùng
+  created_at                timestamp with time zone DEFAULT now() NOT NULL                     Thời điểm tạo bản ghi token
+  Chỉ mục: demo_payment_tokens_expiry_idx (btree: expires_at WHERE (used_at IS NULL))
+
+
+
+
+B.11 Bảng employee
+
+  Thuộc tính                Kiểu và ràng buộc                                                   Ý nghĩa
+  employee_id               integer NOT NULL DEFAULT nextval(’public.employee_ Liên kết nhân viên
+                            employee_id_seq’::regclass) PRIMARY KEY
+  account_id                integer UNIQUE REFERENCES              account(account_id)    ON Liên kết tài khoản
+                            DELETE SET NULL
+  full_name                 character varying(150) NOT NULL                                     Họ tên
+  gender                    public.gender_type                                                  Giới tính
+  date_of_birth             date                                                                Ngày sinh
+  phone                     character varying(20)                                               Số điện thoại
+  email                     character varying(150)                                              Email
+  address                   text                                                                Địa chỉ
+
+
+
+                                                                 32
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                          HUNG FASHION CRM
+
+
+  Thuộc tính              Kiểu và ràng buộc                                               Ý nghĩa
+  hire_date               date DEFAULT CURRENT_DATE NOT NULL                              Ngày vào làm
+  is_active               boolean DEFAULT true NOT NULL                                   Cờ hoạt động
+  created_at              timestamp with time zone DEFAULT now() NOT NULL                 Thời điểm tạo bản ghi
+  Chỉ mục: employee_active_idx (btree: is_active); employee_name_idx (btree: full_name)
+
+
+
+
+B.12 Bảng feedback
+
+  Thuộc tính              Kiểu và ràng buộc                                               Ý nghĩa
+  feedback_id             integer NOT NULL DEFAULT nextval(’public.feedback_ Liên kết phản hồi
+                          feedback_id_seq’::regclass) PRIMARY KEY
+  customer_id             integer REFERENCES customer(customer_id) ON DELETE SET Liên kết khách hàng
+                          NULL
+  product_id              integer REFERENCES product(product_id) ON DELETE SET Liên kết sản phẩm
+                          NULL
+  order_id                integer REFERENCES order(order_id) ON DELETE SET NULL           Liên kết đơn hàng
+  employee_id             integer REFERENCES employee(employee_id) ON DELETE SET Liên kết nhân viên
+                          NULL
+  feedback_type           public.feedback_type DEFAULT ’Product’::public.feedback_type Loại phản hồi
+                          NOT NULL
+  rating                  smallint                                                        Điểm đánh giá
+  content                 text NOT NULL                                                   Nội dung
+  reply                   text                                                            Phản hồi của cửa hàng
+  status                  public.feedback_status DEFAULT ’New’::public.feedback_status Trạng thái
+                          NOT NULL
+  replied_at              timestamp with time zone                                        Thời điểm/ngày nghiệp vụ
+  created_at              timestamp with time zone DEFAULT now() NOT NULL                 Thời điểm tạo bản ghi
+  Chỉ mục: feedback_created_at_idx (btree: created_at DESC); feedback_customer_idx (btree: customer_id); feedback_product_idx
+  (btree: product_id); feedback_rating_idx (btree: rating); feedback_status_idx (btree: status)
+
+
+
+
+B.13 Bảng feedback_attachment
+
+  Thuộc tính              Kiểu và ràng buộc                                               Ý nghĩa
+  attachment_id           bigint NOT NULL DEFAULT nextval(’public.feedback_ Mã tệp đính kèm
+                          attachment_attachment_id_seq’::regclass) PRIMARY KEY
+  feedback_id             integer NOT NULL REFERENCES feedback(feedback_id) ON Liên kết phản hồi
+                          DELETE CASCADE
+  media_url               text NOT NULL                                                   Đường dẫn media
+  media_type              character varying(10) NOT NULL                                  Loại media
+  mime_type               character varying(100) NOT NULL                                 Kiểu MIME
+  original_name           text NOT NULL                                                   Tên tệp gốc
+  file_size               bigint NOT NULL                                                 Dung lượng byte
+  created_at              timestamp with time zone DEFAULT now() NOT NULL                 Thời điểm tạo bản ghi
+  Chỉ mục: feedback_attachment_feedback_idx (btree: feedback_id, attachment_id)
+
+
+
+
+                                                              33
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                                 HUNG FASHION CRM
+
+
+B.14 Bảng import_detail
+
+  Thuộc tính                Kiểu và ràng buộc                                                    Ý nghĩa
+  detail_id                 integer NOT NULL DEFAULT nextval(’public.import_detail_ Mã dòng chi tiết
+                            detail_id_seq’::regclass) PRIMARY KEY
+  receipt_id                integer NOT NULL REFERENCES import_receipt(receipt_id) ON Liên kết phiếu kho
+                            DELETE CASCADE
+  variant_id                integer NOT NULL REFERENCES product_variant(variant_id)              Liên kết biến thể
+  quantity                  integer NOT NULL                                                     Số lượng
+  unit_price                numeric(15,2) NOT NULL                                               Unit price
+  Chỉ mục: import_detail_receipt_idx (btree: receipt_id); import_detail_variant_idx (btree: variant_id)
+
+
+
+
+B.15 Bảng import_receipt
+
+  Thuộc tính                Kiểu và ràng buộc                                                    Ý nghĩa
+  receipt_id                integer NOT NULL DEFAULT nextval(’public.import_receipt_ Liên kết phiếu kho
+                            receipt_id_seq’::regclass) PRIMARY KEY
+  supplier_id               integer REFERENCES supplier(supplier_id)                             Liên kết nhà cung cấp
+  employee_id               integer REFERENCES employee(employee_id)                             Liên kết nhân viên
+  receipt_type              public.receipt_type DEFAULT ’Import’::public.receipt_type NOT Loại phiếu
+                            NULL
+  note                      text                                                                 Ghi chú
+  total_amount              numeric(15,2) DEFAULT 0 NOT NULL                                     Tổng tiền
+  receipt_date              timestamp with time zone DEFAULT now() NOT NULL                      Ngày lập phiếu
+  Chỉ mục: receipt_date_idx (btree: receipt_date DESC); receipt_employee_idx (btree: employee_id); receipt_supplier_idx (btree:
+  supplier_id)
+
+
+
+
+B.16 Bảng interest
+
+    Thuộc tính                Kiểu và ràng buộc                                                    Ý nghĩa
+    interest_id               integer NOT NULL DEFAULT nextval(’public.interest_interest_ Liên kết sở thích
+                              id_seq’::regclass) PRIMARY KEY
+    interest_name             character varying(100) NOT NULL UNIQUE                               Tên sở thích
+
+
+
+
+B.17 Bảng loyalty_point_transaction
+
+  Thuộc tính                Kiểu và ràng buộc                                                    Ý nghĩa
+  loyalty_transaction_id    bigint NOT NULL DEFAULT nextval(’public.loyalty_point_ Mã giao dịch điểm
+                            transaction_loyalty_transaction_id_seq’::regclass) PRIMARY
+                            KEY
+  customer_id               integer NOT NULL REFERENCES customer(customer_id) ON Liên kết khách hàng
+                            DELETE CASCADE
+  order_id                  integer REFERENCES order(order_id) ON DELETE SET NULL                Liên kết đơn hàng
+
+
+
+
+                                                                  34
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                             HUNG FASHION CRM
+
+
+  Thuộc tính               Kiểu và ràng buộc                                                 Ý nghĩa
+  transaction_type         character varying(32) NOT NULL                                    Transaction type
+  points_delta             integer NOT NULL                                                  Biến động điểm
+  balance_after            integer NOT NULL                                                  Số dư điểm sau giao dịch
+  note                     text                                                              Ghi chú
+  created_at               timestamp with time zone DEFAULT now() NOT NULL                   Thời điểm tạo bản ghi
+  Chỉ mục: loyalty_point_transaction_customer_created_idx (btree: customer_id, created_at DESC, loyalty_transaction_id DESC);
+  loyalty_point_transaction_order_type_idx (UNIQUE, btree: order_id, transaction_type WHERE (order_id IS NOT NULL))
+
+
+
+
+B.18 Bảng order
+
+  Thuộc tính               Kiểu và ràng buộc                                                 Ý nghĩa
+  order_id                 integer NOT NULL DEFAULT nextval(’public.order_order_id_ Liên kết đơn hàng
+                           seq’::regclass) PRIMARY KEY
+  customer_id              integer REFERENCES customer(customer_id) ON DELETE SET Liên kết khách hàng
+                           NULL
+  employee_id              integer REFERENCES employee(employee_id) ON DELETE SET Liên kết nhân viên
+                           NULL
+  promotion_id             integer REFERENCES promotion(promotion_id)                        Liên kết khuyến mãi
+  order_status             public.order_status DEFAULT ’Pending’::public.order_status NOT Trạng thái đơn hàng
+                           NULL
+  subtotal                 numeric(15,2) DEFAULT 0 NOT NULL                                  Tạm tính
+  discount_amt             numeric(15,2) DEFAULT 0 NOT NULL                                  Số tiền giảm
+  total_amount             numeric(15,2) DEFAULT 0 NOT NULL                                  Tổng tiền
+  note                     text                                                              Ghi chú
+  shipping_address         text                                                              Shipping address
+  order_channel            character varying(50) DEFAULT ’InStore’::character varying NOT Kênh bán
+                           NULL
+  ordered_at               timestamp with time zone DEFAULT now() NOT NULL                   Thời điểm đặt đơn
+  updated_at               timestamp with time zone DEFAULT now() NOT NULL                   Thời điểm cập nhật
+  loyalty_points_          integer DEFAULT 0 NOT NULL                                        Loyalty points redeemed
+  redeemed
+  loyalty_discount         numeric(15,2) DEFAULT 0 NOT NULL                                  Loyalty discount
+  Chỉ mục: order_customer_idx (btree: customer_id); order_date_idx (btree: ordered_at DESC); order_employee_idx (btree: employee_
+  id); order_status_idx (btree: order_status)
+
+
+
+
+B.19 Bảng order_detail
+
+  Thuộc tính               Kiểu và ràng buộc                                                 Ý nghĩa
+  detail_id                integer NOT NULL DEFAULT nextval(’public.order_detail_ Mã dòng chi tiết
+                           detail_id_seq’::regclass) PRIMARY KEY
+  order_id                 integer NOT NULL REFERENCES order(order_id) ON DELETE Liên kết đơn hàng
+                           CASCADE
+  variant_id               integer NOT NULL REFERENCES product_variant(variant_id)           Liên kết biến thể
+  quantity                 integer NOT NULL                                                  Số lượng
+  unit_price               numeric(15,2) NOT NULL                                            Unit price
+
+
+
+
+                                                               35
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                                    HUNG FASHION CRM
+
+
+  Thuộc tính                Kiểu và ràng buộc                                                       Ý nghĩa
+  subtotal                  numeric(15,2) GENERATED ALWAYS AS (((quantity)::numeric * Tạm tính
+                            unit_price)) STORED
+  Chỉ mục: order_detail_order_idx (btree: order_id); order_detail_variant_idx (btree: variant_id)
+
+
+
+
+B.20 Bảng outbox_events
+
+  Thuộc tính                Kiểu và ràng buộc                                                       Ý nghĩa
+  event_id                  text NOT NULL PRIMARY KEY                                               Mã sự kiện chống ghi trùng
+  topic                     text NOT NULL                                                           Kafka topic
+  partition_key             text                                                                    Khóa phân vùng Kafka
+  payload                   jsonb NOT NULL                                                          Nội dung sự kiện JSON
+  created_at                timestamp with time zone DEFAULT now() NOT NULL                         Thời điểm tạo bản ghi
+  published_at              timestamp with time zone                                                Thời điểm relay công bố
+  Chỉ mục: outbox_events_unpublished_idx (btree: created_at, event_id WHERE (published_at IS NULL))
+
+
+
+
+B.21 Bảng payment
+
+  Thuộc tính                Kiểu và ràng buộc                                                       Ý nghĩa
+  payment_id                integer NOT NULL DEFAULT nextval(’public.payment_ Mã thanh toán
+                            payment_id_seq’::regclass) PRIMARY KEY
+  order_id                  integer NOT NULL UNIQUE REFERENCES order(order_id) ON Liên kết đơn hàng
+                            DELETE CASCADE
+  method                    public.payment_method       DEFAULT        ’Cash’::public.payment_ Phương thức
+                            method NOT NULL
+  status                    public.payment_status    DEFAULT       ’Pending’::public.payment_ Trạng thái
+                            status NOT NULL
+  amount                    numeric(15,2) NOT NULL                                                  Số tiền
+  transaction_ref           character varying(200)                                                  Mã tham chiếu giao dịch
+  paid_at                   timestamp with time zone                                                Thời điểm thanh toán
+  created_at                timestamp with time zone DEFAULT now() NOT NULL                         Thời điểm tạo bản ghi
+  Chỉ mục: payment_order_idx (btree: order_id); payment_status_idx (btree: status)
+
+
+
+
+B.22 Bảng permission
+
+    Thuộc tính                Kiểu và ràng buộc                                                       Ý nghĩa
+    permission_id             integer NOT NULL DEFAULT nextval(’public.permission_ Liên kết quyền
+                              permission_id_seq’::regclass) PRIMARY KEY
+    permission_code           character varying(80) NOT NULL UNIQUE                                   Mã quyền
+    description               text                                                                    Mô tả
+
+
+
+
+B.23 Bảng product
+
+
+                                                                  36
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                             HUNG FASHION CRM
+
+
+  Thuộc tính               Kiểu và ràng buộc                                                 Ý nghĩa
+  product_id               integer NOT NULL DEFAULT nextval(’public.product_product_ Liên kết sản phẩm
+                           id_seq’::regclass) PRIMARY KEY
+  category_id              integer NOT NULL REFERENCES category(category_id)                 Liên kết danh mục
+  brand_id                 integer REFERENCES brand(brand_id)                                Liên kết thương hiệu
+  product_name             character varying(200) NOT NULL                                   Tên sản phẩm
+  description              text                                                              Mô tả
+  import_price             numeric(15,2) NOT NULL                                            Giá nhập
+  selling_price            numeric(15,2) NOT NULL                                            Giá bán
+  image_url                text                                                              Đường dẫn ảnh
+  is_active                boolean DEFAULT true NOT NULL                                     Cờ hoạt động
+  created_at               timestamp with time zone DEFAULT now() NOT NULL                   Thời điểm tạo bản ghi
+  updated_at               timestamp with time zone DEFAULT now() NOT NULL                   Thời điểm cập nhật
+  supplier_id              integer REFERENCES supplier(supplier_id)                          Liên kết nhà cung cấp
+  Chỉ mục: product_active_idx (btree: is_active); product_brand_idx (btree: brand_id); product_category_idx (btree: category_id);
+  product_created_at_idx (btree: created_at DESC); product_name_idx (gin: to_tsvector(’simple’::regconfig, (product_name)::text));
+  product_price_idx (btree: selling_price); product_supplier_idx (btree: supplier_id)
+
+
+
+
+B.24 Bảng product_image
+
+  Thuộc tính               Kiểu và ràng buộc                                                 Ý nghĩa
+  image_id                 integer NOT NULL DEFAULT nextval(’public.product_image_ Khóa liên kết đến bản ghi liên
+                           image_id_seq’::regclass) PRIMARY KEY                    quan
+  product_id               integer NOT NULL REFERENCES product(product_id) ON Liên kết sản phẩm
+                           DELETE CASCADE
+  image_url                text NOT NULL                                                     Đường dẫn ảnh
+  is_primary               boolean DEFAULT false NOT NULL                                    Cờ ảnh chính
+  display_order            smallint DEFAULT 1 NOT NULL                                       Thứ tự hiển thị
+  Chỉ mục: product_image_product_idx (btree: product_id)
+
+
+
+
+B.25 Bảng product_variant
+
+  Thuộc tính               Kiểu và ràng buộc                                                 Ý nghĩa
+  variant_id               integer NOT NULL DEFAULT nextval(’public.product_variant_ Liên kết biến thể
+                           variant_id_seq’::regclass) PRIMARY KEY
+  product_id               integer NOT NULL REFERENCES product(product_id) ON Liên kết sản phẩm
+                           DELETE CASCADE
+  size_id                  integer NOT NULL REFERENCES size(size_id)                         Khóa liên kết đến bản ghi liên
+                                                                                             quan
+  color_id                 integer NOT NULL REFERENCES color(color_id)                       Khóa liên kết đến bản ghi liên
+                                                                                             quan
+  sku                      character varying(100) UNIQUE                                     Mã SKU
+  quantity                 integer DEFAULT 0 NOT NULL                                        Số lượng
+  selling_price            numeric(15,2)                                                     Giá bán
+  is_active                boolean DEFAULT true NOT NULL                                     Cờ hoạt động
+  Ràng buộc: UNIQUE (product_id, size_id, color_id)
+
+
+
+
+                                                                37
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                                  HUNG FASHION CRM
+
+
+  Thuộc tính                Kiểu và ràng buộc                                                     Ý nghĩa
+  Chỉ mục: variant_active_idx (btree: is_active); variant_color_idx (btree: color_id); variant_product_idx (btree: product_id); variant_
+  size_idx (btree: size_id)
+
+
+
+
+B.26 Bảng promotion
+
+    Thuộc tính                Kiểu và ràng buộc                                                     Ý nghĩa
+    promotion_id              integer NOT NULL DEFAULT nextval(’public.promotion_ Liên kết khuyến mãi
+                              promotion_id_seq’::regclass) PRIMARY KEY
+    code                      character varying(50) NOT NULL UNIQUE                                 Mã
+    name                      character varying(200) NOT NULL                                       Tên
+    promo_type                public.promotion_type DEFAULT ’Percent’::public.promotion_ Loại ưu đãi
+                              type NOT NULL
+    value                     numeric(10,2) NOT NULL                                                Giá trị ưu đãi
+    min_order                 numeric(15,2) DEFAULT 0 NOT NULL                                      Giá trị đơn tối thiểu
+    max_discount              numeric(15,2)                                                         Mức giảm tối đa
+    usage_limit               integer                                                               Giới hạn lượt dùng
+    used_count                integer DEFAULT 0 NOT NULL                                            Số lượt đã dùng
+    start_date                date NOT NULL                                                         Ngày bắt đầu
+    end_date                  date NOT NULL                                                         Ngày kết thúc
+    is_active                 boolean DEFAULT true NOT NULL                                         Cờ hoạt động
+    created_by                integer REFERENCES employee(employee_id)                              Nhân viên tạo
+    created_at                timestamp with time zone DEFAULT now() NOT NULL                       Thời điểm tạo bản ghi
+
+
+
+
+B.27 Bảng role
+
+    Thuộc tính                Kiểu và ràng buộc                                                     Ý nghĩa
+    role_id                   integer NOT NULL DEFAULT nextval(’public.role_role_id_ Liên kết vai trò
+                              seq’::regclass) PRIMARY KEY
+    role_name                 character varying(50) NOT NULL UNIQUE                                 Tên vai trò
+    description               text                                                                  Mô tả
+
+
+
+
+B.28 Bảng role_permission
+
+    Thuộc tính                Kiểu và ràng buộc                                                     Ý nghĩa
+    role_id                   integer NOT NULL PRIMARY KEY REFERENCES role(role_id) Liên kết vai trò
+                              ON DELETE CASCADE
+    permission_id             integer NOT NULL PRIMARY KEY REFERENCES Liên kết quyền
+                              permission(permission_id) ON DELETE CASCADE
+
+
+
+
+B.29 Bảng size
+
+
+
+                                                                   38
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                              HUNG FASHION CRM
+
+
+    Thuộc tính               Kiểu và ràng buộc                                                  Ý nghĩa
+    size_id                  integer NOT NULL DEFAULT nextval(’public.size_size_id_ Khóa liên kết đến bản ghi liên
+                             seq’::regclass) PRIMARY KEY                            quan
+    size_name                character varying(20) NOT NULL UNIQUE                              Tên kích cỡ
+
+
+
+
+B.30 Bảng store_admin_schema_migrations
+
+    Thuộc tính               Kiểu và ràng buộc                                                  Ý nghĩa
+    version                  character varying(32) NOT NULL PRIMARY KEY                         Phiên bản migration đã áp dụng
+    name                     text NOT NULL                                                      Tên migration đã áp dụng
+    applied_at               timestamp with time zone DEFAULT now() NOT NULL                    Thời điểm áp dụng migration
+
+
+
+
+B.31 Bảng supplier
+
+  Thuộc tính               Kiểu và ràng buộc                                                  Ý nghĩa
+  supplier_id              integer NOT NULL DEFAULT nextval(’public.supplier_supplier_ Liên kết nhà cung cấp
+                           id_seq’::regclass) PRIMARY KEY
+  supplier_name            character varying(200) NOT NULL                                    Tên nhà cung cấp
+  contact_name             character varying(150)                                             Tên người liên hệ
+  phone                    character varying(20)                                              Số điện thoại
+  email                    character varying(150)                                             Email
+  address                  text                                                               Địa chỉ
+  is_active                boolean DEFAULT true NOT NULL                                      Cờ hoạt động
+  created_at               timestamp with time zone DEFAULT now() NOT NULL                    Thời điểm tạo bản ghi
+  Chỉ mục: supplier_active_idx (btree: is_active); supplier_name_idx (btree: supplier_name)
+
+
+
+
+B.32 Bảng survey
+
+  Thuộc tính               Kiểu và ràng buộc                                                  Ý nghĩa
+  survey_id                integer NOT NULL DEFAULT nextval(’public.survey_survey_id_ Liên kết khảo sát
+                           seq’::regclass) PRIMARY KEY
+  created_by               integer REFERENCES employee(employee_id) ON DELETE SET Nhân viên tạo
+                           NULL
+  title                    character varying(300) NOT NULL                                    Tiêu đề
+  description              text                                                               Mô tả
+  target_gender            public.gender_type                                                 Giới tính mục tiêu
+  target_tier              character varying(20)                                              Hạng mục tiêu
+  min_age                  integer                                                            Tuổi tối thiểu
+  max_age                  integer                                                            Tuổi tối đa
+  status                   public.survey_status DEFAULT ’Draft’::public.survey_status NOT Trạng thái
+                           NULL
+  start_date               date                                                               Ngày bắt đầu
+  end_date                 date                                                               Ngày kết thúc
+  created_at               timestamp with time zone DEFAULT now() NOT NULL                    Thời điểm tạo bản ghi
+
+
+
+
+                                                                39
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                               HUNG FASHION CRM
+
+
+  Thuộc tính               Kiểu và ràng buộc                                                   Ý nghĩa
+  updated_at               timestamp with time zone DEFAULT now() NOT NULL                     Thời điểm cập nhật
+  target_interest_id       integer REFERENCES interest(interest_id) ON DELETE SET Sở thích mục tiêu
+                           NULL
+  reward_promotion_id      integer REFERENCES promotion(promotion_id) ON DELETE Khuyến mãi thưởng
+                           SET NULL
+  Chỉ mục: survey_created_at_idx (btree: created_at DESC); survey_status_idx (btree: status)
+
+
+
+
+B.33 Bảng survey_answer
+
+  Thuộc tính               Kiểu và ràng buộc                                                   Ý nghĩa
+  answer_id                integer NOT NULL DEFAULT nextval(’public.survey_answer_ Mã câu trả lời
+                           answer_id_seq’::regclass) PRIMARY KEY
+  response_id              integer NOT NULL REFERENCES survey_response(response_id) Liên kết lượt trả lời
+                           ON DELETE CASCADE
+  question_id              integer NOT NULL REFERENCES survey_question(question_id) Liên kết câu hỏi
+  option_id                integer REFERENCES survey_option(option_id)                         Liên kết lựa chọn
+  answer_text              text                                                                Nội dung trả lời
+  Chỉ mục: sa_question_idx (btree: question_id); sa_response_idx (btree: response_id)
+
+
+
+
+B.34 Bảng survey_invitation
+
+  Thuộc tính               Kiểu và ràng buộc                                                   Ý nghĩa
+  invitation_id            integer NOT NULL DEFAULT nextval(’public.survey_invitation_ Mã lời mời khảo sát
+                           invitation_id_seq’::regclass) PRIMARY KEY
+  survey_id                integer NOT NULL REFERENCES survey(survey_id) ON Liên kết khảo sát
+                           DELETE CASCADE
+  customer_id              integer NOT NULL REFERENCES customer(customer_id) ON Liên kết khách hàng
+                           DELETE CASCADE
+  invited_by               integer REFERENCES employee(employee_id) ON DELETE SET Nhân viên gửi lời mời
+                           NULL
+  status                   character varying(20) DEFAULT ’Sent’::character varying NOT Trạng thái
+                           NULL
+  invited_at               timestamp with time zone DEFAULT now() NOT NULL                     Thời điểm mời
+  Ràng buộc: UNIQUE (survey_id, customer_id)
+  Chỉ mục: survey_invitation_customer_idx (btree: customer_id); survey_invitation_survey_idx (btree: survey_id)
+
+
+
+
+B.35 Bảng survey_option
+
+  Thuộc tính               Kiểu và ràng buộc                                                   Ý nghĩa
+  option_id                integer NOT NULL DEFAULT nextval(’public.survey_option_ Liên kết lựa chọn
+                           option_id_seq’::regclass) PRIMARY KEY
+  question_id              integer NOT NULL REFERENCES survey_question(question_id) Liên kết câu hỏi
+                           ON DELETE CASCADE
+  option_text              character varying(300) NOT NULL                                     Nội dung lựa chọn
+
+
+
+
+                                                                40
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                         HUNG FASHION CRM
+
+
+  Thuộc tính               Kiểu và ràng buộc                                             Ý nghĩa
+  display_order            smallint DEFAULT 1 NOT NULL                                   Thứ tự hiển thị
+  Ràng buộc: UNIQUE (question_id, option_id)
+  Chỉ mục: so_question_idx (btree: question_id)
+
+
+
+
+B.36 Bảng survey_question
+
+  Thuộc tính               Kiểu và ràng buộc                                             Ý nghĩa
+  question_id              integer NOT NULL DEFAULT nextval(’public.survey_question_ Liên kết câu hỏi
+                           question_id_seq’::regclass) PRIMARY KEY
+  survey_id                integer NOT NULL REFERENCES survey(survey_id) ON Liên kết khảo sát
+                           DELETE CASCADE
+  question_text            text NOT NULL                                                 Nội dung câu hỏi
+  question_type            public.question_type DEFAULT ’SingleChoice’::public.question_ Loại câu hỏi
+                           type NOT NULL
+  display_order            smallint DEFAULT 1 NOT NULL                                   Thứ tự hiển thị
+  is_required              boolean DEFAULT true NOT NULL                                 Câu hỏi bắt buộc
+  Chỉ mục: sq_survey_idx (btree: survey_id)
+
+
+
+
+B.37 Bảng survey_response
+
+  Thuộc tính               Kiểu và ràng buộc                                             Ý nghĩa
+  response_id              integer NOT NULL DEFAULT nextval(’public.survey_response_ Liên kết lượt trả lời
+                           response_id_seq’::regclass) PRIMARY KEY
+  survey_id                integer NOT NULL REFERENCES survey(survey_id) ON Liên kết khảo sát
+                           DELETE CASCADE
+  customer_id              integer REFERENCES customer(customer_id) ON DELETE SET Liên kết khách hàng
+                           NULL
+  submitted_at             timestamp with time zone DEFAULT now() NOT NULL               Thời điểm gửi câu trả lời
+  Ràng buộc: UNIQUE (survey_id, customer_id)
+  Chỉ mục: sr_survey_idx (btree: survey_id)
+
+
+
+
+B.38 Bảng transactions
+
+  Thuộc tính               Kiểu và ràng buộc                                             Ý nghĩa
+  id                       bigint NOT NULL ADD GENERATED BY DEFAULT AS Khóa định danh nội bộ
+                           IDENTITY PRIMARY KEY
+  source                   text NOT NULL                                                 Nguồn dữ liệu
+  created_at               timestamp with time zone DEFAULT now() NOT NULL               Thời điểm tạo bản ghi
+  event_id                 text                                                          Mã sự kiện chống ghi trùng
+  session_id               text                                                          Mã phiên
+  event_type               text NOT NULL                                                 Loại sự kiện
+  transaction_id           text                                                          Mã giao dịch nghiệp vụ
+  benchmark_run_id         text                                                          Mã lần benchmark
+
+
+
+
+                                                             41
+ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP                                                              HUNG FASHION CRM
+
+
+  Thuộc tính              Kiểu và ràng buộc                                                   Ý nghĩa
+  amount                  numeric(15,2)                                                       Số tiền
+  currency                text                                                                Đơn vị tiền tệ
+  status                  text                                                                Trạng thái
+  item_count              integer                                                             Số mặt hàng
+  page                    text                                                                Trang phát sinh sự kiện
+  action                  text                                                                Hành động
+  producer_source         text                                                                Nguồn phát sự kiện
+  occurred_at             timestamp with time zone DEFAULT now() NOT NULL                     Thời điểm sự kiện
+  user_id                 text                                                                Mã người dùng
+  Chỉ mục: transactions_created_at_idx (btree: created_at DESC); transactions_event_id_unique_idx (UNIQUE, btree: event_id);
+  transactions_transaction_id_idx (btree: transaction_id); transactions_type_occurred_idx (btree: event_type, occurred_at DESC)
+
+
+
+
+B.39 Bảng user_events
+
+  Thuộc tính              Kiểu và ràng buộc                                                   Ý nghĩa
+  id                      bigint NOT NULL ADD GENERATED BY DEFAULT AS Khóa định danh nội bộ
+                          IDENTITY PRIMARY KEY
+  source                  text NOT NULL                                                       Nguồn dữ liệu
+  created_at              timestamp with time zone DEFAULT now() NOT NULL                     Thời điểm tạo bản ghi
+  event_id                text                                                                Mã sự kiện chống ghi trùng
+  session_id              text                                                                Mã phiên
+  event_type              text NOT NULL                                                       Loại sự kiện
+  page                    text                                                                Trang phát sinh sự kiện
+  section                 text                                                                Khu vực phát sinh sự kiện
+  action                  text                                                                Hành động
+  source_check            text                                                                Dấu kiểm tra nguồn
+  occurred_at             timestamp with time zone DEFAULT now() NOT NULL                     Thời điểm sự kiện
+  user_id                 text                                                                Mã người dùng
+  Chỉ mục: user_events_created_at_idx (btree: created_at DESC); user_events_event_id_unique_idx (UNIQUE, btree: event_id); user_
+  events_type_occurred_idx (btree: event_type, occurred_at DESC)
+
+
+
+
+B.40 Bảng user_promotion
+
+  Thuộc tính              Kiểu và ràng buộc                                                   Ý nghĩa
+  user_promo_id           integer NOT NULL DEFAULT nextval(’public.user_promotion_ Mã khuyến mãi được cấp
+                          user_promo_id_seq’::regclass) PRIMARY KEY
+  customer_id             integer NOT NULL REFERENCES customer(customer_id) ON Liên kết khách hàng
+                          DELETE CASCADE
+  promotion_id            integer NOT NULL REFERENCES promotion(promotion_id) ON Liên kết khuyến mãi
+                          DELETE CASCADE
+  status                  public.user_promo_status DEFAULT          ’Available’::public.user_ Trạng thái
+                          promo_status NOT NULL
+  assigned_at             timestamp with time zone DEFAULT now() NOT NULL                     Thời điểm phân bổ
+  used_at                 timestamp with time zone                                            Thời điểm sử dụng
+  Ràng buộc: UNIQUE (customer_id, promotion_id)
+  Chỉ mục: user_promo_customer_idx (btree: customer_id); user_promo_status_idx (btree: status)
+
+
+
+
+                                                               42
+

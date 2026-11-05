@@ -10,12 +10,13 @@ import FilterPopover from '../components/FilterPopover';
 import DatePicker from '../components/DatePicker';
 import { fmtVND } from '../utils/formatters';
 import { showErrorAlert, showSuccessAlert } from '../utils/notifications';
+import { ORDER_CHANNEL_LABELS, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS, RECEIPT_TYPE_LABELS } from '../utils/viLabels';
 
 const ROLE_LABELS = { ADMIN:'Quản trị hệ thống', QL_NHAN_SU:'Quản lý nhân sự', QL_KHO:'Quản lý kho', QL_BAN_HANG:'Quản lý bán hàng', QL_KHACH_HANG:'Quản lý khách hàng', KHACH_HANG:'Khách hàng' };
 
 const OPERATION_CONFIG = {
   employees:  { title:'Danh sách nhân viên', endpoint:'/api/employees', fields:[['employee_id','Mã'],['full_name','Họ tên'],['position','Chức vụ'],['email','Email'],['phone','Điện thoại'],['is_active','Trạng thái']] },
-  inventory:  { title:'Theo dõi tồn kho', endpoint:'/api/inventory', fields:[['sku','SKU'],['product_name','Sản phẩm'],['category_name','Danh mục'],['size_name','Size'],['color_name','Màu'],['quantity','Tồn kho']] },
+  inventory:  { title:'Theo dõi tồn kho', endpoint:'/api/inventory', fields:[['sku','Mã SKU'],['product_name','Sản phẩm'],['category_name','Danh mục'],['size_name','Kích cỡ'],['color_name','Màu'],['quantity','Tồn kho']] },
   receipts:   { title:'Phiếu nhập và xuất kho', endpoint:'/api/inventory/receipts', fields:[['receipt_id','Mã phiếu'],['receipt_type','Loại phiếu'],['supplier_name','Nhà cung cấp'],['employee_name','Nhân viên'],['total_amount','Tổng tiền'],['receipt_date','Ngày tạo']] },
   orders:     { title:'Quản lý đơn hàng', endpoint:'/api/orders', fields:[['order_id','Mã đơn'],['customer_name','Khách hàng'],['order_channel','Kênh bán'],['total_amount','Tổng tiền'],['order_status','Trạng thái'],['ordered_at','Ngày tạo']] },
   promotions: { title:'Chương trình khuyến mãi', endpoint:'/api/promotions?limit=100', fields:[['code','Mã'],['name','Tên chương trình'],['promo_type','Loại'],['value','Giá trị'],['start_date','Bắt đầu'],['end_date','Kết thúc']] },
@@ -151,7 +152,7 @@ function CounterOrderForm({ onClose, onCreated }) {
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-white/55">Biến thể
                     <select className={`${SELECT} w-full`} value={line.variantId} disabled={!line.productId} onChange={e => updateLine(line.key, { variantId: e.target.value })}>
-                      <option value="">Chọn size / màu</option>
+                      <option value="">Chọn kích cỡ / màu</option>
                       {productVariants.filter(variant => Number(variant.quantity) > 0).map(variant => <option key={variant.variant_id} value={variant.variant_id} style={{ background:'#1a1410', color:'#f5f0eb' }}>{variant.size_name} / {variant.color_name} · còn {variant.quantity}</option>)}
                     </select>
                   </label>
@@ -253,6 +254,9 @@ export default function OperationsView({ type }) {
     if (key==='total_amount'||key==='selling_price') return fmtVND(value);
     if (key.endsWith('_at')||key.endsWith('_date')) return new Date(value).toLocaleDateString('vi-VN');
     if (key==='is_active') return value ? 'Đang làm việc' : 'Ngừng hoạt động';
+    if (key==='order_channel') return ORDER_CHANNEL_LABELS[value] || String(value);
+    if (key==='receipt_type') return RECEIPT_TYPE_LABELS[value] || String(value);
+    if (key==='promo_type') return ({ Percent: 'Giảm theo phần trăm', FixedAmount: 'Giảm số tiền cố định' })[value] || String(value);
     if (key==='quantity'&&type==='inventory') return (
       <strong className={Number(value)<=5 ? 'text-red-400 font-bold' : 'text-[#f5f0eb]'}>{value}</strong>
     );
@@ -300,14 +304,14 @@ export default function OperationsView({ type }) {
             <label className="flex flex-col gap-1.5 text-xs text-white/65">Trạng thái đơn
               <select className={`${SELECT} w-full`} value={orderFilters.status} onChange={event => updateOrderFilter('status', event.target.value)}>
                 <option value="">Tất cả trạng thái</option>
-                {ORDER_STATUSES.map(status => <option key={status} value={status}>{({ Pending:'Chờ xác nhận', Confirmed:'Đã xác nhận', Processing:'Đang xử lý', Shipped:'Đang giao', Delivered:'Đã giao', Cancelled:'Đã hủy', Refunded:'Đã hoàn tiền' })[status]}</option>)}
+                {ORDER_STATUSES.map(status => <option key={status} value={status}>{ORDER_STATUS_LABELS[status] || status}</option>)}
               </select>
             </label>
             <label className="flex flex-col gap-1.5 text-xs text-white/65">Kênh bán
               <select className={`${SELECT} w-full`} value={orderFilters.channel} onChange={event => updateOrderFilter('channel', event.target.value)}>
                 <option value="">Tất cả kênh</option>
                 <option value="Online">Trực tuyến</option>
-                <option value="Website">Website</option>
+                <option value="Website">Trang web</option>
                 <option value="InStore">Tại cửa hàng</option>
               </select>
             </label>
@@ -351,13 +355,13 @@ export default function OperationsView({ type }) {
                               aria-label={`Trạng thái đơn ${row.order_id}`}
                               onChange={e => updateOrderStatus(row, e.target.value)}
                               style={{ backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat:'no-repeat', backgroundPosition:'right 8px center' }}>
-                              {ORDER_STATUSES.map(s => <option key={s} style={{ background:'#1a1410', color:'#f5f0eb' }}>{s}</option>)}
+                              {ORDER_STATUSES.map(s => <option key={s} value={s} style={{ background:'#1a1410', color:'#f5f0eb' }}>{ORDER_STATUS_LABELS[s] || s}</option>)}
                             </select>
                           </div>
                         </td>
                         <td className={TD}>
                           <select className={SELECT} value={row.payment_status || 'Pending'} disabled={paymentLoadingId===row.order_id || !row.payment_status} aria-label={`Trạng thái thanh toán đơn ${row.order_id}`} onChange={e => updatePaymentStatus(row, e.target.value)}>
-                            {PAYMENT_STATUSES.map(status => <option key={status} value={status} style={{ background:'#1a1410', color:'#f5f0eb' }}>{({Pending:'Chờ thanh toán',Paid:'Đã thanh toán',Failed:'Thất bại',Refunded:'Đã hoàn tiền'})[status]}</option>)}
+                            {PAYMENT_STATUSES.map(status => <option key={status} value={status} style={{ background:'#1a1410', color:'#f5f0eb' }}>{PAYMENT_STATUS_LABELS[status] || status}</option>)}
                           </select>
                         </td>
                         <td className={TD}>

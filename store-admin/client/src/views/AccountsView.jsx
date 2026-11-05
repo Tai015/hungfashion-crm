@@ -5,6 +5,7 @@ import { Lock, Search, Trash2, UserPlus, X } from 'lucide-react';
 import { apiFetch } from '../api';
 import PasswordInput from '../PasswordInput';
 import StatusBadge from '../components/StatusBadge';
+import { ACCOUNT_STATUS_LABELS } from '../utils/viLabels';
 import Spinner from '../components/Spinner';
 import Pagination from '../components/Pagination';
 import { useSweetAlertMessages } from '../utils/notifications';
@@ -251,7 +252,7 @@ export default function AccountsView({ currentAccountId }) {
                           {roles.map(r => <option key={r.role_id} value={r.role_name} style={{ background:'#211d38', color:'#f5f0eb' }}>{ROLE_LABELS[r.role_name]||r.role_name}</option>)}
                         </select>
                       </td>
-                      <td className={TD}><StatusBadge status={acc.status} /></td>
+                      <td className={TD}><StatusBadge status={acc.status} label={ACCOUNT_STATUS_LABELS[acc.status] || acc.status} /></td>
                       <td className={TD}>
                         {Number(acc.online_session_count) > 0
                           ? <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400"/>Đang online · {acc.online_session_count} phiên</span>

@@ -1,0 +1,74 @@
+\documentclass[12pt,a4paper,oneside]{report}
+\usepackage[a4paper,left=3cm,right=2cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{polyglossia}
+\setdefaultlanguage{vietnamese}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{needspace}
+\usepackage{placeins}
+\usepackage{longtable,booktabs,array,tabularx}
+\usepackage{etoolbox}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+\usepackage{ragged2e}
+\usepackage{listings}
+% XeLaTeX 2025 reports an ignored infinite-shrink message while longtable splits
+% pages; use finite shrink glue to avoid build tools misclassifying it as fatal.
+\makeatletter
+\patchcmd{\LT@output}{\vss}{\vskip 0pt plus \maxdimen minus \normalbaselineskip}{}{\PackageError{report}{Could not patch longtable glue}{Check the longtable version and update the finite-glue patch.}}
+\patchcmd{\LT@output}{\vss}{\vskip 0pt plus \maxdimen minus \normalbaselineskip}{}{\PackageError{report}{Could not patch the second longtable glue}{Check the longtable version and update the finite-glue patch.}}
+\makeatother
+\setlength{\parindent}{1cm}
+\setlength{\parskip}{0pt}
+\setlist{nosep,leftmargin=1.2cm}
+\renewcommand{\arraystretch}{1.15}
+\captionsetup{font=small,labelfont=bf}
+\titleformat{\chapter}[display]{\normalfont\bfseries\centering}{CHƯƠNG \thechapter}{8pt}{\Large}
+\titleformat{\section}{\normalfont\bfseries\large}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\normalfont\bfseries}{\thesubsection}{0.7em}{}
+\pagestyle{fancy}
+\setlength{\headheight}{16pt}
+\fancyhf{}
+\fancyhead[L]{ĐỒ ÁN HỆ THỐNG THÔNG TIN DOANH NGHIỆP}
+\fancyhead[R]{HUNG FASHION CRM}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\emergencystretch=3em
+\renewcommand{\_}{\textunderscore\allowbreak}
+
+\newcommand{\ReportScreenshot}[3]{%
+  \begin{figure}[htbp]\centering
+  \IfFileExists{images/#1.png}{%
+    \includegraphics[width=\textwidth,height=0.72\textheight,keepaspectratio]{images/#1.png}%
+  }{%
+    \fbox{\parbox[c][3.2cm][c]{0.88\textwidth}{\centering Chờ ảnh \texttt{\detokenize{docs/report/images/#1.png}}}}%
+  }%
+  \caption{#2}\label{#3}
+  \end{figure}%
+}
+
+\begin{document}
+\input{chapters/00-trang-bia.tex}
+\pagenumbering{roman}
+\tableofcontents
+\listoffigures
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\input{chapters/01-gioi-thieu.tex}
+\input{chapters/02-khao-sat.tex}
+\input{chapters/03-phan-tich.tex}
+\input{chapters/04-thiet-ke.tex}
+\input{chapters/05-cai-dat-bao-tri.tex}
+\input{chapters/06-tong-ket.tex}
+\input{chapters/07-phu-luc.tex}
+\end{document}

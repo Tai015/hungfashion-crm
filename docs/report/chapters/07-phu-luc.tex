@@ -1,0 +1,38 @@
+\appendix
+\chapter{Phụ lục vận hành}
+\section{Lệnh thường dùng}
+Từ thư mục \texttt{\detokenize{store-admin}}:
+\begin{verbatim}
+npm install
+npm run dev:local
+npm run db:migrate --workspace server
+npm run seed
+npm run build
+npm run db:backup
+npm run db:restore -- backups/<file>.dump
+\end{verbatim}
+Restore có thể xóa/ghi đè schema trong database đích; chỉ thực hiện ở database test đã xác nhận.
+
+\section{Tài khoản demo}
+Không đưa mật khẩu vào báo cáo. Tạo/seed tài khoản theo cơ chế trong source ở môi trường local rồi ghi lại username, role, ngày tạo và người quản lý tài khoản ở bảng nội bộ của nhóm. Không dùng tài khoản demo mặc định trên môi trường công khai. Không coi tài khoản hoặc dữ liệu seed là khách hàng/nghiệp vụ thực.
+
+\section{Môi trường và giới hạn free tier}
+Lưu tên biến môi trường và mục đích ở Chương~\ref{chap:install}; giá trị cụ thể chỉ nằm trong cấu hình triển khai riêng. Giới hạn free tier phụ thuộc nhà cung cấp và gói tại thời điểm sử dụng. Nhóm ghi lại giới hạn đang hiển thị trên console vào ngày demo: [CẦN BỔ SUNG: số liệu và ngày]; cần đối chiếu ảnh console, che thông tin định danh và credential. Xem Hình~\ref{fig:quota-console} ở Mục~\ref{chap:install} (Chờ ảnh \texttt{docs/report/images/5.3.png}).
+
+\section{Nguồn sơ đồ}
+Các sơ đồ được lưu dưới dạng Mermaid trong \texttt{\detokenize{docs/report/diagrams/*.mmd}}. Nếu máy có Mermaid CLI, kết xuất từng sơ đồ sang PDF bằng lệnh mẫu:
+\begin{verbatim}
+mmdc -i docs/report/diagrams/01-chuc-nang.mmd `
+  -o docs/report/diagrams/01-chuc-nang.pdf
+\end{verbatim}
+Sau khi kết xuất, biên dịch báo cáo lại hai lượt. Nếu không có Mermaid CLI, cài công cụ theo quy định máy nộp hoặc sử dụng công cụ Mermaid được trường chấp thuận; không thay sơ đồ bằng hình tự vẽ không đối chiếu source.
+
+\section{Bảng API và schema đầy đủ}
+Danh sách route và nguồn code được kiểm kê trong \texttt{\detokenize{docs/report/00-inventory.md}}. Schema-only SQL dump lấy từ database local demo nằm trong \texttt{\detokenize{database/schema.sql}}; từ điển dữ liệu các bảng/thuộc tính nằm ở Phụ lục B.
+
+\begingroup
+\renewcommand{\normalsize}{\scriptsize}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\input{04-tu-dien-du-lieu.tex}
+\endgroup

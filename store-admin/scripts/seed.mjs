@@ -11,10 +11,11 @@ const pg = require('pg');
 const bcrypt = require('bcryptjs');
 const storeAdminDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const serverDir = path.join(storeAdminDir, 'server');
+let dbHelpers;
+if (process.env.SEED_ISOLATED_LOCAL !== 'true') dbHelpers = await import('./db-env.mjs');
+
 const isolatedLocalSeed = process.env.SEED_ISOLATED_LOCAL === 'true';
 const seedTarget = process.env.SEED_TARGET || 'local';
-let dbHelpers;
-if (!isolatedLocalSeed) dbHelpers = await import('./db-env.mjs');
 
 if (!['local', 'aiven', 'runtime'].includes(seedTarget)) {
   throw new Error('SEED_TARGET phải là local hoặc aiven.');
@@ -58,10 +59,17 @@ const SUPPLIERS = Array.from({ length: 4 }, (_, index) => ({
   address: `Synthetic address ${String(index + 1).padStart(2, '0')}`,
 }));
 
+const DEMO_BIRTH_DATES_BY_AGE_GROUP = [
+  '2010-06-15', // <18
+  '2004-06-15', // 18-24
+  '1996-06-15', // 25-34
+  '1986-06-15', // 35-44
+  '1975-06-15', // 45+
+];
 const EXTRA_CUSTOMERS = Array.from({ length: 20 }, (_, index) => [
   `Demo Customer ${String(index + 1).padStart(2, '0')}`,
   index % 2 ? 'Female' : 'Male',
-  `19${String(70 + index).padStart(2, '0')}-06-15`,
+  DEMO_BIRTH_DATES_BY_AGE_GROUP[index % DEMO_BIRTH_DATES_BY_AGE_GROUP.length],
   ['Áo thun', 'Quần jean', 'Váy', 'Áo khoác'][index % 4],
 ]);
 
@@ -115,9 +123,9 @@ async function upsertAccount(client, { role, username, email, passwordHash, stat
 async function ensureEmployee(client, accountId, fullName, position) {
   await client.query(
     `INSERT INTO employee (account_id, full_name, gender, email, position, hire_date, is_active)
-     SELECT $1, $2, 'Other'::gender_type, a.email, $3, DATE '2023-01-15', TRUE
+     SELECT $1, $2, 'Other'::gender_type, a.email, $3, CURRENT_DATE - (($1 % 6) * 30)::int, TRUE
      FROM account a WHERE a.account_id = $1
-     ON CONFLICT (account_id) DO UPDATE SET full_name = EXCLUDED.full_name, position = EXCLUDED.position`,
+     ON CONFLICT (account_id) DO UPDATE SET full_name = EXCLUDED.full_name, position = EXCLUDED.position, hire_date = EXCLUDED.hire_date`,
     [accountId, fullName, position],
   );
 }
@@ -189,6 +197,11 @@ async function seed(client) {
   await ensureEmployee(client, accountIds['kho@hungfashion.local'], 'Demo Employee Warehouse 01', 'Quản lý kho');
   await ensureEmployee(client, accountIds['banhang@hungfashion.local'], 'Demo Employee Sales 01', 'Quản lý bán hàng');
   await ensureEmployee(client, accountIds['crm@hungfashion.local'], 'Demo Employee CRM 01', 'Quản lý khách hàng');
+  await client.query(
+    `INSERT INTO employee (full_name, position, hire_date, is_active)
+     SELECT 'Demo Employee Inactive 01', 'Nhân viên kho', DATE '2022-03-01', FALSE
+     WHERE NOT EXISTS (SELECT 1 FROM employee WHERE full_name = 'Demo Employee Inactive 01')`,
+  );
 
   const { rows: [warehouseStaff] } = await client.query(
     'SELECT employee_id FROM employee WHERE account_id = $1',
@@ -327,9 +340,9 @@ async function seed(client) {
   const customerIds = [];
   const guestAccounts = TEST_ACCOUNTS.filter((a) => a.role === 'KHACH_HANG');
   const guestMeta = [
-    { gender: 'Male', dob: '1999-03-18', interest: 'Áo thun' },
-    { gender: 'Female', dob: '1994-08-09', interest: 'Váy' },
-    { gender: 'Male', dob: '1988-12-02', interest: 'Quần jean' },
+    { gender: 'Male', dob: '2010-03-18', interest: 'Áo thun' },
+    { gender: 'Female', dob: '2004-08-09', interest: 'Váy' },
+    { gender: 'Male', dob: '1978-12-02', interest: 'Quần jean' },
   ];
   for (const [i, acc] of guestAccounts.entries()) {
     const id = await ensureCustomer(client, {

@@ -24,7 +24,7 @@ function Field({ label, children }) {
   return <label className="flex flex-col gap-1.5 text-white/65 text-sm font-medium">{label&&<span>{label}</span>}{children}</label>;
 }
 
-function ProductModal({ product, categories, suppliers, onClose, onSaved }) {
+function ProductModal({ product, categories, suppliers, sizes, colors, onClose, onSaved }) {
   useModalEffects(true, onClose);
   const isEdit = Boolean(product);
   const [form, setForm] = useState(product ? {
@@ -34,12 +34,32 @@ function ProductModal({ product, categories, suppliers, onClose, onSaved }) {
   } : { product_name:'', category_id:'', supplier_id:'', import_price:'', selling_price:'', description:'' });
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
+  const [variants, setVariants] = useState([]);
   useSweetAlertMessages({ error });
+
+  const updateVariant = (index, key, value) => setVariants(current => current.map((variant, row) =>
+    row === index ? { ...variant, [key]: value } : variant
+  ));
 
   const save = async e => {
     e.preventDefault(); setBusy(true); setError('');
     try {
-      const body = { ...form, import_price:Number(form.import_price), selling_price:Number(form.selling_price), category_id:Number(form.category_id)||null, supplier_id:Number(form.supplier_id)||null };
+      const incompleteVariant = variants.some(variant =>
+        !variant.size_id || !variant.color_id || !variant.sku.trim()
+        || !Number.isInteger(Number(variant.quantity)) || Number(variant.quantity) < 0
+      );
+      if (incompleteVariant) throw new Error('Hoàn tất kích cỡ, màu, mã SKU và số lượng cho từng biến thể.');
+      const body = {
+        ...form,
+        import_price:Number(form.import_price),
+        selling_price:Number(form.selling_price),
+        category_id:Number(form.category_id)||null,
+        supplier_id:Number(form.supplier_id)||null,
+        variants: variants.map(variant => ({
+          size_id: Number(variant.size_id), color_id: Number(variant.color_id),
+          sku: variant.sku.trim(), quantity: Number(variant.quantity),
+        })),
+      };
       if (isEdit) await apiFetch(`/api/products/${product.product_id}`, { method:'PATCH', body });
       else        await apiFetch('/api/products', { method:'POST', body });
       onSaved();
@@ -49,7 +69,7 @@ function ProductModal({ product, categories, suppliers, onClose, onSaved }) {
   return createPortal((
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/55 backdrop-blur-md p-5" onClick={onClose}>
       <motion.div initial={{ scale:0.94, opacity:0 }} animate={{ scale:1, opacity:1 }} exit={{ scale:0.94, opacity:0 }} transition={{ duration:0.18 }}
-        className="popup-surface w-full max-w-[520px] p-7 border border-white/[0.12] rounded-3xl bg-[rgba(26,20,16,0.96)] shadow-[0_32px_80px_rgba(0,0,0,0.65)] text-[#f5f0eb]"
+        className="popup-surface w-full max-w-[760px] max-h-[90vh] overflow-y-auto p-7 border border-white/[0.12] rounded-3xl bg-[rgba(26,20,16,0.96)] shadow-[0_32px_80px_rgba(0,0,0,0.65)] text-[#f5f0eb]"
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-white/[0.08]">
           <h2 className="m-0 text-[1.1rem] font-bold">{isEdit ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</h2>
@@ -82,6 +102,24 @@ function ProductModal({ product, categories, suppliers, onClose, onSaved }) {
               </Field>
             </div>
           </div>
+          {!isEdit && <section className="flex flex-col gap-3 border-t border-white/[0.08] pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="m-0 text-sm font-semibold">Biến thể sản phẩm</h3>
+                <p className="m-0 mt-1 text-xs text-white/45">Thêm tổ hợp kích cỡ, màu, mã SKU và tồn kho ban đầu.</p>
+              </div>
+              <button type="button" className={BTN_GHOST} onClick={() => setVariants(current => [...current, { size_id:'', color_id:'', sku:'', quantity:'0' }])}>
+                <Plus size={14}/> Thêm biến thể
+              </button>
+            </div>
+            {variants.map((variant, index) => <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1.3fr_0.8fr_auto] gap-2 items-end rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <Field label="Kích cỡ *"><select required className={SELECT} value={variant.size_id} onChange={event => updateVariant(index, 'size_id', event.target.value)}><option value="">Chọn kích cỡ</option>{sizes.map(size => <option key={size.size_id} value={size.size_id}>{size.size_name}</option>)}</select></Field>
+              <Field label="Màu *"><select required className={SELECT} value={variant.color_id} onChange={event => updateVariant(index, 'color_id', event.target.value)}><option value="">Chọn màu</option>{colors.map(color => <option key={color.color_id} value={color.color_id}>{color.color_name}</option>)}</select></Field>
+              <Field label="Mã SKU *"><input required maxLength={100} className={INPUT} placeholder="VD: AO-TRANG-M" value={variant.sku} onChange={event => updateVariant(index, 'sku', event.target.value)} /></Field>
+              <Field label="Số lượng"><input required type="number" min="0" step="1" className={INPUT} value={variant.quantity} onChange={event => updateVariant(index, 'quantity', event.target.value)} /></Field>
+              <button type="button" className={`${ICON_BTN} mb-0.5`} title="Xóa biến thể" aria-label="Xóa biến thể" onClick={() => setVariants(current => current.filter((_, row) => row !== index))}><Trash2 size={14}/></button>
+            </div>)}
+          </section>}
           <div className="flex justify-end gap-2.5 pt-3 border-t border-white/[0.08]">
             <button type="button" className={BTN_GHOST} onClick={onClose}>Hủy</button>
             <button type="submit" className={`${BTN_PRIMARY} admin-primary-action`} disabled={busy}>{busy ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : 'Thêm sản phẩm'}</button>
@@ -97,6 +135,8 @@ export default function ProductsView() {
   const [categories, setCategories] = useState([]);
   const [brands, setBrands]         = useState([]);
   const [suppliers, setSuppliers]   = useState([]);
+  const [sizes, setSizes]           = useState([]);
+  const [colors, setColors]         = useState([]);
   const [total, setTotal]           = useState(0);
   const [search, setSearch]         = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -114,12 +154,17 @@ export default function ProductsView() {
   const [modal, setModal]           = useState(null);
 
   useEffect(() => {
-    Promise.all([apiFetch('/api/products/categories'), apiFetch('/api/products/brands'), apiFetch('/api/inventory/suppliers')])
-      .then(([cats, brandRows, supps]) => {
+    Promise.all([
+      apiFetch('/api/products/categories'), apiFetch('/api/products/brands'),
+      apiFetch('/api/inventory/suppliers'), apiFetch('/api/products/sizes'), apiFetch('/api/products/colors'),
+    ])
+      .then(([cats, brandRows, supps, sizeRows, colorRows]) => {
         const seen = new Set();
         setCategories(cats.filter(c => { if(seen.has(c.category_name)) return false; seen.add(c.category_name); return true; }));
         setBrands(brandRows || []);
         setSuppliers(supps||[]);
+        setSizes(sizeRows||[]);
+        setColors(colorRows||[]);
       }).catch(e => setError(e.message));
   }, []);
 
@@ -236,7 +281,7 @@ export default function ProductsView() {
         {modal && (
           <ProductModal
             product={modal==='add'?null:modal}
-            categories={categories} suppliers={suppliers}
+            categories={categories} suppliers={suppliers} sizes={sizes} colors={colors}
             onClose={() => setModal(null)}
             onSaved={() => { setModal(null); setRefresh(v => v+1); }}
           />

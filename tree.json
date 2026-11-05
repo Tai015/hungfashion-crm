@@ -1,0 +1,1384 @@
+{
+  "name": "HTTTDN",
+  "type": "directory",
+  "children": [
+    {
+      "name": ".codex",
+      "type": "directory",
+      "path": ".codex",
+      "children": [
+        {
+          "name": "AGENTS.md",
+          "type": "file",
+          "path": ".codex/AGENTS.md"
+        }
+      ]
+    },
+    {
+      "name": ".vscode",
+      "type": "directory",
+      "path": ".vscode",
+      "children": [
+        {
+          "name": "launch.json",
+          "type": "file",
+          "path": ".vscode/launch.json"
+        },
+        {
+          "name": "tasks.json",
+          "type": "file",
+          "path": ".vscode/tasks.json"
+        }
+      ]
+    },
+    {
+      "name": "database",
+      "type": "directory",
+      "path": "database",
+      "children": [
+        {
+          "name": "demo_data.sql",
+          "type": "file",
+          "path": "database/demo_data.sql"
+        },
+        {
+          "name": "schema.sql",
+          "type": "file",
+          "path": "database/schema.sql"
+        }
+      ]
+    },
+    {
+      "name": "docs",
+      "type": "directory",
+      "path": "docs",
+      "children": [
+        {
+          "name": "report",
+          "type": "directory",
+          "path": "docs/report",
+          "children": [
+            {
+              "name": "chapters",
+              "type": "directory",
+              "path": "docs/report/chapters",
+              "children": [
+                {
+                  "name": "00-trang-bia.tex",
+                  "type": "file",
+                  "path": "docs/report/chapters/00-trang-bia.tex"
+                },
+                {
+                  "name": "01-gioi-thieu.tex",
+                  "type": "file",
+                  "path": "docs/report/chapters/01-gioi-thieu.tex"
+                },
+                {
+                  "name": "02-khao-sat.tex",
+                  "type": "file",
+                  "path": "docs/report/chapters/02-khao-sat.tex"
+                },
+                {
+                  "name": "03-phan-tich.tex",
+                  "type": "file",
+                  "path": "docs/report/chapters/03-phan-tich.tex"
+                },
+                {
+                  "name": "04-thiet-ke.tex",
+                  "type": "file",
+                  "path": "docs/report/chapters/04-thiet-ke.tex"
+                },
+                {
+                  "name": "05-cai-dat-bao-tri.tex",
+                  "type": "file",
+                  "path": "docs/report/chapters/05-cai-dat-bao-tri.tex"
+                },
+                {
+                  "name": "06-tong-ket.tex",
+                  "type": "file",
+                  "path": "docs/report/chapters/06-tong-ket.tex"
+                },
+                {
+                  "name": "07-phu-luc.tex",
+                  "type": "file",
+                  "path": "docs/report/chapters/07-phu-luc.tex"
+                }
+              ]
+            },
+            {
+              "name": "diagrams",
+              "type": "directory",
+              "path": "docs/report/diagrams",
+              "children": [
+                {
+                  "name": "01-chuc-nang.mmd",
+                  "type": "file",
+                  "path": "docs/report/diagrams/01-chuc-nang.mmd"
+                },
+                {
+                  "name": "01-chuc-nang.pdf",
+                  "type": "file",
+                  "path": "docs/report/diagrams/01-chuc-nang.pdf"
+                },
+                {
+                  "name": "02-ngu-canh.mmd",
+                  "type": "file",
+                  "path": "docs/report/diagrams/02-ngu-canh.mmd"
+                },
+                {
+                  "name": "02-ngu-canh.pdf",
+                  "type": "file",
+                  "path": "docs/report/diagrams/02-ngu-canh.pdf"
+                },
+                {
+                  "name": "03-dfd-muc-0.mmd",
+                  "type": "file",
+                  "path": "docs/report/diagrams/03-dfd-muc-0.mmd"
+                },
+                {
+                  "name": "03-dfd-muc-0.pdf",
+                  "type": "file",
+                  "path": "docs/report/diagrams/03-dfd-muc-0.pdf"
+                },
+                {
+                  "name": "04-erd.mmd",
+                  "type": "file",
+                  "path": "docs/report/diagrams/04-erd.mmd"
+                },
+                {
+                  "name": "04-erd.pdf",
+                  "type": "file",
+                  "path": "docs/report/diagrams/04-erd.pdf"
+                },
+                {
+                  "name": "05-trien-khai-su-kien.mmd",
+                  "type": "file",
+                  "path": "docs/report/diagrams/05-trien-khai-su-kien.mmd"
+                },
+                {
+                  "name": "05-trien-khai-su-kien.pdf",
+                  "type": "file",
+                  "path": "docs/report/diagrams/05-trien-khai-su-kien.pdf"
+                }
+              ]
+            },
+            {
+              "name": "images",
+              "type": "directory",
+              "path": "docs/report/images",
+              "children": [
+                {
+                  "name": ".gitkeep",
+                  "type": "file",
+                  "path": "docs/report/images/.gitkeep"
+                }
+              ]
+            },
+            {
+              "name": "scripts",
+              "type": "directory",
+              "path": "docs/report/scripts",
+              "children": [
+                {
+                  "name": "generate-data-dictionary.py",
+                  "type": "file",
+                  "path": "docs/report/scripts/generate-data-dictionary.py"
+                }
+              ]
+            },
+            {
+              "name": "00-inventory.md",
+              "type": "file",
+              "path": "docs/report/00-inventory.md"
+            },
+            {
+              "name": "04-tu-dien-du-lieu.tex",
+              "type": "file",
+              "path": "docs/report/04-tu-dien-du-lieu.tex"
+            },
+            {
+              "name": "diagram-source.md",
+              "type": "file",
+              "path": "docs/report/diagram-source.md"
+            },
+            {
+              "name": "main-text.txt",
+              "type": "file",
+              "path": "docs/report/main-text.txt"
+            },
+            {
+              "name": "main.aux",
+              "type": "file",
+              "path": "docs/report/main.aux"
+            },
+            {
+              "name": "main.lof",
+              "type": "file",
+              "path": "docs/report/main.lof"
+            },
+            {
+              "name": "main.log",
+              "type": "file",
+              "path": "docs/report/main.log"
+            },
+            {
+              "name": "main.lot",
+              "type": "file",
+              "path": "docs/report/main.lot"
+            },
+            {
+              "name": "main.out",
+              "type": "file",
+              "path": "docs/report/main.out"
+            },
+            {
+              "name": "main.pdf",
+              "type": "file",
+              "path": "docs/report/main.pdf"
+            },
+            {
+              "name": "main.tex",
+              "type": "file",
+              "path": "docs/report/main.tex"
+            },
+            {
+              "name": "main.toc",
+              "type": "file",
+              "path": "docs/report/main.toc"
+            },
+            {
+              "name": "rename-pass1.log",
+              "type": "file",
+              "path": "docs/report/rename-pass1.log"
+            },
+            {
+              "name": "rename-pass2.log",
+              "type": "file",
+              "path": "docs/report/rename-pass2.log"
+            },
+            {
+              "name": "TODO-can-bo-sung.md",
+              "type": "file",
+              "path": "docs/report/TODO-can-bo-sung.md"
+            }
+          ]
+        },
+        {
+          "name": "tools",
+          "type": "directory",
+          "path": "docs/tools",
+          "children": [
+            {
+              "name": "build-reference.py",
+              "type": "file",
+              "path": "docs/tools/build-reference.py"
+            }
+          ]
+        },
+        {
+          "name": "report.zip",
+          "type": "file",
+          "path": "docs/report.zip"
+        }
+      ]
+    },
+    {
+      "name": "store-admin",
+      "type": "directory",
+      "path": "store-admin",
+      "children": [
+        {
+          "name": ".vscode",
+          "type": "directory",
+          "path": "store-admin/.vscode",
+          "children": []
+        },
+        {
+          "name": "client",
+          "type": "directory",
+          "path": "store-admin/client",
+          "children": [
+            {
+              "name": "public",
+              "type": "directory",
+              "path": "store-admin/client/public",
+              "children": [
+                {
+                  "name": "database.css",
+                  "type": "file",
+                  "path": "store-admin/client/public/database.css"
+                },
+                {
+                  "name": "database.html",
+                  "type": "file",
+                  "path": "store-admin/client/public/database.html"
+                },
+                {
+                  "name": "database.js",
+                  "type": "file",
+                  "path": "store-admin/client/public/database.js"
+                },
+                {
+                  "name": "NotoSans-Regular.ttf",
+                  "type": "file",
+                  "path": "store-admin/client/public/NotoSans-Regular.ttf"
+                }
+              ]
+            },
+            {
+              "name": "src",
+              "type": "directory",
+              "path": "store-admin/client/src",
+              "children": [
+                {
+                  "name": "api",
+                  "type": "directory",
+                  "path": "store-admin/client/src/api",
+                  "children": [
+                    {
+                      "name": "client.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/api/client.js"
+                    }
+                  ]
+                },
+                {
+                  "name": "components",
+                  "type": "directory",
+                  "path": "store-admin/client/src/components",
+                  "children": [
+                    {
+                      "name": "dashboard",
+                      "type": "directory",
+                      "path": "store-admin/client/src/components/dashboard",
+                      "children": [
+                        {
+                          "name": "ActivityTable.jsx",
+                          "type": "file",
+                          "path": "store-admin/client/src/components/dashboard/ActivityTable.jsx"
+                        },
+                        {
+                          "name": "AnalyticsChart.jsx",
+                          "type": "file",
+                          "path": "store-admin/client/src/components/dashboard/AnalyticsChart.jsx"
+                        },
+                        {
+                          "name": "BarChart.jsx",
+                          "type": "file",
+                          "path": "store-admin/client/src/components/dashboard/BarChart.jsx"
+                        },
+                        {
+                          "name": "GlassCard.jsx",
+                          "type": "file",
+                          "path": "store-admin/client/src/components/dashboard/GlassCard.jsx"
+                        },
+                        {
+                          "name": "Header.jsx",
+                          "type": "file",
+                          "path": "store-admin/client/src/components/dashboard/Header.jsx"
+                        },
+                        {
+                          "name": "MetricCard.jsx",
+                          "type": "file",
+                          "path": "store-admin/client/src/components/dashboard/MetricCard.jsx"
+                        },
+                        {
+                          "name": "NeedsAttention.jsx",
+                          "type": "file",
+                          "path": "store-admin/client/src/components/dashboard/NeedsAttention.jsx"
+                        },
+                        {
+                          "name": "SectionState.jsx",
+                          "type": "file",
+                          "path": "store-admin/client/src/components/dashboard/SectionState.jsx"
+                        },
+                        {
+                          "name": "Sidebar.jsx",
+                          "type": "file",
+                          "path": "store-admin/client/src/components/dashboard/Sidebar.jsx"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "AppShell.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/AppShell.jsx"
+                    },
+                    {
+                      "name": "ChatMedia.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/ChatMedia.jsx"
+                    },
+                    {
+                      "name": "DatePicker.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/DatePicker.jsx"
+                    },
+                    {
+                      "name": "FeedbackMedia.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/FeedbackMedia.jsx"
+                    },
+                    {
+                      "name": "FilterPopover.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/FilterPopover.jsx"
+                    },
+                    {
+                      "name": "NavItem.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/NavItem.jsx"
+                    },
+                    {
+                      "name": "Pagination.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/Pagination.jsx"
+                    },
+                    {
+                      "name": "PaymentCountdown.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/PaymentCountdown.jsx"
+                    },
+                    {
+                      "name": "PaymentSuccessModal.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/PaymentSuccessModal.jsx"
+                    },
+                    {
+                      "name": "RoleAvatar.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/RoleAvatar.jsx"
+                    },
+                    {
+                      "name": "Skeleton.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/Skeleton.jsx"
+                    },
+                    {
+                      "name": "Spinner.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/Spinner.jsx"
+                    },
+                    {
+                      "name": "StatCard.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/StatCard.jsx"
+                    },
+                    {
+                      "name": "StatusBadge.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/StatusBadge.jsx"
+                    },
+                    {
+                      "name": "TierBadge.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/components/TierBadge.jsx"
+                    }
+                  ]
+                },
+                {
+                  "name": "context",
+                  "type": "directory",
+                  "path": "store-admin/client/src/context",
+                  "children": [
+                    {
+                      "name": "CartContext.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/context/CartContext.jsx"
+                    }
+                  ]
+                },
+                {
+                  "name": "data",
+                  "type": "directory",
+                  "path": "store-admin/client/src/data",
+                  "children": []
+                },
+                {
+                  "name": "hooks",
+                  "type": "directory",
+                  "path": "store-admin/client/src/hooks",
+                  "children": [
+                    {
+                      "name": "useDashboardData.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/hooks/useDashboardData.js"
+                    },
+                    {
+                      "name": "useModalEffects.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/hooks/useModalEffects.js"
+                    }
+                  ]
+                },
+                {
+                  "name": "utils",
+                  "type": "directory",
+                  "path": "store-admin/client/src/utils",
+                  "children": [
+                    {
+                      "name": "chatAttachments.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/utils/chatAttachments.js"
+                    },
+                    {
+                      "name": "confirmAction.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/utils/confirmAction.js"
+                    },
+                    {
+                      "name": "dashboardFormatters.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/utils/dashboardFormatters.js"
+                    },
+                    {
+                      "name": "dashboardMotion.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/utils/dashboardMotion.js"
+                    },
+                    {
+                      "name": "formatters.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/utils/formatters.js"
+                    },
+                    {
+                      "name": "notifications.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/utils/notifications.js"
+                    },
+                    {
+                      "name": "pageTransition.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/utils/pageTransition.js"
+                    },
+                    {
+                      "name": "pdfGenerator.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/utils/pdfGenerator.js"
+                    },
+                    {
+                      "name": "telemetry.js",
+                      "type": "file",
+                      "path": "store-admin/client/src/utils/telemetry.js"
+                    }
+                  ]
+                },
+                {
+                  "name": "views",
+                  "type": "directory",
+                  "path": "store-admin/client/src/views",
+                  "children": [
+                    {
+                      "name": "AccountsView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/AccountsView.jsx"
+                    },
+                    {
+                      "name": "AuditLogView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/AuditLogView.jsx"
+                    },
+                    {
+                      "name": "CartView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/CartView.jsx"
+                    },
+                    {
+                      "name": "CheckoutView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/CheckoutView.jsx"
+                    },
+                    {
+                      "name": "CskhChatView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/CskhChatView.jsx"
+                    },
+                    {
+                      "name": "CustomerLoyaltyView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/CustomerLoyaltyView.jsx"
+                    },
+                    {
+                      "name": "CustomerOrdersView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/CustomerOrdersView.jsx"
+                    },
+                    {
+                      "name": "CustomerSupportChatView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/CustomerSupportChatView.jsx"
+                    },
+                    {
+                      "name": "CustomersView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/CustomersView.jsx"
+                    },
+                    {
+                      "name": "CustomerVouchersView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/CustomerVouchersView.jsx"
+                    },
+                    {
+                      "name": "DashboardPage.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/DashboardPage.jsx"
+                    },
+                    {
+                      "name": "DashboardView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/DashboardView.jsx"
+                    },
+                    {
+                      "name": "EmployeesView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/EmployeesView.jsx"
+                    },
+                    {
+                      "name": "FeedbacksView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/FeedbacksView.jsx"
+                    },
+                    {
+                      "name": "InventoryManagementView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/InventoryManagementView.jsx"
+                    },
+                    {
+                      "name": "OperationsView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/OperationsView.jsx"
+                    },
+                    {
+                      "name": "ProductsView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/ProductsView.jsx"
+                    },
+                    {
+                      "name": "PromotionsView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/PromotionsView.jsx"
+                    },
+                    {
+                      "name": "ReportsView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/ReportsView.jsx"
+                    },
+                    {
+                      "name": "SettingsView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/SettingsView.jsx"
+                    },
+                    {
+                      "name": "StaffChatView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/StaffChatView.jsx"
+                    },
+                    {
+                      "name": "SurveysView.jsx",
+                      "type": "file",
+                      "path": "store-admin/client/src/views/SurveysView.jsx"
+                    }
+                  ]
+                },
+                {
+                  "name": "api.js",
+                  "type": "file",
+                  "path": "store-admin/client/src/api.js"
+                },
+                {
+                  "name": "App.jsx",
+                  "type": "file",
+                  "path": "store-admin/client/src/App.jsx"
+                },
+                {
+                  "name": "AuthScreen.jsx",
+                  "type": "file",
+                  "path": "store-admin/client/src/AuthScreen.jsx"
+                },
+                {
+                  "name": "CustomerPortal.jsx",
+                  "type": "file",
+                  "path": "store-admin/client/src/CustomerPortal.jsx"
+                },
+                {
+                  "name": "dashboard.css",
+                  "type": "file",
+                  "path": "store-admin/client/src/dashboard.css"
+                },
+                {
+                  "name": "main.jsx",
+                  "type": "file",
+                  "path": "store-admin/client/src/main.jsx"
+                },
+                {
+                  "name": "PasswordInput.jsx",
+                  "type": "file",
+                  "path": "store-admin/client/src/PasswordInput.jsx"
+                },
+                {
+                  "name": "styles.css",
+                  "type": "file",
+                  "path": "store-admin/client/src/styles.css"
+                }
+              ]
+            },
+            {
+              "name": "index.html",
+              "type": "file",
+              "path": "store-admin/client/index.html"
+            },
+            {
+              "name": "package.json",
+              "type": "file",
+              "path": "store-admin/client/package.json"
+            },
+            {
+              "name": "postcss.config.js",
+              "type": "file",
+              "path": "store-admin/client/postcss.config.js"
+            },
+            {
+              "name": "tailwind.config.js",
+              "type": "file",
+              "path": "store-admin/client/tailwind.config.js"
+            },
+            {
+              "name": "vite.config.js",
+              "type": "file",
+              "path": "store-admin/client/vite.config.js"
+            }
+          ]
+        },
+        {
+          "name": "data",
+          "type": "directory",
+          "path": "store-admin/data",
+          "children": [
+            {
+              "name": "clean",
+              "type": "directory",
+              "path": "store-admin/data/clean",
+              "children": [
+                {
+                  "name": "products.json",
+                  "type": "file",
+                  "path": "store-admin/data/clean/products.json"
+                }
+              ]
+            },
+            {
+              "name": "raw",
+              "type": "directory",
+              "path": "store-admin/data/raw",
+              "children": [
+                {
+                  "name": "fashion-studio-products.json",
+                  "type": "file",
+                  "path": "store-admin/data/raw/fashion-studio-products.json"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "desktop",
+          "type": "directory",
+          "path": "store-admin/desktop",
+          "children": [
+            {
+              "name": "launcher.css",
+              "type": "file",
+              "path": "store-admin/desktop/launcher.css"
+            },
+            {
+              "name": "launcher.html",
+              "type": "file",
+              "path": "store-admin/desktop/launcher.html"
+            },
+            {
+              "name": "launcher.js",
+              "type": "file",
+              "path": "store-admin/desktop/launcher.js"
+            },
+            {
+              "name": "main.js",
+              "type": "file",
+              "path": "store-admin/desktop/main.js"
+            },
+            {
+              "name": "preload.js",
+              "type": "file",
+              "path": "store-admin/desktop/preload.js"
+            }
+          ]
+        },
+        {
+          "name": "Microsoft",
+          "type": "directory",
+          "path": "store-admin/Microsoft",
+          "children": [
+            {
+              "name": "Windows",
+              "type": "directory",
+              "path": "store-admin/Microsoft/Windows",
+              "children": [
+                {
+                  "name": "PowerShell",
+                  "type": "directory",
+                  "path": "store-admin/Microsoft/Windows/PowerShell",
+                  "children": [
+                    {
+                      "name": "ModuleAnalysisCache",
+                      "type": "file",
+                      "path": "store-admin/Microsoft/Windows/PowerShell/ModuleAnalysisCache"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "scripts",
+          "type": "directory",
+          "path": "store-admin/scripts",
+          "children": [
+            {
+              "name": "backup-db.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/backup-db.mjs"
+            },
+            {
+              "name": "db-env.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/db-env.mjs"
+            },
+            {
+              "name": "generate-project-tree.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/generate-project-tree.mjs"
+            },
+            {
+              "name": "kafka-load-test.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/kafka-load-test.mjs"
+            },
+            {
+              "name": "normalize_catalog.py",
+              "type": "file",
+              "path": "store-admin/scripts/normalize_catalog.py"
+            },
+            {
+              "name": "normalize-catalog.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/normalize-catalog.mjs"
+            },
+            {
+              "name": "python-process.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/python-process.mjs"
+            },
+            {
+              "name": "reset-db.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/reset-db.mjs"
+            },
+            {
+              "name": "restore-db.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/restore-db.mjs"
+            },
+            {
+              "name": "scrape_catalog.py",
+              "type": "file",
+              "path": "store-admin/scripts/scrape_catalog.py"
+            },
+            {
+              "name": "scrape-catalog.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/scrape-catalog.mjs"
+            },
+            {
+              "name": "seed-db-config.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/seed-db-config.mjs"
+            },
+            {
+              "name": "seed-db-config.test.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/seed-db-config.test.mjs"
+            },
+            {
+              "name": "seed.mjs",
+              "type": "file",
+              "path": "store-admin/scripts/seed.mjs"
+            }
+          ]
+        },
+        {
+          "name": "server",
+          "type": "directory",
+          "path": "store-admin/server",
+          "children": [
+            {
+              "name": "settings",
+              "type": "directory",
+              "path": "store-admin/server/settings",
+              "children": [
+                {
+                  "name": "requirements.txt",
+                  "type": "file",
+                  "path": "store-admin/server/settings/requirements.txt"
+                }
+              ]
+            },
+            {
+              "name": "sql",
+              "type": "directory",
+              "path": "store-admin/server/sql",
+              "children": [
+                {
+                  "name": "migrations",
+                  "type": "directory",
+                  "path": "store-admin/server/sql/migrations",
+                  "children": [
+                    {
+                      "name": "001_create_indexes.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/001_create_indexes.sql"
+                    },
+                    {
+                      "name": "002_structure_event_records.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/002_structure_event_records.sql"
+                    },
+                    {
+                      "name": "003_outbox_events.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/003_outbox_events.sql"
+                    },
+                    {
+                      "name": "004_crm_schema_gap.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/004_crm_schema_gap.sql"
+                    },
+                    {
+                      "name": "005_crm_integrity_constraints.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/005_crm_integrity_constraints.sql"
+                    },
+                    {
+                      "name": "006_chat.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/006_chat.sql"
+                    },
+                    {
+                      "name": "007_order_shipping_address.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/007_order_shipping_address.sql"
+                    },
+                    {
+                      "name": "008_loyalty_point_transactions.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/008_loyalty_point_transactions.sql"
+                    },
+                    {
+                      "name": "009_survey_target_interest_reward.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/009_survey_target_interest_reward.sql"
+                    },
+                    {
+                      "name": "010_feedback_attachments.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/010_feedback_attachments.sql"
+                    },
+                    {
+                      "name": "011_username_case_insensitive.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/011_username_case_insensitive.sql"
+                    },
+                    {
+                      "name": "012_chat_image_attachments.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/012_chat_image_attachments.sql"
+                    },
+                    {
+                      "name": "013_chat_video_attachments.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/013_chat_video_attachments.sql"
+                    },
+                    {
+                      "name": "014_demo_payment_tokens.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/014_demo_payment_tokens.sql"
+                    },
+                    {
+                      "name": "015_chat_document_attachments.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/015_chat_document_attachments.sql"
+                    },
+                    {
+                      "name": "016_account_sessions.sql",
+                      "type": "file",
+                      "path": "store-admin/server/sql/migrations/016_account_sessions.sql"
+                    }
+                  ]
+                },
+                {
+                  "name": "bootstrap.sql",
+                  "type": "file",
+                  "path": "store-admin/server/sql/bootstrap.sql"
+                },
+                {
+                  "name": "schema.sql",
+                  "type": "file",
+                  "path": "store-admin/server/sql/schema.sql"
+                }
+              ]
+            },
+            {
+              "name": "src",
+              "type": "directory",
+              "path": "store-admin/server/src",
+              "children": [
+                {
+                  "name": "domain",
+                  "type": "directory",
+                  "path": "store-admin/server/src/domain",
+                  "children": [
+                    {
+                      "name": "index.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/domain/index.js"
+                    },
+                    {
+                      "name": "inventory.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/domain/inventory.js"
+                    },
+                    {
+                      "name": "loyalty.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/domain/loyalty.js"
+                    },
+                    {
+                      "name": "order-status.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/domain/order-status.js"
+                    },
+                    {
+                      "name": "pricing.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/domain/pricing.js"
+                    },
+                    {
+                      "name": "types.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/domain/types.js"
+                    }
+                  ]
+                },
+                {
+                  "name": "routes",
+                  "type": "directory",
+                  "path": "store-admin/server/src/routes",
+                  "children": [
+                    {
+                      "name": "account.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/account.js"
+                    },
+                    {
+                      "name": "auth.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/auth.js"
+                    },
+                    {
+                      "name": "chat.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/chat.js"
+                    },
+                    {
+                      "name": "customer.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/customer.js"
+                    },
+                    {
+                      "name": "demo-payment.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/demo-payment.js"
+                    },
+                    {
+                      "name": "employee.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/employee.js"
+                    },
+                    {
+                      "name": "feedback.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/feedback.js"
+                    },
+                    {
+                      "name": "inventory.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/inventory.js"
+                    },
+                    {
+                      "name": "loyalty.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/loyalty.js"
+                    },
+                    {
+                      "name": "order.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/order.js"
+                    },
+                    {
+                      "name": "product.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/product.js"
+                    },
+                    {
+                      "name": "promotion.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/promotion.js"
+                    },
+                    {
+                      "name": "report.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/report.js"
+                    },
+                    {
+                      "name": "settings.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/settings.js"
+                    },
+                    {
+                      "name": "survey.js",
+                      "type": "file",
+                      "path": "store-admin/server/src/routes/survey.js"
+                    }
+                  ]
+                },
+                {
+                  "name": "auth.js",
+                  "type": "file",
+                  "path": "store-admin/server/src/auth.js"
+                },
+                {
+                  "name": "chat-access.js",
+                  "type": "file",
+                  "path": "store-admin/server/src/chat-access.js"
+                },
+                {
+                  "name": "chat-attachment-types.js",
+                  "type": "file",
+                  "path": "store-admin/server/src/chat-attachment-types.js"
+                },
+                {
+                  "name": "db.js",
+                  "type": "file",
+                  "path": "store-admin/server/src/db.js"
+                },
+                {
+                  "name": "index.js",
+                  "type": "file",
+                  "path": "store-admin/server/src/index.js"
+                },
+                {
+                  "name": "kafka-metrics.js",
+                  "type": "file",
+                  "path": "store-admin/server/src/kafka-metrics.js"
+                },
+                {
+                  "name": "kafka.js",
+                  "type": "file",
+                  "path": "store-admin/server/src/kafka.js"
+                },
+                {
+                  "name": "migrate.js",
+                  "type": "file",
+                  "path": "store-admin/server/src/migrate.js"
+                },
+                {
+                  "name": "migrations.js",
+                  "type": "file",
+                  "path": "store-admin/server/src/migrations.js"
+                },
+                {
+                  "name": "outbox-relay.js",
+                  "type": "file",
+                  "path": "store-admin/server/src/outbox-relay.js"
+                },
+                {
+                  "name": "outbox-writer.js",
+                  "type": "file",
+                  "path": "store-admin/server/src/outbox-writer.js"
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "type": "directory",
+              "path": "store-admin/server/test",
+              "children": [
+                {
+                  "name": "account-safety.test.js",
+                  "type": "file",
+                  "path": "store-admin/server/test/account-safety.test.js"
+                },
+                {
+                  "name": "chat-attachment-types.test.js",
+                  "type": "file",
+                  "path": "store-admin/server/test/chat-attachment-types.test.js"
+                }
+              ]
+            },
+            {
+              "name": "uploads",
+              "type": "directory",
+              "path": "store-admin/server/uploads",
+              "children": [
+                {
+                  "name": "chat",
+                  "type": "directory",
+                  "path": "store-admin/server/uploads/chat",
+                  "children": [
+                    {
+                      "name": ".gitkeep",
+                      "type": "file",
+                      "path": "store-admin/server/uploads/chat/.gitkeep"
+                    }
+                  ]
+                },
+                {
+                  "name": "feedback",
+                  "type": "directory",
+                  "path": "store-admin/server/uploads/feedback",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "package.json",
+              "type": "file",
+              "path": "store-admin/server/package.json"
+            }
+          ]
+        },
+        {
+          "name": ".dockerignore",
+          "type": "file",
+          "path": "store-admin/.dockerignore"
+        },
+        {
+          "name": ".gitignore",
+          "type": "file",
+          "path": "store-admin/.gitignore"
+        },
+        {
+          "name": "docker-compose.aiven.yml",
+          "type": "file",
+          "path": "store-admin/docker-compose.aiven.yml"
+        },
+        {
+          "name": "docker-compose.yml",
+          "type": "file",
+          "path": "store-admin/docker-compose.yml"
+        },
+        {
+          "name": "Dockerfile",
+          "type": "file",
+          "path": "store-admin/Dockerfile"
+        },
+        {
+          "name": "package-lock.json",
+          "type": "file",
+          "path": "store-admin/package-lock.json"
+        },
+        {
+          "name": "package.json",
+          "type": "file",
+          "path": "store-admin/package.json"
+        },
+        {
+          "name": "README.md",
+          "type": "file",
+          "path": "store-admin/README.md"
+        },
+        {
+          "name": "readme.txt",
+          "type": "file",
+          "path": "store-admin/readme.txt"
+        },
+        {
+          "name": "schedule.md",
+          "type": "file",
+          "path": "store-admin/schedule.md"
+        }
+      ]
+    },
+    {
+      "name": "submission",
+      "type": "directory",
+      "path": "submission",
+      "children": [
+        {
+          "name": "SUBMISSION-CHECKLIST.md",
+          "type": "file",
+          "path": "submission/SUBMISSION-CHECKLIST.md"
+        }
+      ]
+    },
+    {
+      "name": "DFD_HungFashion_CRM.pdf",
+      "type": "file",
+      "path": "DFD_HungFashion_CRM.pdf"
+    },
+    {
+      "name": "DoAn.md",
+      "type": "file",
+      "path": "DoAn.md"
+    },
+    {
+      "name": "frontend_improvement.md",
+      "type": "file",
+      "path": "frontend_improvement.md"
+    },
+    {
+      "name": "missing.md",
+      "type": "file",
+      "path": "missing.md"
+    },
+    {
+      "name": "package-lock.json",
+      "type": "file",
+      "path": "package-lock.json"
+    },
+    {
+      "name": "README.md",
+      "type": "file",
+      "path": "README.md"
+    },
+    {
+      "name": "readme.txt",
+      "type": "file",
+      "path": "readme.txt"
+    },
+    {
+      "name": "recoverydb.md",
+      "type": "file",
+      "path": "recoverydb.md"
+    },
+    {
+      "name": "SGU - 2026_2027 - HK1 - DO AN HTTTDN.pdf",
+      "type": "file",
+      "path": "SGU - 2026_2027 - HK1 - DO AN HTTTDN.pdf"
+    },
+    {
+      "name": "tree.json",
+      "type": "file",
+      "path": "tree.json"
+    }
+  ]
+}

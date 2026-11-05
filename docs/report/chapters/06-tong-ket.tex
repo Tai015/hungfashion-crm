@@ -1,0 +1,38 @@
+\chapter{Kết luận và hướng phát triển}
+\section{Kết quả}
+Đề tài hiện thực một ứng dụng quản lý bán lẻ thời trang có các miền tài khoản/phân quyền, sản phẩm và tồn kho, đơn hàng/thanh toán, khách hàng/CRM, phản hồi, khảo sát, chat, báo cáo và nhật ký. Backend Express cung cấp API; PostgreSQL lưu dữ liệu; outbox/Kafka hỗ trợ chuyển tiếp sự kiện nghiệp vụ. Luồng thanh toán QR trong phạm vi demo chỉ mô phỏng xác nhận, không xử lý tiền thật.
+
+Phạm vi CRM được chọn để đối chiếu mục III của đề cương đánh giá. Ma trận tại Mục~\ref{subsec:crm-coverage} dùng các trạng thái Có, Có điều kiện, Một phần và Chưa có dựa trên màn hình/route trong source; đây chưa phải kết quả nghiệm thu từ người dùng. Đặc điểm doanh nghiệp chỉ là giả định từ tên, giao diện và dữ liệu catalog cho tới khi nhóm xác minh.
+
+\section{Hạn chế}
+Chưa có chứng cứ khảo sát thực tế, thử nghiệm khôi phục, đo hiệu năng đã chạy, hay ảnh giao diện được xác minh trong gói repo. Seed không cam kết lấp mọi bảng. Một số chức năng mô phỏng và các giới hạn nêu ở Chương 1 cần được ghi nhận trong demo, đặc biệt payment QR không xác thực giao dịch ngân hàng. Các kết luận về bảo mật/hiệu năng không vượt quá những gì có thể đọc từ mã nguồn.
+
+\section{Hướng phát triển}
+Ưu tiên tiếp theo là khảo sát và xác nhận quy trình với đơn vị thật; tổ chức backup tự động và diễn tập restore; triển khai giám sát Kafka/outbox và quota; hoàn thiện kiểm soát nội dung upload và lưu trữ media; thay luồng thanh toán demo bằng nhà cung cấp có webhook/chữ ký/đối soát nếu có nhu cầu giao dịch thật. Mọi hướng phát triển cần được đánh giá phạm vi, rủi ro và dữ liệu trước khi triển khai.
+
+\section{Đối chiếu tiêu chí đánh giá}
+Đối chiếu theo phiếu đánh giá đồ án trong repository: Phần I là trình bày báo cáo (40 điểm); Phần II là xây dựng và cài đặt CSDL (30 điểm), gồm cài đặt CSDL kèm phương án sao lưu và phục hồi (10 điểm) và giao diện ADMIN (20 điểm); Phần III (30 điểm) yêu cầu chọn một trong HRM/CRM/MRP. Nhóm chọn CRM. Bảng dưới đây dẫn tới bằng chứng trong báo cáo và ghi trạng thái theo cùng hệ thuật ngữ với ma trận CRM tại Mục~\ref{subsec:crm-coverage}; đây là đối chiếu hồ sơ, không thay cho việc chấm điểm.
+\small
+\begin{longtable}{|p{0.10\textwidth}|p{0.53\textwidth}|p{0.20\textwidth}|}\hline
+\textbf{Phần}&\textbf{Tiêu chí và bằng chứng trong báo cáo}&\textbf{Trạng thái}\\
+\hline\endhead
+I&Trình bày báo cáo (40 điểm): Chương 1–6, sơ đồ, thiết kế, cài đặt, kết luận và phụ lục. Còn thiếu khảo sát/ảnh xác thực theo danh sách bổ sung.&Một phần\\
+\hline
+II.a&Cài đặt CSDL, phương án sao lưu và phục hồi (10 điểm): Chương~\ref{chap:design} mô tả thiết kế; Mục~\ref{sec:backup-restore} ghi lại drill pg\_dump/pg\_restore và đối chiếu 40 bảng. Chưa phải diễn tập trên môi trường production.&Có điều kiện\\
+\hline
+II.b&Giao diện ADMIN (20 điểm): các mục giao diện tại Chương~\ref{chap:design} và ảnh minh chứng dự kiến ở các Hình~\ref{fig:ui-dashboard}–\ref{fig:ui-chat}. Ảnh vẫn cần nhóm cung cấp/xác minh.&Một phần\\
+\hline
+III – CRM&Ma trận tại Mục~\ref{subsec:crm-coverage}; có các route/màn hình CRM, quy trình cần được xác nhận với đơn vị.&Một phần\\
+\hline
+\end{longtable}
+\normalsize
+
+\chapter*{Tài liệu tham khảo}
+\addcontentsline{toc}{chapter}{Tài liệu tham khảo}
+\begin{enumerate}
+\item Trường Đại học Sài Gòn, Khoa Công nghệ Thông tin, “Phiếu đánh giá đồ án giữa kỳ -- Hệ thống thông tin doanh nghiệp, học kỳ 1, năm học 2026--2027”, tệp PDF được cung cấp trong repository.
+\item Mã nguồn Hung Fashion CRM, các route Express tại \path{store-admin/server/src/routes/}, middleware và mount API tại \path{store-admin/server/src/index.js}.
+\item Lược đồ và lịch sử cấu trúc dữ liệu: \texttt{store-admin/server/sql/schema.sql} và \texttt{store-admin/server/sql/migrations/001--015}.
+\item Seed và scripts vận hành: \texttt{store-admin/scripts/seed.mjs}, backup/restore và \texttt{store-admin/package.json}.
+\item Giao diện và role navigation: \texttt{store-admin/client/src/App.jsx}, Customer Portal và các view trong \texttt{store-admin/client/src/views/}.
+\end{enumerate}

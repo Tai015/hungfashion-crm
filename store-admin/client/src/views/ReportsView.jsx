@@ -7,15 +7,20 @@ import GlassCard from '../components/dashboard/GlassCard';
 import SectionState from '../components/dashboard/SectionState';
 import DatePicker from '../components/DatePicker';
 import { formatCount, formatVnd } from '../utils/dashboardFormatters';
+import { EMPLOYEE_STATUS_LABELS } from '../utils/viLabels';
 import '../dashboard.css';
 
 const TAB_ROLES = {
   sales: ['ADMIN', 'QL_BAN_HANG'],
   customers: ['ADMIN', 'QL_KHACH_HANG'],
   feedback: ['ADMIN', 'QL_KHACH_HANG'],
+  warehouse: ['ADMIN', 'QL_KHO'],
+  hr: ['ADMIN', 'QL_NHAN_SU'],
 };
 const TABS = [
   ['sales', 'Doanh thu và đơn hàng'],
+  ['warehouse', 'Kho'],
+  ['hr', 'Nhân sự'],
   ['customers', 'Khách hàng'],
   ['feedback', 'Phản hồi và khảo sát'],
 ];
@@ -278,6 +283,58 @@ function FeedbackSurveyTab({ from, to }) {
   </>;
 }
 
+function WarehouseTab({ from, to }) {
+  const rangeQuery = new URLSearchParams({ from, to }).toString();
+  const movements = useReportData(`/api/reports/warehouse/movements?${rangeQuery}`, true);
+  const suppliers = useReportData(`/api/reports/warehouse/suppliers?${rangeQuery}`, true);
+  const [threshold, setThreshold] = useState(10);
+  const stock = useReportData(`/api/reports/warehouse/summary?threshold=${threshold}`, true);
+  const movementRows = Array.isArray(movements.data) ? movements.data : [];
+  const supplierRows = Array.isArray(suppliers.data) ? suppliers.data : [];
+  const lowStock = stock.data?.lowStock || [];
+  const movementHeaders = ['Ngày', 'Loại phiếu', 'Số lượng', 'Giá trị (₫)'];
+  const supplierHeaders = ['Nhà cung cấp', 'Số phiếu nhập', 'Số lượng nhập', 'Giá trị nhập (₫)'];
+  const lowHeaders = ['Sản phẩm', 'SKU', 'Kích cỡ', 'Màu', 'Tồn', 'Ngưỡng'];
+  return <>
+    <section className="reports-summary-grid"><ReportBlock eyebrow="TỒN KHO HIỆN TẠI" title="Tổng giá trị tồn kho">
+      <StatePanel state={stock} empty={!stock.data}><strong className="reports-big-number">{formatVnd(stock.data?.inventoryValue || 0)}</strong></StatePanel>
+    </ReportBlock><ReportBlock eyebrow="HÀNG CẦN THEO DÕI" title="Ngưỡng tồn tối thiểu">
+      <label className="reports-field">Số lượng ngưỡng<input type="number" min="0" max="1000000" value={threshold} onChange={event => setThreshold(Math.max(0, Math.min(1000000, Number(event.target.value) || 0)))} /></label>
+    </ReportBlock></section>
+    <ReportBlock eyebrow="NHẬP / XUẤT" title="Biến động kho theo ngày"><StatePanel state={movements} empty={!movementRows.length}><DistributionChart items={movementRows.map(row => ({ label: `${dateLabel(String(row.period).slice(0, 10))} · ${row.receipt_type === 'Import' ? 'Nhập' : 'Xuất'}`, value: Number(row.quantity) || 0 }))} /><Table headers={movementHeaders} rows={movementRows.map((row, i) => ({ key: `${row.period}-${row.receipt_type}-${i}`, cells: [dateLabel(String(row.period).slice(0, 10)), row.receipt_type === 'Import' ? 'Nhập' : 'Xuất', formatCount(row.quantity), formatVnd(row.value)] }))} /></StatePanel>
+      <div className="reports-export-row"><button type="button" className="dashboard-quick-action" onClick={() => exportCsv('bien-dong-kho', `${from}-${to}`, movementHeaders, movementRows.map(row => [row.period, row.receipt_type, row.quantity, row.value]))} disabled={!movementRows.length}><Download size={15} /> Xuất CSV</button></div>
+    </ReportBlock>
+    <ReportBlock eyebrow="CẢNH BÁO TỒN" title="Danh sách hàng sắp hết"><StatePanel state={stock} empty={!lowStock.length}><Table headers={lowHeaders} rows={lowStock.map(row => ({ key: row.variant_id, cells: [row.product_name, row.sku, row.size_name, row.color_name, formatCount(row.quantity), formatCount(row.threshold)] }))} /></StatePanel>
+      <div className="reports-export-row"><button type="button" className="dashboard-quick-action" onClick={() => exportCsv('hang-sap-het', `nguong-${threshold}`, lowHeaders, lowStock.map(row => [row.product_name, row.sku, row.size_name, row.color_name, row.quantity, row.threshold]))} disabled={!lowStock.length}><Download size={15} /> Xuất CSV</button></div>
+    </ReportBlock>
+    <ReportBlock eyebrow="NHÀ CUNG CẤP" title="Thống kê nhập hàng"><StatePanel state={suppliers} empty={!supplierRows.length}><Table headers={supplierHeaders} rows={supplierRows.map((row, i) => ({ key: `${row.supplier_name}-${i}`, cells: [row.supplier_name, formatCount(row.receipt_count), formatCount(row.imported_quantity), formatVnd(row.imported_value)] }))} /></StatePanel>
+      <div className="reports-export-row"><button type="button" className="dashboard-quick-action" onClick={() => exportCsv('nhap-theo-nha-cung-cap', `${from}-${to}`, supplierHeaders, supplierRows.map(row => [row.supplier_name, row.receipt_count, row.imported_quantity, row.imported_value]))} disabled={!supplierRows.length}><Download size={15} /> Xuất CSV</button></div>
+    </ReportBlock>
+  </>;
+}
+
+function HrTab({ from, to }) {
+  const query = new URLSearchParams({ from, to }).toString();
+  const report = useReportData(`/api/reports/hr/summary?${query}`, true);
+  const statuses = report.data?.statuses || [];
+  const positions = report.data?.positions || [];
+  const hires = report.data?.hiresByMonth || [];
+  const csvRows = [
+    ...statuses.map(row => ['Trạng thái', EMPLOYEE_STATUS_LABELS[row.status] || row.status, row.count]),
+    ...positions.map(row => ['Chức vụ', row.position, row.count]),
+    ...hires.map(row => ['Nhân viên mới theo tháng', String(row.month).slice(0, 10), row.count]),
+  ];
+  return <>
+    <section className="reports-summary-grid"><ReportBlock eyebrow="HỒ SƠ NHÂN VIÊN" title="Tổng số nhân viên"><StatePanel state={report} empty={!report.data}><strong className="reports-big-number">{formatCount(report.data?.total || 0)}</strong></StatePanel></ReportBlock></section>
+    <div className="reports-grid-two">
+      <ReportBlock eyebrow="TRẠNG THÁI" title="Nhân viên theo trạng thái"><StatePanel state={report} empty={!statuses.length}><DistributionChart items={statuses.map(row => ({ label: EMPLOYEE_STATUS_LABELS[row.status] || row.status, value: Number(row.count) || 0 }))} /><Table headers={['Trạng thái', 'Số nhân viên']} rows={statuses.map(row => ({ key: row.status, cells: [EMPLOYEE_STATUS_LABELS[row.status] || row.status, formatCount(row.count)] }))} /></StatePanel></ReportBlock>
+      <ReportBlock eyebrow="CHỨC VỤ" title="Nhân viên theo chức vụ"><StatePanel state={report} empty={!positions.length}><DistributionChart items={positions.map(row => ({ label: row.position, value: Number(row.count) || 0 }))} /><Table headers={['Chức vụ', 'Số nhân viên']} rows={positions.map(row => ({ key: row.position, cells: [row.position, formatCount(row.count)] }))} /></StatePanel></ReportBlock>
+    </div>
+    <ReportBlock eyebrow="TUYỂN DỤNG" title="Nhân viên mới theo tháng"><StatePanel state={report} empty={!hires.length}><Table headers={['Tháng', 'Nhân viên mới']} rows={hires.map(row => ({ key: String(row.month), cells: [dateLabel(String(row.month).slice(0, 10)), formatCount(row.count)] }))} /></StatePanel></ReportBlock>
+    <div className="reports-export-row"><button type="button" className="dashboard-quick-action" onClick={() => exportCsv('nhan-su', `${from}-${to}`, ['Loại thống kê', 'Nhóm', 'Số nhân viên'], csvRows)} disabled={!csvRows.length}><Download size={15} /> Xuất CSV</button></div>
+  </>;
+}
+
 export default function ReportsView({ userRole }) {
   const allowedTabs = TABS.filter(([key]) => TAB_ROLES[key].includes(userRole));
   const [tab, setTab] = useState(allowedTabs[0]?.[0] || '');
@@ -308,7 +365,7 @@ export default function ReportsView({ userRole }) {
         <label className="reports-field">Từ ngày<DatePicker value={dates.from} max={dates.to || today} onChange={value => changeDate('from', value)} placeholder="Chọn ngày bắt đầu" ariaLabel="Từ ngày" /></label>
         <label className="reports-field">Đến ngày<DatePicker value={dates.to} min={dates.from} max={today} onChange={value => changeDate('to', value)} placeholder="Chọn ngày kết thúc" ariaLabel="Đến ngày" /></label>
         <div className="reports-presets" role="group" aria-label="Chọn nhanh khoảng thời gian">{PRESETS.map(name => <button type="button" key={name} className={preset === name ? 'is-active' : ''} aria-pressed={preset === name} onClick={() => applyPreset(name)}>{name}</button>)}</div>
-        <span className="reports-subtle reports-filter-hint">Áp dụng cho doanh thu, khách đăng ký, phản hồi và lượt trả lời khảo sát.</span>
+        <span className="reports-subtle reports-filter-hint">Khoảng ngày áp dụng cho biến động kho, nhập theo nhà cung cấp, nhân viên mới và các báo cáo có dữ liệu theo thời gian.</span>
       </div>
       <div className="reports-tabs" role="tablist" aria-label="Các nhóm báo cáo">{allowedTabs.map(([key, label], index) => <button type="button" role="tab" id={`report-tab-${key}`} aria-controls={`report-panel-${key}`} aria-selected={effectiveTab === key} tabIndex={effectiveTab === key ? 0 : -1} className={effectiveTab === key ? 'is-active' : ''} key={key} onClick={() => setTab(key)} onKeyDown={event => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -319,6 +376,8 @@ export default function ReportsView({ userRole }) {
       }}>{label}</button>)}</div>
       <section className="reports-tab-panel dashboard-enter dashboard-enter-charts" role="tabpanel" id={`report-panel-${effectiveTab}`} aria-labelledby={`report-tab-${effectiveTab}`}>
         {effectiveTab === 'sales' && <SalesTab from={dates.from} to={dates.to} preset={preset} rangeDaysCount={days} groupBy={groupBy} rangeValid={rangeValid} rangeError={rangeError} />}
+        {effectiveTab === 'warehouse' && <WarehouseTab from={dates.from} to={dates.to} />}
+        {effectiveTab === 'hr' && <HrTab from={dates.from} to={dates.to} />}
         {effectiveTab === 'customers' && <CustomersTab from={dates.from} to={dates.to} />}
         {effectiveTab === 'feedback' && <FeedbackSurveyTab from={dates.from} to={dates.to} />}
       </section>

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import ChangePasswordModal from './ChangePasswordModal';
 
 const NAV_ICONS = {
   dashboard: Grid2x2, accounts: Users, customers: User, products: ShoppingBag,
@@ -27,9 +28,11 @@ export default function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const userMenuRef = useRef(null);
   const userMenuButtonRef = useRef(null);
   const activeLabel = navItems.find(([key]) => key === active)?.[1] || brand;
+  const brandInitial = (brand || 'H').slice(0, 1).toUpperCase();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -83,7 +86,7 @@ export default function AppShell({
 
       <aside className={`customer-portal-sidebar${sidebarCollapsed ? ' is-collapsed' : ''}${mobileNavOpen ? ' is-open' : ''}`} aria-label="Điều hướng khách hàng">
         <div className="customer-portal-brand">
-          <span className="customer-portal-brand-mark" aria-hidden="true">{initial}</span>
+          <button type="button" className="customer-portal-brand-mark" aria-label="Hung Fashion — đổi mật khẩu" title="Đổi mật khẩu" onClick={() => setChangePasswordOpen(true)}>{brandInitial}</button>
           <span><strong>{brand}</strong><small>KHU VỰC KHÁCH HÀNG</small></span>
           <button type="button" className="customer-portal-close" aria-label="Đóng menu" onClick={() => setMobileNavOpen(false)}><X size={19} /></button>
         </div>
@@ -115,6 +118,7 @@ export default function AppShell({
         <header className="customer-portal-header">
           <div className="customer-portal-header-left">
             <button type="button" className="customer-portal-mobile-menu" aria-label="Mở menu" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(true)}><Menu size={20} /></button>
+            <button type="button" className="customer-portal-header-brand" title="Đổi mật khẩu" aria-label="Hung Fashion — đổi mật khẩu" onClick={() => setChangePasswordOpen(true)}><span className="customer-portal-brand-mark" aria-hidden="true">{brandInitial}</span></button>
             <div className="customer-portal-page-title"><span>Cửa hàng <i>/</i></span><strong title={activeLabel}>{activeLabel}</strong></div>
           </div>
           <div className="customer-portal-header-actions">
@@ -145,6 +149,7 @@ export default function AppShell({
           {children}
         </div>
       </main>
+      {changePasswordOpen && <ChangePasswordModal onClose={() => setChangePasswordOpen(false)} />}
     </div>
   );
 }

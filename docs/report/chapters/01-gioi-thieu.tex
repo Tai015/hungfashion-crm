@@ -1,0 +1,25 @@
+\chapter{Giới thiệu doanh nghiệp}
+\section{Phạm vi thông tin và giả định}
+Repository mô tả sản phẩm quần áo, phụ kiện, biến thể size/màu, nhà cung cấp, phiếu nhập kho, đơn bán hàng và các hoạt động chăm sóc khách hàng. Từ các dữ liệu này, báo cáo tạm xem Hung Fashion là doanh nghiệp/cửa hàng bán lẻ thời trang có bán trực tiếp và trực tuyến. Đây là suy luận từ catalog và seed trong mã nguồn, chưa phải mô tả đã được doanh nghiệp xác nhận.
+
+Tên pháp lý, địa chỉ, năm thành lập, số lượng nhân viên, doanh thu và sơ đồ tổ chức thực tế chưa có trong repository. Các thông tin này để tại \texttt{\detokenize{TODO-can-bo-sung.md}}; không đưa số liệu giả định thành sự thật.
+
+\section{Hoạt động và mô hình nghiệp vụ thể hiện trong phần mềm}
+Ứng dụng hiện quản lý danh mục/sản phẩm và nhà cung cấp; theo dõi biến thể cùng lượng tồn; lập phiếu nhập, xuất hoặc điều chỉnh; tạo đơn bán tại cửa hàng hoặc kênh website; lưu thanh toán và trạng thái giao hàng. Phần CRM quản lý hồ sơ khách hàng, hạng/điểm tích lũy, sở thích, phản hồi sản phẩm/dịch vụ, khảo sát và trao đổi hỗ trợ.
+
+Mô hình doanh thu được phần mềm phản ánh là bán sản phẩm thời trang trực tiếp và qua website. Mã nguồn không chứng minh doanh nghiệp có cửa hàng, website sản xuất hay liên kết ngân hàng thực tế; kênh \texttt{\detokenize{Website}} và \texttt{\detokenize{InStore}} là dữ liệu nghiệp vụ trong schema.
+
+\section{Nhóm nhân sự và vai trò hệ thống}
+Các vai trò dưới đây khớp với danh mục role trong SQL và quyền tại Express; tên phòng ban thực tế cần doanh nghiệp xác nhận.
+\begin{longtable}{|p{0.24\textwidth}|p{0.68\textwidth}|}\hline
+\textbf{Vai trò hệ thống}&\textbf{Trách nhiệm phần mềm}\\\hline
+ADMIN&Quản lý tài khoản và phân quyền; truy cập các module quản trị; thao tác cấu hình, báo cáo và dữ liệu.\\\hline
+QL\_NHAN\_SU&Quản lý hồ sơ nhân viên, xem báo cáo được cấp quyền. Phần mềm hiện không có đơn nghỉ phép, chấm công hoặc tính lương.\\\hline
+QL\_KHO&Quản lý sản phẩm, tồn kho, nhà cung cấp và phiếu kho.\\\hline
+QL\_BAN\_HANG&Quản lý đơn, trạng thái thanh toán, hóa đơn và khuyến mãi.\\\hline
+QL\_KHACH\_HANG&Quản lý khách hàng, phản hồi, khảo sát, trò chuyện hỗ trợ và báo cáo CRM.\\\hline
+KHACH\_HANG&Đăng ký/đăng nhập, duyệt sản phẩm, đặt và theo dõi đơn, cập nhật hồ sơ, gửi đánh giá, trả lời khảo sát và chat.\\\hline
+\end{longtable}
+
+\section{Cơ cấu tổ chức}
+Sơ đồ tổ chức thật: [CẦN BỔ SUNG: sơ đồ do doanh nghiệp cung cấp]. Có thể dùng nhóm vai trò trong phần mềm làm bản đồ chức năng ở Hình \ref{fig:functions}; không xem sơ đồ chức năng này là sơ đồ nhân sự thực.

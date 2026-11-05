@@ -1,0 +1,20 @@
+flowchart LR
+    Customer[Khách hàng]
+    Staff[Nhân viên CSKH]
+    Admin[Quản trị viên]
+    Sales[Quản lý bán hàng]
+    Warehouse[Quản lý kho]
+    HR[Quản lý nhân sự]
+    System((HTTT Hung Fashion))
+    Customer -->|Hồ sơ, đơn mua, đánh giá, trả lời khảo sát, tin nhắn| System
+    System -->|Catalog, trạng thái đơn, voucher, khảo sát, trả lời chat| Customer
+    Admin -->|Tài khoản, quyền, cấu hình, yêu cầu báo cáo| System
+    System -->|Danh sách, trạng thái, báo cáo, nhật ký| Admin
+    Staff -->|Phản hồi, khảo sát, hội thoại| System
+    System -->|Hồ sơ khách, trạng thái, thống kê| Staff
+    Sales -->|Đơn tại quầy, trạng thái thanh toán, khuyến mãi| System
+    System -->|Đơn, thanh toán, hóa đơn, báo cáo| Sales
+    Warehouse -->|Sản phẩm, phiếu kho, nhà cung cấp| System
+    System -->|Tồn kho, catalog, cảnh báo| Warehouse
+    HR -->|Hồ sơ nhân sự| System
+    System -->|Danh sách nhân viên, báo cáo được cấp quyền| HR

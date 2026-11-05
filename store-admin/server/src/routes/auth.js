@@ -104,7 +104,7 @@ router.post('/register', registerIpLimiter, async (req, res) => {
   } catch (error) {
     return res.status(503).json({ message: error.message });
   }
-  const { username, email, password, full_name, gender = null, date_of_birth = null } = req.body || {};
+  const { username, email, password, full_name, gender = null, date_of_birth = null, interests = [] } = req.body || {};
   if (typeof username !== 'string' || !/^[a-zA-Z0-9_.-]{3,100}$/.test(username.trim())) {
     return res.status(400).json({ message: 'Tên đăng nhập cần từ 3–100 ký tự chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.' });
   }
@@ -126,6 +126,9 @@ router.post('/register', registerIpLimiter, async (req, res) => {
   if (!isValidDateOfBirth(date_of_birth)) {
     return res.status(400).json({ message: 'Ngày sinh không hợp lệ.' });
   }
+  if (!Array.isArray(interests) || interests.length > 20 || interests.some((name) => typeof name !== 'string' || name.trim().length > 100)) {
+    return res.status(400).json({ message: 'Danh sách sở thích không hợp lệ.' });
+  }
 
   let client;
   try {
@@ -146,6 +149,19 @@ router.post('/register', registerIpLimiter, async (req, res) => {
        RETURNING customer_id`,
       [account.account_id, full_name.trim(), gender, date_of_birth, email.trim().toLowerCase()],
     );
+    const normalizedInterests = [...new Set(interests.map((name) => name.trim()).filter(Boolean))];
+    for (const name of normalizedInterests) {
+      await client.query(
+        `INSERT INTO interest (interest_name) VALUES ($1) ON CONFLICT (interest_name) DO NOTHING`,
+        [name],
+      );
+      await client.query(
+        `INSERT INTO customer_interest (customer_id, interest_id)
+         SELECT $1, interest_id FROM interest WHERE LOWER(TRIM(interest_name)) = LOWER($2)
+         ON CONFLICT DO NOTHING`,
+        [customer.customer_id, name],
+      );
+    }
     const sessionId = randomUUID();
     await client.query(
       `INSERT INTO account_sessions (session_id, account_id, expires_at)
@@ -168,7 +184,7 @@ router.post('/register', registerIpLimiter, async (req, res) => {
         date_of_birth,
         phone: null,
         address: null,
-        interests: [],
+        interests: normalizedInterests,
       }),
     });
   } catch (error) {
@@ -244,6 +260,50 @@ router.post('/logout', requireAuth, async (req, res) => {
     return res.json({ message: 'Đã đăng xuất.' });
   } catch {
     return res.status(500).json({ message: 'Không thể kết thúc phiên đăng nhập lúc này.' });
+  }
+});
+
+router.post('/change-password', requireAuth, async (req, res) => {
+  const { current_password, new_password } = req.body || {};
+  if (typeof current_password !== 'string' || !current_password || current_password.length > 128
+    || Buffer.byteLength(current_password, 'utf8') > 72
+    || typeof new_password !== 'string' || new_password.length < 8 || new_password.length > 128
+    || Buffer.byteLength(new_password, 'utf8') > 72) {
+    return res.status(400).json({ message: 'Mật khẩu hiện tại và mật khẩu mới hợp lệ là bắt buộc; mật khẩu mới cần từ 8–128 ký tự và tối đa 72 byte.' });
+  }
+  if (current_password === new_password) {
+    return res.status(400).json({ message: 'Mật khẩu mới phải khác mật khẩu hiện tại.' });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const { rows: [account] } = await client.query(
+      `SELECT password_hash FROM account WHERE account_id = $1 AND status = 'Active' FOR UPDATE`,
+      [req.user.account_id],
+    );
+    if (!account || !await bcrypt.compare(current_password, account.password_hash)) {
+      await client.query('ROLLBACK');
+      return res.status(401).json({ message: 'Mật khẩu hiện tại không chính xác.' });
+    }
+    const passwordHash = await bcrypt.hash(new_password, 12);
+    await client.query(
+      'UPDATE account SET password_hash = $1, updated_at = NOW() WHERE account_id = $2',
+      [passwordHash, req.user.account_id],
+    );
+    await client.query(
+      `UPDATE account_sessions SET revoked_at = NOW()
+       WHERE account_id = $1 AND session_id <> $2 AND revoked_at IS NULL`,
+      [req.user.account_id, req.sessionId],
+    );
+    await client.query('COMMIT');
+    return res.json({ message: 'Đã đổi mật khẩu. Các phiên đăng nhập khác đã được kết thúc.' });
+  } catch {
+    await client?.query('ROLLBACK').catch(() => {});
+    return res.status(500).json({ message: 'Không thể đổi mật khẩu lúc này.' });
+  } finally {
+    client?.release();
   }
 });
 
