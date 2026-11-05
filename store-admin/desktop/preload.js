@@ -4,7 +4,7 @@ contextBridge.exposeInMainWorld('storeAdminLauncher', {
   openLocal: () => ipcRenderer.invoke('launcher:open-local'),
   openDatabase: () => ipcRenderer.invoke('launcher:open-database'),
   openKafkaUi: () => ipcRenderer.invoke('launcher:open-kafka-ui'),
-  openRemote: (url) => ipcRenderer.invoke('launcher:open-remote', url),
+  openDeploy: () => ipcRenderer.invoke('launcher:open-deploy'),
   stopLocal: () => ipcRenderer.invoke('launcher:stop-local'),
   onLog: (callback) => {
     const listener = (_event, message) => callback(message);

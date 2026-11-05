@@ -164,9 +164,9 @@ router.post('/register', registerIpLimiter, async (req, res) => {
     }
     const sessionId = randomUUID();
     await client.query(
-      `INSERT INTO account_sessions (session_id, account_id, expires_at)
-       VALUES ($1, $2, NOW() + INTERVAL '8 hours')`,
-      [sessionId, account.account_id],
+      `INSERT INTO account_sessions (session_id, account_id, expires_at, ip_address)
+       VALUES ($1, $2, NOW() + INTERVAL '8 hours', $3::inet)`,
+      [sessionId, account.account_id, req.ip || req.socket.remoteAddress],
     );
     const token = createAccessToken(account.account_id, sessionId);
     await client.query('COMMIT');
@@ -206,34 +206,63 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
   } catch (error) {
     return res.status(503).json({ message: error.message });
   }
-  const { identifier, password } = req.body || {};
+  const { identifier, password, audience } = req.body || {};
+  if (audience !== undefined && !['customer', 'staff'].includes(audience)) {
+    return res.status(400).json({ message: 'Loại trang đăng nhập không hợp lệ.' });
+  }
   if (typeof identifier !== 'string' || !identifier.trim() || identifier.trim().length > 150
     || typeof password !== 'string' || !password || Buffer.byteLength(password, 'utf8') > 72) {
     return res.status(400).json({ message: 'Vui lòng nhập tên đăng nhập/email và mật khẩu.' });
   }
   try {
     const { rows } = await pool.query(
-      `SELECT account_id, password_hash, status
-       FROM account
-       WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1)
+      `SELECT a.account_id, a.password_hash, a.status, r.role_name
+       FROM account a
+       JOIN role r ON r.role_id = a.role_id
+       WHERE (LOWER(a.username) = LOWER($1) OR LOWER(a.email) = LOWER($1))
+         AND ($2::boolean = FALSE OR r.role_name = 'KHACH_HANG')
        LIMIT 1`,
-      [identifier.trim()],
+      [identifier.trim(), audience === 'customer'],
     );
     const account = rows[0];
     const passwordHash = account?.password_hash || DUMMY_PASSWORD_HASH;
     const passwordMatches = await bcrypt.compare(password, passwordHash);
     if (!account || account.status !== 'Active' || !passwordMatches) {
-      return res.status(401).json({ message: 'Thông tin đăng nhập không chính xác hoặc tài khoản đã bị khóa.' });
+      return res.status(401).json({ message: audience === 'customer'
+        ? 'Tài khoản không tồn tại hoặc thông tin đăng nhập không chính xác.'
+        : 'Thông tin đăng nhập không chính xác hoặc tài khoản đã bị khóa.' });
     }
     const client = await pool.connect();
     const sessionId = randomUUID();
     try {
       await client.query('BEGIN');
+      await client.query('SELECT account_id FROM account WHERE account_id = $1 FOR UPDATE', [account.account_id]);
+      const clientIp = req.ip || req.socket.remoteAddress;
+      const { rows: [otherIpSession] } = await client.query(
+        `SELECT session_id FROM account_sessions
+         WHERE account_id = $1 AND revoked_at IS NULL AND expires_at > NOW()
+           AND ip_address IS DISTINCT FROM $2::inet
+         LIMIT 1`,
+        [account.account_id, clientIp],
+      );
+      if (otherIpSession) {
+        await client.query(
+          `UPDATE account_sessions
+           SET revoked_at = NOW(), revocation_reason = 'different_ip'
+           WHERE account_id = $1 AND revoked_at IS NULL AND expires_at > NOW()`,
+          [account.account_id],
+        );
+        await client.query('COMMIT');
+        return res.status(409).json({
+          code: 'SESSION_IP_CONFLICT',
+          message: 'Phát hiện đăng nhập tài khoản này từ IP khác. Tất cả phiên hiện có đã bị đăng xuất và lần đăng nhập mới bị từ chối. Nếu không phải bạn, hãy đổi mật khẩu.',
+        });
+      }
       await client.query('UPDATE account SET last_login = NOW(), updated_at = NOW() WHERE account_id = $1', [account.account_id]);
       await client.query(
-        `INSERT INTO account_sessions (session_id, account_id, expires_at)
-         VALUES ($1, $2, NOW() + INTERVAL '8 hours')`,
-        [sessionId, account.account_id],
+        `INSERT INTO account_sessions (session_id, account_id, expires_at, ip_address)
+         VALUES ($1, $2, NOW() + INTERVAL '8 hours', $3::inet)`,
+        [sessionId, account.account_id, clientIp],
       );
       await client.query('COMMIT');
     } catch (error) {

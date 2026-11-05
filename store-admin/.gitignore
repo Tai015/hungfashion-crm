@@ -1,5 +1,7 @@
 node_modules/
 client/dist/
+desktop/deploy-config.json
+release/
 server/.env
 certs/
 Microsoft/

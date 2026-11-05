@@ -8,6 +8,7 @@ import Spinner from './components/Spinner';
 
 import { publishTelemetry } from './utils/telemetry';
 import { runPageTransition } from './utils/pageTransition';
+import { showWarningAlert } from './utils/notifications';
 
 const DashboardPage = lazy(() => import('./views/DashboardPage'));
 const CustomersView = lazy(() => import('./views/CustomersView'));
@@ -145,7 +146,14 @@ function App() {
   useEffect(() => {
     const token = window.localStorage.getItem(TOKEN_KEY);
     let active = true;
-    const expire = () => { pageViewTracked.current = null; setUser(null); setView('dashboard'); };
+    const expire = event => {
+      pageViewTracked.current = null;
+      setUser(null);
+      setView('dashboard');
+      if (event?.detail?.code === 'SESSION_IP_CONFLICT') {
+        showWarningAlert(event.detail.message || 'Phiên đăng nhập đã kết thúc do phát hiện đăng nhập từ IP khác.');
+      }
+    };
     const handleStorage = event => {
       if (event.key === TOKEN_KEY && !event.newValue) expire();
     };
@@ -217,11 +225,12 @@ function App() {
 
   const logout = () => {
     pageViewTracked.current = null;
+    const loginRoute = user?.role === 'KHACH_HANG' ? '' : '#/nhan-vien/login';
     apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {}).finally(() => {
       window.localStorage.removeItem(TOKEN_KEY);
       setUser(null);
       setView('dashboard');
-      window.location.hash = '';
+      window.location.hash = loginRoute;
     });
   };
 
@@ -232,7 +241,7 @@ function App() {
       onRegister={() => { window.location.hash = '#/khach-hang/register'; }}
     /></Suspense>;
   }
-  if (!user) return <AuthScreen onAuthenticated={authenticatedUser => {
+  if (!user) return <AuthScreen key={authRoute} onAuthenticated={authenticatedUser => {
     setUser(authenticatedUser);
     setView(authenticatedUser.role === 'KHACH_HANG' ? 'catalog' : 'dashboard');
     window.location.hash = authenticatedUser.role === 'KHACH_HANG'

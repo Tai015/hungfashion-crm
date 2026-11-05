@@ -7,6 +7,7 @@ COPY server/package.json server/package.json
 RUN npm ci
 
 COPY client ./client
+COPY server/.env.example server/.env.example
 RUN npm run build --workspace client
 
 FROM node:22-bookworm-slim AS runtime

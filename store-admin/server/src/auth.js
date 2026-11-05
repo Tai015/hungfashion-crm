@@ -78,7 +78,7 @@ export async function requireAuth(req, res, next) {
   try {
     const { rows } = await pool.query(
       `SELECT a.account_id, a.username, a.email, a.status, r.role_name,
-              c.customer_id, e.employee_id
+              c.customer_id, e.employee_id, s.revocation_reason
        FROM account a
        JOIN role r ON r.role_id = a.role_id
        JOIN account_sessions s ON s.account_id = a.account_id
@@ -89,6 +89,17 @@ export async function requireAuth(req, res, next) {
       [token.sub, token.jti],
     );
     if (!rows.length || rows[0].status !== 'Active') {
+      const { rows: revokedSessions } = await pool.query(
+        `SELECT revocation_reason FROM account_sessions
+         WHERE session_id = $1 AND account_id = $2 AND revoked_at IS NOT NULL`,
+        [token.jti, token.sub],
+      );
+      if (revokedSessions[0]?.revocation_reason === 'different_ip') {
+        return res.status(401).json({
+          code: 'SESSION_IP_CONFLICT',
+          message: 'Phiên đăng nhập đã bị kết thúc vì tài khoản được dùng từ một địa chỉ IP khác. Tất cả phiên của tài khoản đã bị đăng xuất.',
+        });
+      }
       return res.status(401).json({ message: 'Tài khoản không tồn tại hoặc đã bị khóa.' });
     }
     req.user = rows[0];

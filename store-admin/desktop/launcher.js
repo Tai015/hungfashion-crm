@@ -2,8 +2,7 @@ const openLocalButton = document.querySelector('#open-local');
 const openDatabaseButton = document.querySelector('#open-database');
 const openKafkaUiButton = document.querySelector('#open-kafka-ui');
 const stopLocalButton = document.querySelector('#stop-local');
-const remoteForm = document.querySelector('#remote-form');
-const remoteInput = document.querySelector('#remote-url');
+const openDeployButton = document.querySelector('#open-deploy');
 const activityLog = document.querySelector('#activity-log');
 
 function log(message) {
@@ -82,20 +81,13 @@ stopLocalButton.addEventListener('click', async () => {
   }
 });
 
-remoteForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const url = remoteInput.value.trim();
-  if (!url) {
-    const message = 'Nhập địa chỉ website đã deploy trước khi mở.';
-    log(message);
-    await showError(message);
-    remoteInput.focus();
-    return;
-  }
+openDeployButton.addEventListener('click', async () => {
+  openDeployButton.disabled = true;
+  log('Đang mở trang đã triển khai...');
   try {
-    const result = await window.storeAdminLauncher.openRemote(url);
+    const result = await window.storeAdminLauncher.openDeploy();
     if (result.ok) {
-      log(`Đang mở ${url} trong trình duyệt.`);
+      log('Đã mở trang đăng nhập nhân viên / quản trị trong trình duyệt mặc định.');
     } else {
       log(result.message);
       await showError(result.message);
@@ -103,6 +95,8 @@ remoteForm.addEventListener('submit', async (event) => {
   } catch (error) {
     log(error.message);
     await showError(error.message);
+  } finally {
+    openDeployButton.disabled = false;
   }
 });
 

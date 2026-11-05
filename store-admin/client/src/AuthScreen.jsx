@@ -6,8 +6,9 @@ import { useSweetAlertMessages } from './utils/notifications';
 const INPUT = 'w-full h-11 px-3 bg-white/70 border border-stone-400 rounded-xl text-stone-900 text-sm placeholder-stone-500 outline-none focus:border-sky-700 focus:ring-2 focus:ring-sky-700/30 transition-all disabled:bg-stone-100 disabled:text-stone-500 disabled:cursor-not-allowed';
 const CUSTOMER_INTERESTS = ['Áo thun', 'Áo sơ mi', 'Áo khoác', 'Quần jean', 'Quần kaki', 'Váy', 'Phụ kiện', 'Giày dép'];
 
-function authErrorMessage(error) {
+function authErrorMessage(error, audience) {
   if (error?.name === 'TypeError') return 'Không thể kết nối máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.';
+  if (error?.status === 401 && audience === 'customer') return 'Tài khoản không tồn tại hoặc thông tin đăng nhập không chính xác.';
   if (error?.status === 401) return 'Thông tin đăng nhập không chính xác. Vui lòng kiểm tra lại.';
   if (error?.status >= 500) return 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.';
   return error?.message || 'Không thể hoàn tất yêu cầu. Vui lòng thử lại.';
@@ -33,11 +34,11 @@ export default function AuthScreen({ onAuthenticated }) {
     e.preventDefault(); setError(''); setBusy(true);
     try {
       const result = mode === 'login'
-        ? await apiFetch('/api/auth/login', { method: 'POST', body: { identifier, password } })
+        ? await apiFetch('/api/auth/login', { method: 'POST', body: { identifier, password, audience } })
         : await apiFetch('/api/auth/register', { method: 'POST', body: { username, email, password, full_name: fullName, date_of_birth: dateOfBirth, interests } });
       window.localStorage.setItem(TOKEN_KEY, result.token);
       onAuthenticated(result.user);
-    } catch (err) { setError(authErrorMessage(err)); }
+    } catch (err) { setError(authErrorMessage(err, audience)); }
     finally { setBusy(false); }
   };
 
@@ -128,25 +129,18 @@ export default function AuthScreen({ onAuthenticated }) {
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-stone-300/70 text-center">
+        {audience === 'customer' && <div className="mt-6 pt-6 border-t border-stone-300/70 text-center">
           <button type="button"
             onClick={() => {
               setError('');
-              if (audience === 'staff') switchAudience('customer');
-              else {
-                const nextMode = mode === 'login' ? 'register' : 'login';
-                setMode(nextMode);
-                window.location.hash = nextMode === 'register' ? '#/khach-hang/register' : '#/khach-hang/login';
-              }
+              const nextMode = mode === 'login' ? 'register' : 'login';
+              setMode(nextMode);
+              window.location.hash = nextMode === 'register' ? '#/khach-hang/register' : '#/khach-hang/login';
             }}
             className="text-xs font-medium text-sky-800 hover:text-sky-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-700 focus-visible:ring-offset-2 rounded transition-colors cursor-pointer">
-            {audience === 'customer'
-              ? (mode === 'login' ? 'Chưa có tài khoản? Đăng ký khách hàng' : 'Đã có tài khoản? Đăng nhập')
-              : 'Khách hàng? Chuyển sang đăng nhập mua sắm'}
+            {mode === 'login' ? 'Chưa có tài khoản? Đăng ký khách hàng' : 'Đã có tài khoản? Đăng nhập'}
           </button>
-        </div>
-        {audience === 'customer' && <button type="button" onClick={() => switchAudience('staff')} className="mt-4 w-full text-xs font-medium text-stone-600 hover:text-stone-900">Đăng nhập nhân viên / quản trị</button>}
-        {audience === 'staff' && <button type="button" onClick={() => switchAudience('customer')} className="mt-4 w-full text-xs font-medium text-sky-800 hover:text-sky-950">Đăng nhập / đăng ký khách hàng</button>}
+        </div>}
         {audience === 'customer' && <button type="button" onClick={() => { window.location.hash = ''; }} className="mt-3 w-full text-xs font-medium text-stone-600 hover:text-stone-900">Tiếp tục xem sản phẩm</button>}
       </section>
     </main>

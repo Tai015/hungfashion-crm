@@ -21,6 +21,7 @@ export async function listenForChatEvents(onEvent, { signal } = {}) {
     const result = await response.json().catch(() => ({}));
     const error = new Error(result?.message || `Không thể kết nối chat (${response.status}).`);
     error.status = response.status;
+    error.code = result?.code;
     throw error;
   }
   if (!response.body) throw new Error('Trình duyệt không hỗ trợ kết nối chat realtime.');
@@ -102,7 +103,9 @@ function startChatEventStream() {
       } catch (error) {
         if (error.status === 401 || error.status === 403) {
           window.localStorage.removeItem(TOKEN_KEY);
-          window.dispatchEvent(new Event('auth:expired'));
+          window.dispatchEvent(new CustomEvent('auth:expired', {
+            detail: { code: error.code, message: error.message },
+          }));
           break;
         }
         // Retry after transient network errors or server restarts.
@@ -166,7 +169,9 @@ export async function apiFetch(url, options = {}) {
   if (!response.ok) {
     if (response.status === 401) {
       window.localStorage.removeItem(TOKEN_KEY);
-      window.dispatchEvent(new Event('auth:expired'));
+      window.dispatchEvent(new CustomEvent('auth:expired', {
+        detail: { code: result?.code, message: result?.message },
+      }));
     }
     const error = new Error(result?.message || `Yêu cầu thất bại (${response.status}).`);
     error.status = response.status;

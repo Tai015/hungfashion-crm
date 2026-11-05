@@ -7,8 +7,6 @@ const dotenv = require('dotenv');
 
 const desktopDir = __dirname;
 const projectDir = path.resolve(desktopDir, '..');
-const localUrl = 'http://localhost:5173';
-const databaseViewerUrl = `${localUrl}/database.html`;
 let launcherWindow;
 let devProcess;
 
@@ -85,7 +83,7 @@ function isPortListening(host, port, timeoutMs = 500) {
   });
 }
 
-function waitForWeb(timeoutMs = 90000) {
+function waitForWeb(localUrl, timeoutMs = 90000) {
   const startedAt = Date.now();
 
   return new Promise((resolve, reject) => {
@@ -99,7 +97,7 @@ function waitForWeb(timeoutMs = 90000) {
       } catch {}
 
       if (Date.now() - startedAt >= timeoutMs) {
-        reject(new Error('Frontend did not become ready at localhost:5173'));
+        reject(new Error(`Frontend chưa sẵn sàng tại ${localUrl}.`));
         return;
       }
       setTimeout(check, 750);
@@ -148,6 +146,29 @@ async function openInBrowser(url) {
   await shell.openExternal(url);
 }
 
+function getDeployUrl() {
+  const environmentDir = path.join(projectDir, 'server');
+  const examplePath = path.join(environmentDir, '.env.example');
+  const localPath = path.join(environmentDir, '.env');
+  const packagedConfigPath = path.join(desktopDir, 'deploy-config.json');
+  const exampleEnvironment = existsSync(examplePath)
+    ? dotenv.parse(readFileSync(examplePath))
+    : {};
+  const localEnvironment = existsSync(localPath)
+    ? dotenv.parse(readFileSync(localPath))
+    : {};
+  const packagedConfig = existsSync(packagedConfigPath)
+    ? JSON.parse(readFileSync(packagedConfigPath, 'utf8'))
+    : {};
+  const deployUrl = String(localEnvironment.DEPLOY_URL || '').trim()
+    || String(packagedConfig.DEPLOY_URL || '').trim()
+    || String(exampleEnvironment.DEPLOY_URL || '').trim();
+  if (!deployUrl) {
+    throw new Error('Chưa có DEPLOY_URL. Hãy mở store-admin/server/.env, thêm DEPLOY_URL=https://địa-chỉ-website-của-bạn rồi mở lại ứng dụng.');
+  }
+  return deployUrl;
+}
+
 async function openKafkaUi() {
   try {
     report('Đang khởi động Kafka và Kafka UI...');
@@ -179,7 +200,7 @@ async function openKafkaUi() {
   }
 }
 
-async function openLocal(targetUrl = localUrl) {
+async function openLocal(target = 'employee') {
   try {
     report('Đang kiểm tra Docker và khởi động PostgreSQL, Kafka...');
     try {
@@ -188,10 +209,29 @@ async function openLocal(targetUrl = localUrl) {
       throw new Error('Không kết nối được Docker Engine. Hãy mở Docker Desktop, dùng Linux containers và chờ Engine khởi động xong rồi thử lại.');
     }
 
-    const envFile = existsSync(path.join(projectDir, 'server', '.env'))
-      ? 'server/.env'
-      : 'server/.env.example';
-    const environment = dotenv.parse(readFileSync(path.join(projectDir, envFile)));
+    const localEnvPath = path.join(projectDir, 'server', '.env');
+    if (!existsSync(localEnvPath)) {
+      throw new Error('Không tìm thấy store-admin/server/.env. Hãy tạo tệp này từ .env.example và điền LOCAL_URL.');
+    }
+    const environment = dotenv.parse(readFileSync(localEnvPath));
+    const envFile = 'server/.env';
+    if (!String(environment.LOCAL_URL || '').trim()) {
+      throw new Error('LOCAL_URL đang thiếu trong store-admin/server/.env. Hãy thêm LOCAL_URL=http://localhost:5173 rồi thử lại.');
+    }
+    let localBaseUrl;
+    try {
+      const parsedLocalUrl = new URL(String(environment.LOCAL_URL).trim());
+      if (!['http:', 'https:'].includes(parsedLocalUrl.protocol)) throw new Error('Giao thức phải là http hoặc https.');
+      parsedLocalUrl.hash = '';
+      parsedLocalUrl.search = '';
+      localBaseUrl = `${parsedLocalUrl.href.replace(/\/+$/, '')}/`;
+    } catch {
+      throw new Error('LOCAL_URL trong server/.env không hợp lệ. Hãy dùng địa chỉ bắt đầu bằng http:// hoặc https://.');
+    }
+    const employeeLoginUrl = new URL(localBaseUrl);
+    employeeLoginUrl.hash = '/nhan-vien/login';
+    const databaseViewerUrl = new URL('database.html', localBaseUrl).href;
+    const targetUrl = target === 'database' ? databaseViewerUrl : employeeLoginUrl.href;
     const apiHost = environment.LOCAL_HOST;
     const apiPort = Number(environment.PORT);
     if (!apiHost || !Number.isInteger(apiPort) || apiPort < 1 || apiPort > 65535) {
@@ -203,9 +243,9 @@ async function openLocal(targetUrl = localUrl) {
       waitForPort(apiHost, 9092),
     ]);
 
-    const isDatabaseViewer = targetUrl === databaseViewerUrl;
+    const isDatabaseViewer = target === 'database';
     const [frontendReady, apiHealth] = await Promise.all([
-      fetch(localUrl).then((response) => response.ok).catch(() => false),
+      fetch(localBaseUrl).then((response) => response.ok).catch(() => false),
       getApiHealth(apiHost, apiPort),
     ]);
 
@@ -239,11 +279,11 @@ async function openLocal(targetUrl = localUrl) {
       report('Đã tìm thấy frontend và API đang chạy sẵn.');
     }
 
-    await Promise.all([waitForWeb(), waitForApi(apiHost, apiPort, isDatabaseViewer)]);
+    await Promise.all([waitForWeb(localBaseUrl), waitForApi(apiHost, apiPort, isDatabaseViewer)]);
     await openInBrowser(targetUrl);
-    report(targetUrl === localUrl
-      ? 'Đã mở Store Admin trong trình duyệt.'
-      : 'Đã mở trang database trong trình duyệt.');
+    report(isDatabaseViewer
+      ? 'Đã mở trang database trong trình duyệt.'
+      : 'Đã mở trang đăng nhập nhân viên trong trình duyệt.');
     return { ok: true };
   } catch (error) {
     report(`Không mở được bản local: ${error.message}`);
@@ -286,17 +326,32 @@ function createLauncherWindow() {
   launcherWindow.on('closed', () => { launcherWindow = undefined; });
 }
 
-ipcMain.handle('launcher:open-local', () => openLocal());
-ipcMain.handle('launcher:open-database', () => openLocal(databaseViewerUrl));
-ipcMain.handle('launcher:open-kafka-ui', openKafkaUi);
-ipcMain.handle('launcher:open-remote', async (_event, url) => {
+function showLauncherWindow() {
+  if (!launcherWindow || launcherWindow.isDestroyed()) createLauncherWindow();
+  else launcherWindow.show();
+}
+
+async function openDeployUrl(url) {
   try {
     const parsedUrl = new URL(url);
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      throw new Error('URL chỉ được dùng giao thức http hoặc https.');
+      throw new Error('DEPLOY_URL chỉ được dùng giao thức http hoặc https.');
     }
+    parsedUrl.hash = '/nhan-vien/login';
     await openInBrowser(parsedUrl.href);
+    report('Đã mở trang đăng nhập nhân viên / quản trị trong trình duyệt mặc định.');
     return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error.message || 'Không thể mở địa chỉ website đã cấu hình.' };
+  }
+}
+
+ipcMain.handle('launcher:open-local', () => openLocal());
+ipcMain.handle('launcher:open-database', () => openLocal('database'));
+ipcMain.handle('launcher:open-kafka-ui', openKafkaUi);
+ipcMain.handle('launcher:open-deploy', async () => {
+  try {
+    return await openDeployUrl(getDeployUrl());
   } catch (error) {
     return { ok: false, message: error.message || 'URL không hợp lệ.' };
   }
@@ -308,15 +363,15 @@ app.whenReady().then(() => {
     {
       label: 'Launcher',
       submenu: [
-        { label: 'Mở trang chọn', click: () => launcherWindow?.show() },
+        { label: 'Mở trình khởi chạy', click: showLauncherWindow },
         { role: 'quit', label: 'Thoát' },
       ],
     },
     { label: 'Xem', submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }] },
   ]));
-  createLauncherWindow();
+  showLauncherWindow();
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createLauncherWindow();
+    if (BrowserWindow.getAllWindows().length === 0) showLauncherWindow();
   });
 });
 
