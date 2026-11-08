@@ -46,7 +46,7 @@ export default function AuthScreen({ onAuthenticated }) {
           ? `Xin chào ${result.user?.full_name || result.user?.username || 'bạn'}!`
           : 'Tài khoản của bạn đã được tạo. Chào mừng bạn đến với Hung Fashion!',
         confirmButtonText: 'Tiếp tục',
-        allowOutsideClick: false,
+        allowOutsideClick: true,
         allowEscapeKey: false,
         showConfirmButton: true,
       });
