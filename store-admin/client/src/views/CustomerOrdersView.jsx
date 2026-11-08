@@ -7,7 +7,6 @@ import DatePicker from '../components/DatePicker';
 import { confirmDestructiveAction } from '../utils/confirmAction';
 import { useSweetAlertMessages } from '../utils/notifications';
 import PaymentCountdown from '../components/PaymentCountdown';
-import QRCode from 'qrcode';
 import { ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from '../utils/viLabels';
 
 const fmtVND  = n => Number(n).toLocaleString('vi-VN') + 'đ';
@@ -90,7 +89,8 @@ function OrderDetail({ orderId, onBack, onReviewProduct }) {
     const demoUrl = order?.payment?.payment_instructions?.demo_url;
     if (!demoUrl) { setDemoQr(''); return undefined; }
     let active = true;
-    QRCode.toDataURL(demoUrl, { width: 280, margin: 2, errorCorrectionLevel: 'M' })
+    import('qrcode')
+      .then(({ default: QRCode }) => QRCode.toDataURL(demoUrl, { width: 280, margin: 2, errorCorrectionLevel: 'M' }))
       .then(dataUrl => { if (active) setDemoQr(dataUrl); })
       .catch(() => { if (active) setDemoQrError('Không tạo được mã QR thanh toán.'); });
     return () => { active = false; };

@@ -6,7 +6,6 @@ import { apiFetch } from '../api';
 import { useCart } from '../context/CartContext';
 import { useSweetAlertMessages } from '../utils/notifications';
 import PaymentCountdown from '../components/PaymentCountdown';
-import QRCode from 'qrcode';
 
 const fmtVND = n => Number(n).toLocaleString('vi-VN') + 'đ';
 
@@ -36,7 +35,8 @@ function QRModal({ order, onClose, onViewOrders }) {
   useEffect(() => {
     if (!isDemo || !instructions?.demo_url) return undefined;
     let active = true;
-    QRCode.toDataURL(instructions.demo_url, { width: 280, margin: 2, errorCorrectionLevel: 'M' })
+    import('qrcode')
+      .then(({ default: QRCode }) => QRCode.toDataURL(instructions.demo_url, { width: 280, margin: 2, errorCorrectionLevel: 'M' }))
       .then(dataUrl => { if (active) setDemoQr(dataUrl); })
       .catch(() => { if (active) setQrError('Không tạo được mã QR thanh toán.'); });
     return () => { active = false; };
