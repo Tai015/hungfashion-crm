@@ -39,7 +39,6 @@ export default defineConfig({
           if (/\/node_modules\/lucide-react\//.test(id)) return 'vendor-icons';
           if (/\/node_modules\/sweetalert2\//.test(id)) return 'vendor-alerts';
           if (/\/node_modules\/qrcode\//.test(id)) return 'vendor-qrcode';
-          if (/\/node_modules\/(jspdf|jspdf-autotable|canvg|html2canvas|dompurify)\//.test(id)) return 'vendor-pdf';
           return undefined;
         },
       },
