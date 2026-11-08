@@ -207,8 +207,8 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
     return res.status(503).json({ message: error.message });
   }
   const { identifier, password, audience } = req.body || {};
-  if (audience !== undefined && !['customer', 'staff'].includes(audience)) {
-    return res.status(400).json({ message: 'Loại trang đăng nhập không hợp lệ.' });
+  if (!['customer', 'staff'].includes(audience)) {
+    return res.status(400).json({ message: 'Vui lòng chọn đúng trang đăng nhập khách hàng hoặc nội bộ.' });
   }
   if (typeof identifier !== 'string' || !identifier.trim() || identifier.trim().length > 150
     || typeof password !== 'string' || !password || Buffer.byteLength(password, 'utf8') > 72) {
@@ -220,9 +220,13 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
        FROM account a
        JOIN role r ON r.role_id = a.role_id
        WHERE (LOWER(a.username) = LOWER($1) OR LOWER(a.email) = LOWER($1))
-         AND ($2::boolean = FALSE OR r.role_name = 'KHACH_HANG')
+         AND (
+           ($2 = 'customer' AND r.role_name = 'KHACH_HANG')
+           OR
+           ($2 = 'staff' AND r.role_name <> 'KHACH_HANG')
+         )
        LIMIT 1`,
-      [identifier.trim(), audience === 'customer'],
+      [identifier.trim(), audience],
     );
     const account = rows[0];
     const passwordHash = account?.password_hash || DUMMY_PASSWORD_HASH;
