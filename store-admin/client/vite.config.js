@@ -26,6 +26,25 @@ if (!localApiHost || !Number.isInteger(localApiPort) || localApiPort < 1 || loca
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        // Keep large optional libraries in independent chunks so the initial
+        // storefront/auth bundle does not need to download them up front.
+        manualChunks(id) {
+          if (!id.includes('/node_modules/')) return undefined;
+          if (/\/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'vendor-react';
+          if (/\/node_modules\/(framer-motion|motion-dom|motion-utils)\//.test(id)) return 'vendor-motion';
+          if (/\/node_modules\/(recharts|victory-vendor|internmap|d3-[^/]+)\//.test(id)) return 'vendor-charts';
+          if (/\/node_modules\/lucide-react\//.test(id)) return 'vendor-icons';
+          if (/\/node_modules\/sweetalert2\//.test(id)) return 'vendor-alerts';
+          if (/\/node_modules\/qrcode\//.test(id)) return 'vendor-qrcode';
+          if (/\/node_modules\/(jspdf|jspdf-autotable|canvg|html2canvas|dompurify)\//.test(id)) return 'vendor-pdf';
+          return undefined;
+        },
+      },
+    },
+  },
   server: {
     host: localUrl.hostname,
     port: Number(localUrl.port || 5173),
