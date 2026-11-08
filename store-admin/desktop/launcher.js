@@ -155,3 +155,5 @@ openGithubActionsButton.addEventListener('click', async () => {
   if (!result.ok) await showError(result.message);
   else log('Đã mở trang GitHub Actions. Chọn workflow và nhấn Run workflow để chạy trên GitHub.');
 });
+
+window.storeAdminLauncher.onE2eStatus((running) => setE2eRunning(running));
