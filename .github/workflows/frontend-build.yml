@@ -36,6 +36,6 @@ jobs:
       - name: Report generated JavaScript chunk sizes
         shell: bash
         run: |
-          find store-admin/client/dist/assets -maxdepth 1 -type f -name '*.js' -printf '%s %f\\n' \
+          find store-admin/client/dist/assets -maxdepth 1 -type f -name '*.js' -printf '%s %f\n' \
             | sort -nr \
-            | awk '{ printf "%7.1f KiB  %s\\n", $1 / 1024, $2 }'
+            | awk '{ printf "%7.1f KiB  %s\n", $1 / 1024, $2 }'
