@@ -1,6 +1,12 @@
 name: E2E authentication
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "store-admin/e2e/**"
+      - "store-admin/playwright.config.js"
+      - ".github/workflows/e2e-auth.yml"
   workflow_dispatch:
 
 permissions:
