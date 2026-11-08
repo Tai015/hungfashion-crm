@@ -101,3 +101,57 @@ openDeployButton.addEventListener('click', async () => {
 });
 
 window.storeAdminLauncher.onLog(log);
+
+
+const e2eTarget = document.querySelector('#e2e-target');
+const runE2eButton = document.querySelector('#run-e2e');
+const stopE2eButton = document.querySelector('#stop-e2e');
+const openE2eReportButton = document.querySelector('#open-e2e-report');
+const openGithubActionsButton = document.querySelector('#open-github-actions');
+
+function setE2eRunning(running) {
+  runE2eButton.disabled = running;
+  e2eTarget.disabled = running;
+  stopE2eButton.disabled = !running;
+  runE2eButton.textContent = running ? 'Đang kiểm thử…' : '▶ Chạy E2E';
+}
+
+runE2eButton.addEventListener('click', async () => {
+  setE2eRunning(true);
+  log(`Đang chuẩn bị Playwright cho môi trường ${e2eTarget.value}...`);
+  try {
+    const result = await window.storeAdminLauncher.runE2e(e2eTarget.value);
+    if (!result.ok) {
+      setE2eRunning(false);
+      log(result.message);
+      await showError(result.message);
+    }
+  } catch (error) {
+    setE2eRunning(false);
+    log(error.message);
+    await showError(error.message);
+  }
+});
+
+stopE2eButton.addEventListener('click', async () => {
+  stopE2eButton.disabled = true;
+  try {
+    const result = await window.storeAdminLauncher.stopE2e();
+    log(result.message);
+  } catch (error) {
+    log(error.message);
+    await showError(error.message);
+  }
+});
+
+openE2eReportButton.addEventListener('click', async () => {
+  const result = await window.storeAdminLauncher.openE2eReport();
+  if (!result.ok) await showError(result.message);
+  else log('Đã mở Playwright HTML report.');
+});
+
+openGithubActionsButton.addEventListener('click', async () => {
+  const result = await window.storeAdminLauncher.openGithubActions();
+  if (!result.ok) await showError(result.message);
+  else log('Đã mở trang GitHub Actions. Chọn workflow và nhấn Run workflow để chạy trên GitHub.');
+});
