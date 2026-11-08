@@ -8,7 +8,7 @@ async function openStaffLogin(page) {
   await page.goto(loginPath);
   await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toBeVisible();
   await page.getByLabel('Tên đăng nhập hoặc email').fill('e2e-staff');
-  await page.getByLabel('Mật khẩu').fill('WrongOrTestPass123!');
+  await page.locator('input[autocomplete="current-password"]').fill('WrongOrTestPass123!');
 }
 
 test('hiện lại cảnh báo khi nhập sai cùng thông tin hai lần', async ({ page }) => {
@@ -48,7 +48,7 @@ test('chỉ lưu token và chuyển trang sau khi xác nhận đăng nhập thà
   }));
 
   await openStaffLogin(page);
-  await page.getByLabel('Mật khẩu').fill('CorrectTestPass123!');
+  await page.locator('input[autocomplete="current-password"]').fill('CorrectTestPass123!');
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
 
   const dialog = page.locator('.swal2-popup');
@@ -74,7 +74,7 @@ test('bấm bên ngoài thông báo thành công vẫn lưu token và chuyển t
   }));
 
   await openStaffLogin(page);
-  await page.getByLabel('Mật khẩu').fill('CorrectTestPass123!');
+  await page.locator('input[autocomplete="current-password"]').fill('CorrectTestPass123!');
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
 
   const dialog = page.locator('.swal2-popup');
