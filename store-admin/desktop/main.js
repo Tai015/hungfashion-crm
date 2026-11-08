@@ -311,7 +311,7 @@ function stopLocal() {
 
 
 function appendProcessOutput(chunk) {
-  const lines = chunk.toString().split(/\\r?\\n/).filter(Boolean);
+  const lines = chunk.toString().split(/\r?\n/).filter(Boolean);
   for (const line of lines) report(`[E2E] ${line}`);
 }
 
@@ -338,6 +338,7 @@ async function runE2e(target) {
     const environment = {
       ...process.env,
       E2E_BASE_URL: parsedBaseUrl.origin,
+      E2E_HEADED: '1',
       E2E_CUSTOMER_IDENTIFIER: e2eEnvironment.E2E_CUSTOMER_IDENTIFIER || process.env.E2E_CUSTOMER_IDENTIFIER || '',
       E2E_CUSTOMER_PASSWORD: e2eEnvironment.E2E_CUSTOMER_PASSWORD || process.env.E2E_CUSTOMER_PASSWORD || '',
       E2E_STAFF_IDENTIFIER: e2eEnvironment.E2E_STAFF_IDENTIFIER || process.env.E2E_STAFF_IDENTIFIER || '',
@@ -372,15 +373,19 @@ async function runE2e(target) {
       report(`Không khởi chạy được Playwright: ${error.message}`);
       e2eProcess = undefined;
       e2eBusy = false;
+      if (launcherWindow && !launcherWindow.isDestroyed()) launcherWindow.webContents.send('launcher:e2e-status', false);
     });
     e2eProcess.once('close', (code, signal) => {
       report(signal ? `E2E đã dừng (${signal}).` : `E2E kết thúc với mã ${code} — ${code === 0 ? 'PASS' : 'FAIL'}.`);
       e2eProcess = undefined;
       e2eBusy = false;
+      if (launcherWindow && !launcherWindow.isDestroyed()) launcherWindow.webContents.send('launcher:e2e-status', false);
     });
+    if (launcherWindow && !launcherWindow.isDestroyed()) launcherWindow.webContents.send('launcher:e2e-status', true);
     return { ok: true, message: 'Playwright đã bắt đầu. Theo dõi log bên dưới.' };
   } catch (error) {
     e2eBusy = false;
+    if (launcherWindow && !launcherWindow.isDestroyed()) launcherWindow.webContents.send('launcher:e2e-status', false);
     report(`Không thể chạy E2E: ${error.message}`);
     return { ok: false, message: error.message };
   }
