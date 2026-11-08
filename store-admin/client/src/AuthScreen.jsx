@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { apiFetch, TOKEN_KEY } from './api';
 import PasswordInput from './PasswordInput';
-import { useSweetAlertMessages } from './utils/notifications';
 
 const INPUT = 'w-full h-11 px-3 bg-white/70 border border-stone-400 rounded-xl text-stone-900 text-sm placeholder-stone-500 outline-none focus:border-sky-700 focus:ring-2 focus:ring-sky-700/30 transition-all disabled:bg-stone-100 disabled:text-stone-500 disabled:cursor-not-allowed';
 const CUSTOMER_INTERESTS = ['Áo thun', 'Áo sơ mi', 'Áo khoác', 'Quần jean', 'Quần kaki', 'Váy', 'Phụ kiện', 'Giày dép'];
@@ -25,27 +24,53 @@ export default function AuthScreen({ onAuthenticated }) {
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [interests, setInterests] = useState([]);
-  const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const ageGroup = getAgeGroup(dateOfBirth);
-  useSweetAlertMessages({ error });
 
   const submit = async (e) => {
-    e.preventDefault(); setError(''); setBusy(true);
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+
     try {
-      const result = mode === 'login'
+      const isLogin = mode === 'login';
+      const result = isLogin
         ? await apiFetch('/api/auth/login', { method: 'POST', body: { identifier, password, audience } })
         : await apiFetch('/api/auth/register', { method: 'POST', body: { username, email, password, full_name: fullName, date_of_birth: dateOfBirth, interests } });
+
+      const { default: Swal } = await import('sweetalert2');
+      await Swal.fire({
+        icon: 'success',
+        title: isLogin ? 'Đăng nhập thành công' : 'Đăng ký thành công',
+        text: isLogin
+          ? `Xin chào ${result.user?.full_name || result.user?.username || 'bạn'}!`
+          : 'Tài khoản của bạn đã được tạo. Chào mừng bạn đến với Hung Fashion!',
+        confirmButtonText: 'Tiếp tục',
+        allowOutsideClick: true,
+        allowEscapeKey: false,
+        showConfirmButton: true,
+      });
+
+      // Chỉ lưu phiên và chuyển trang sau khi người dùng xác nhận thông báo.
       window.localStorage.setItem(TOKEN_KEY, result.token);
       onAuthenticated(result.user);
-    } catch (err) { setError(authErrorMessage(err, audience)); }
-    finally { setBusy(false); }
+    } catch (err) {
+      const { default: Swal } = await import('sweetalert2');
+      await Swal.fire({
+        icon: 'error',
+        title: mode === 'login' ? 'Đăng nhập thất bại' : 'Đăng ký thất bại',
+        text: authErrorMessage(err, audience),
+        confirmButtonText: 'Thử lại',
+        allowOutsideClick: false,
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const switchAudience = nextAudience => {
     setAudience(nextAudience);
     setMode('login');
-    setError('');
     setPassword('');
     setIdentifier('');
     window.location.hash = nextAudience === 'customer' ? '#/khach-hang/login' : '#/nhan-vien/login';
@@ -132,7 +157,6 @@ export default function AuthScreen({ onAuthenticated }) {
         {audience === 'customer' && <div className="mt-6 pt-6 border-t border-stone-300/70 text-center">
           <button type="button"
             onClick={() => {
-              setError('');
               const nextMode = mode === 'login' ? 'register' : 'login';
               setMode(nextMode);
               window.location.hash = nextMode === 'register' ? '#/khach-hang/register' : '#/khach-hang/login';
