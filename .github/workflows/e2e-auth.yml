@@ -1,0 +1,40 @@
+name: E2E authentication
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auth-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install project dependencies
+        run: npm ci --prefix store-admin
+
+      - name: Install Playwright test runner
+        run: npm install --no-save --package-lock=false --prefix store-admin @playwright/test
+
+      - name: Install Chromium
+        run: npx --prefix store-admin playwright install --with-deps chromium
+
+      - name: Run login E2E tests
+        run: npx --prefix store-admin playwright test
+        env:
+          E2E_BASE_URL: https://hungfashion-crm.onrender.com
+          E2E_CUSTOMER_IDENTIFIER: ${{ secrets.E2E_CUSTOMER_IDENTIFIER }}
+          E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
+          E2E_STAFF_IDENTIFIER: ${{ secrets.E2E_STAFF_IDENTIFIER }}
+          E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
