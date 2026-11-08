@@ -11,3 +11,6 @@ server/uploads/feedback/*
 !server/uploads/feedback/.gitkeep
 server/uploads/chat/*
 !server/uploads/chat/.gitkeep
+.env.e2e
+playwright-report/
+test-results/
