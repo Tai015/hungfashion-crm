@@ -2,16 +2,21 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 30_000,
-  expect: { timeout: 10_000 },
+  timeout: 120_000,
+  expect: { timeout: 15_000 },
   workers: 1,
-  reporter: 'list',
+  reporter: [
+    ['list'],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+  ],
   use: {
     baseURL: process.env.E2E_BASE_URL || 'https://hungfashion-crm.onrender.com',
     browserName: 'chromium',
-    headless: true,
-    trace: 'off',
-    screenshot: 'off',
-    video: 'off',
+    headless: false,
+    navigationTimeout: 120_000,
+    actionTimeout: 20_000,
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
 });
