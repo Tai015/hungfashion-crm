@@ -50,6 +50,28 @@
         <button class="button button-outline" id="open-deploy" type="button">Mở deploy <span aria-hidden="true">→</span></button>
       </section>
 
+      <section class="testing-section" aria-labelledby="testing-heading">
+        <div class="section-index">03 / QUALITY</div>
+        <h2 id="testing-heading">Kiểm thử E2E</h2>
+        <p>Chạy Playwright ngay trên máy này. Chromium sẽ mở để bạn quan sát quá trình tự động kiểm thử.</p>
+        <div class="test-controls">
+          <label for="e2e-target">Môi trường kiểm thử</label>
+          <select id="e2e-target">
+            <option value="local">Local — http://localhost:5173</option>
+            <option value="render">Render — website đã deploy</option>
+          </select>
+          <div class="actions">
+            <button class="button button-primary" id="run-e2e" type="button">▶ Chạy E2E</button>
+            <button class="button button-danger" id="stop-e2e" type="button" disabled>Dừng kiểm thử</button>
+          </div>
+          <div class="actions test-secondary-actions">
+            <button class="button button-secondary" id="open-e2e-report" type="button">Mở HTML report</button>
+            <button class="button button-outline" id="open-github-actions" type="button">GitHub Actions ↗</button>
+          </div>
+          <p class="test-note">Local: cần website đang chạy. Render: chỉ dùng tài khoản test riêng; không chạy thao tác sửa/xóa dữ liệu thật. GitHub Actions chỉ mở trang workflow, không tự kích hoạt.</p>
+        </div>
+      </section>
+
       <footer class="activity" aria-live="polite">
         <div class="activity-heading"><span>ACTIVITY</span><span class="activity-led"></span></div>
         <pre id="activity-log">Sẵn sàng. Chọn nơi mở Store Admin.</pre>
