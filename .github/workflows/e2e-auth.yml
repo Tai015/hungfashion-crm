@@ -42,12 +42,29 @@ jobs:
         working-directory: store-admin
         run: npx playwright install --with-deps chromium
 
-      - name: Run login-screen UI E2E (headless)
+      - name: Verify dedicated UI test credentials
+        shell: bash
+        env:
+          E2E_CUSTOMER_IDENTIFIER: ${{ secrets.E2E_CUSTOMER_IDENTIFIER }}
+          E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
+          E2E_STAFF_IDENTIFIER: ${{ secrets.E2E_STAFF_IDENTIFIER }}
+          E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
+        run: |
+          test -n "$E2E_CUSTOMER_IDENTIFIER" || { echo "::error::Missing E2E_CUSTOMER_IDENTIFIER GitHub Secret"; exit 1; }
+          test -n "$E2E_CUSTOMER_PASSWORD" || { echo "::error::Missing E2E_CUSTOMER_PASSWORD GitHub Secret"; exit 1; }
+          test -n "$E2E_STAFF_IDENTIFIER" || { echo "::error::Missing E2E_STAFF_IDENTIFIER GitHub Secret"; exit 1; }
+          test -n "$E2E_STAFF_PASSWORD" || { echo "::error::Missing E2E_STAFF_PASSWORD GitHub Secret"; exit 1; }
+
+      - name: Run customer and staff login UI E2E (headless)
         working-directory: store-admin
-        run: npx playwright test e2e/auth.spec.js --grep "màn hình đăng nhập"
+        run: npx playwright test e2e/auth.spec.js
         env:
           E2E_BASE_URL: https://hungfashion-crm-git-test-e2e-auth-playwright-tai-4212.vercel.app
           E2E_VERCEL_BYPASS_TOKEN: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          E2E_CUSTOMER_IDENTIFIER: ${{ secrets.E2E_CUSTOMER_IDENTIFIER }}
+          E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
+          E2E_STAFF_IDENTIFIER: ${{ secrets.E2E_STAFF_IDENTIFIER }}
+          E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
 
       - name: Upload UI Playwright report and failure artifacts
         if: always()
