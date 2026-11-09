@@ -943,7 +943,7 @@ router.patch('/:id/payment', async (req, res) => {
         orderId: Number(req.params.id), amount: rows[0].amount, status,
         source: 'orders_payment_api', userId: req.user.account_id,
         customerId: order.customer_id, paymentId: rows[0].payment_id,
-        transactionId: rows[0].transaction_ref || String(rows[0].payment_id),
+        transactionId: rows[0].transaction_ref || null,
       });
     }
     await client.query('COMMIT');
