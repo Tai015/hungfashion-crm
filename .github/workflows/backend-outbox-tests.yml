@@ -6,6 +6,8 @@ on:
     paths:
       - "store-admin/server/src/transaction-events.js"
       - "store-admin/server/src/outbox-writer.js"
+      - "store-admin/server/src/outbox-relay.js"
+      - "store-admin/server/src/outbox-publisher.js"
       - "store-admin/server/src/routes/order.js"
       - "store-admin/server/src/routes/demo-payment.js"
       - "store-admin/server/src/index.js"
