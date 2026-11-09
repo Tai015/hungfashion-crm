@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { LOW_STOCK_THRESHOLD } from '../domain/types.js';
+import { logger } from '../logger.js';
 
 const router = Router();
 
 function fail(res, error, label, message) {
-  console.error(`[reports/${label}]`, error);
+  logger.error({ err: error, context: label }, 'Report request failed');
   return res.status(500).json({ message });
 }
 
@@ -206,7 +207,7 @@ router.get('/summary', async (req, res) => {
         : null,
     });
   } catch (err) {
-    console.error('[reports/summary]', err);
+    logger.error({ err, context: 'summary' }, 'Report request failed');
     res.status(500).json({ message: 'Không thể tải số liệu tổng hợp.' });
   }
 });
