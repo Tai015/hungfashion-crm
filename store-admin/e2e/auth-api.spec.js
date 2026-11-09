@@ -1,31 +1,36 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
+import bcrypt from 'bcryptjs';
 
 const cleanupPool = new pg.Pool({ connectionString: process.env.TEST_DATABASE_URL });
-let createdUsername = null;
+const createdUsernames = new Set();
 
 test.afterEach(async () => {
-  if (!createdUsername) return;
-  const username = createdUsername;
-  createdUsername = null;
+  if (createdUsernames.size === 0) return;
+  const usernames = [...createdUsernames];
+  createdUsernames.clear();
   const client = await cleanupPool.connect();
   try {
     await client.query('BEGIN');
     await client.query(
-      `DELETE FROM customer_interest
-       WHERE customer_id IN (SELECT customer_id FROM customer WHERE account_id IN
-         (SELECT account_id FROM account WHERE username = $1))`, [username],
+      `DELETE FROM customer_interest WHERE customer_id IN
+         (SELECT customer_id FROM customer WHERE account_id IN
+           (SELECT account_id FROM account WHERE username = ANY($1::text[])))`, [usernames],
     );
     await client.query(
       `DELETE FROM account_sessions WHERE account_id IN
-         (SELECT account_id FROM account WHERE username = $1)`, [username],
+         (SELECT account_id FROM account WHERE username = ANY($1::text[]))`, [usernames],
     );
     await client.query(
       `DELETE FROM customer WHERE account_id IN
-         (SELECT account_id FROM account WHERE username = $1)`, [username],
+         (SELECT account_id FROM account WHERE username = ANY($1::text[]))`, [usernames],
     );
-    await client.query('DELETE FROM account WHERE username = $1', [username]);
+    await client.query(
+      `DELETE FROM employee WHERE account_id IN
+         (SELECT account_id FROM account WHERE username = ANY($1::text[]))`, [usernames],
+    );
+    await client.query('DELETE FROM account WHERE username = ANY($1::text[])', [usernames]);
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
@@ -70,7 +75,7 @@ test('API + PostgreSQL thật: đăng ký mới, từ chối trùng tài khoản
     date_of_birth: '1998-05-12',
   };
 
-  createdUsername = account.username;
+  createdUsernames.add(account.username);
 
   // Không mock API: các request đi qua Vite proxy tới Express và PostgreSQL của CI.
   await openRegistration(page);
@@ -102,4 +107,29 @@ test('API + PostgreSQL thật: đăng ký mới, từ chối trùng tài khoản
   await expect(page).toHaveURL(/#\/khach-hang\/catalog$/);
   await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).not.toBeNull();
   expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
+});
+
+
+test('API + PostgreSQL thật: đăng nhập nhân viên bằng tài khoản nội bộ đã tồn tại trong DB', async ({ page }) => {
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
+  const username = `e2e_staff_${suffix}`;
+  const password = 'E2eStaffPass123!';
+  createdUsernames.add(username);
+  const passwordHash = await bcrypt.hash(password, 4);
+  await cleanupPool.query(
+    `INSERT INTO account (role_id, username, password_hash, email)
+     SELECT role_id, $1, $2, $3 FROM role WHERE role_name = 'ADMIN'`,
+    [username, passwordHash, `e2e-staff+${suffix}@example.test`],
+  );
+
+  await page.goto('/#/nhan-vien/login');
+  await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toBeVisible();
+  await page.getByLabel('Tên đăng nhập hoặc email').fill(username);
+  await page.locator('input[autocomplete="current-password"]').fill(password);
+  await page.getByLabel('Duy trì đăng nhập').check();
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await dismissSuccess(page);
+  await expect(page).toHaveURL(/#\\/admin\\/dashboard$/);
+  await expect.poll(() => page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).not.toBeNull();
+  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
 });
