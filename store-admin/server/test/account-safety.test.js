@@ -14,6 +14,7 @@ async function startTestApp({ activeAdmins = [{ account_id: 1 }], target, role =
       if (sql.includes("role_name = 'ADMIN' AND a.status = 'Active'")) return { rows: activeAdmins };
       if (sql.includes('SELECT role_id, role_name FROM role')) return { rows: role ? [role] : [] };
       if (sql.includes('AS has_related_data')) return { rows: [{ has_related_data: hasRelatedData }] };
+      if (sql.includes('AS is_online')) return { rows: [{ is_online: false }] };
       if (sql.includes('UPDATE account SET status')) return { rows: [{ account_id: target?.account_id, username: target?.username, status: params[0] }] };
       if (sql.includes('UPDATE account SET role_id')) return { rows: [{ account_id: target?.account_id, username: target?.username, role_id: params[0] }] };
       return { rows: [], rowCount: 1 };
