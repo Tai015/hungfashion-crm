@@ -89,7 +89,7 @@ async function expirePendingBankTransfers() {
   try {
     await client.query('BEGIN');
     const { rows: expiredOrders } = await client.query(
-      `SELECT o.order_id, o.customer_id
+      `SELECT o.order_id, o.customer_id, o.total_amount
        FROM "order" o
        JOIN payment p ON p.order_id = o.order_id
        WHERE o.order_status = 'Pending'
@@ -116,7 +116,7 @@ async function expirePendingBankTransfers() {
       await client.query(`UPDATE "order" SET order_status='Cancelled', updated_at=NOW() WHERE order_id=$1`, [order.order_id]);
       await reverseOrderLoyalty(client, order.customer_id, order.order_id);
       await enqueueTransactionEvent(client, {
-        eventType: 'order_cancelled', orderId: order.order_id, amount: 0,
+        eventType: 'order_cancelled', orderId: order.order_id, amount: order.total_amount,
         status: 'Cancelled', source: 'payment_expiry_worker', customerId: order.customer_id,
         itemCount: details.reduce((sum, detail) => sum + Number(detail.quantity), 0),
         previousStatus: 'Pending', reason: 'payment_expired',
