@@ -10,22 +10,32 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GENDERS = new Set(['Male', 'Female', 'Other']);
 const PHONE_PATTERN = /^\+?[0-9][0-9\s().-]{7,19}$/;
 const DUMMY_PASSWORD_HASH = bcrypt.hashSync('auth-timing-padding', 12);
-const authRateLimitWindowMs = Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
+const authRateLimitWindowMs = Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000);
 const loginRateLimitMax = Number(process.env.AUTH_LOGIN_RATE_LIMIT_MAX || 10);
 const registerRateLimitMax = Number(process.env.AUTH_REGISTER_RATE_LIMIT_MAX || 10);
 if (![authRateLimitWindowMs, loginRateLimitMax, registerRateLimitMax].every(Number.isInteger)
   || authRateLimitWindowMs <= 0 || loginRateLimitMax <= 0 || registerRateLimitMax <= 0) {
   throw new Error('Auth rate limit settings must be positive integers.');
 }
-const retryAfterMinutes = Math.ceil(authRateLimitWindowMs / 60000);
-const authLimitResponse = { message: `Bạn thao tác quá nhiều lần. Vui lòng thử lại sau ${retryAfterMinutes} phút.` };
+function authRateLimitHandler(req, res, _next, options) {
+  const resetTime = req.rateLimit?.resetTime;
+  const retryAfterSeconds = resetTime instanceof Date
+    ? Math.max(1, Math.ceil((resetTime.getTime() - Date.now()) / 1000))
+    : Math.ceil(authRateLimitWindowMs / 1000);
+  res.set('Retry-After', String(retryAfterSeconds));
+  return res.status(options.statusCode).json({
+    code: 'AUTH_RATE_LIMITED',
+    message: 'Bạn thao tác quá nhiều lần.',
+    retryAfterSeconds,
+  });
+}
 const loginIpLimiter = rateLimit({
   windowMs: authRateLimitWindowMs,
   limit: loginRateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,
-  message: authLimitResponse,
+  handler: authRateLimitHandler,
 });
 const loginIdentifierLimiter = rateLimit({
   windowMs: authRateLimitWindowMs,
@@ -36,14 +46,14 @@ const loginIdentifierLimiter = rateLimit({
   keyGenerator: (req) => typeof req.body?.identifier === 'string'
     ? `${ipKeyGenerator(req.ip)}:${req.body.identifier.trim().toLocaleLowerCase('vi-VN').slice(0, 150) || '_empty'}`
     : `${ipKeyGenerator(req.ip)}:_invalid`,
-  message: authLimitResponse,
+  handler: authRateLimitHandler,
 });
 const registerIpLimiter = rateLimit({
   windowMs: authRateLimitWindowMs,
   limit: registerRateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
-  message: authLimitResponse,
+  handler: authRateLimitHandler,
 });
 
 function isValidDateOfBirth(value) {
