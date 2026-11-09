@@ -9,9 +9,9 @@ ALTER TABLE transactions
   END;
 
 ALTER TABLE transactions
-  ADD COLUMN IF NOT EXISTS order_id BIGINT,
-  ADD COLUMN IF NOT EXISTS payment_id BIGINT,
-  ADD COLUMN IF NOT EXISTS customer_id BIGINT;
+  ADD COLUMN IF NOT EXISTS order_id INTEGER,
+  ADD COLUMN IF NOT EXISTS payment_id INTEGER,
+  ADD COLUMN IF NOT EXISTS customer_id INTEGER;
 
 CREATE UNIQUE INDEX IF NOT EXISTS transactions_event_id_unique_idx
   ON transactions (event_id);
