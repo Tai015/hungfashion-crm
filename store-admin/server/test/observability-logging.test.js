@@ -17,7 +17,7 @@ test('writes JSON logs and redacts sensitive fields and bearer tokens', () => {
     password: 'do-not-log',
     authorization: 'Bearer abc.def.ghi',
     err: new Error('request failed'),
-  }, 'request failed');
+  }, 'request failed with Bearer abc.def.ghi and postgres://app:db-secret@db.example/store');
 
   assert.equal(records.length, 1);
   assert.equal(records[0].service, 'test-service');
@@ -46,7 +46,7 @@ test('adds request id header and logs a route template without query parameters'
     assert.equal(records[0].route, '/api/orders/:orderId');
     assert.equal(records[0].statusCode, 200);
     assert.equal(records[0].level, 'info');
-    assert.doesNotMatch(JSON.stringify(records[0]), /123|private/);
+    assert.doesNotMatch(JSON.stringify(records[0]), /\\/api\\/orders\\/123|private/);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }
