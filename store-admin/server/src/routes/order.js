@@ -9,7 +9,7 @@ import {
   isOrderStatus,
 } from '../domain/index.js';
 import { pool } from '../db.js';
-import { writeOutboxEvent } from '../outbox-writer.js';
+import { enqueueTransactionEvent } from '../transaction-events.js';
 
 const router = Router();
 const CUSTOMER_PAYMENT_METHODS = new Set(['Cash', 'BankTransfer']);
@@ -17,26 +17,6 @@ const BANK_TRANSFER_TTL_MINUTES = 10;
 const DEMO_PAYMENT_TTL_MINUTES = 15;
 const paymentTtlMinutes = () => process.env.DEMO_PAYMENT === 'true'
   ? DEMO_PAYMENT_TTL_MINUTES : BANK_TRANSFER_TTL_MINUTES;
-
-async function enqueueTransactionEvent(client, {
-  eventType, orderId, amount, status, source, userId = null, customerId = null,
-  paymentId = null, transactionId = String(orderId), itemCount = null,
-  previousStatus = null, reason = null,
-}) {
-  const eventId = `${eventType}:${orderId}:${randomUUID()}`;
-  const payload = {
-    eventId, eventType, transactionId: String(transactionId), orderId: String(orderId),
-    amount: Number(amount ?? 0), currency: 'VND', status, source,
-    userId: userId == null ? null : String(userId),
-    customerId: customerId == null ? null : String(customerId),
-    paymentId: paymentId == null ? null : String(paymentId),
-    occurredAt: new Date().toISOString(),
-  };
-  if (Number.isInteger(itemCount)) payload.itemCount = itemCount;
-  if (previousStatus) payload.previousStatus = previousStatus;
-  if (reason) payload.reason = reason;
-  await writeOutboxEvent(client, { eventId, topic: 'transaction-events', partitionKey: String(orderId), payload });
-}
 
 async function addLoyaltyTransaction(client, { customerId, orderId, type, delta, note }) {
   const { rows: existing } = await client.query(
