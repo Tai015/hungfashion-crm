@@ -248,7 +248,7 @@ test('hiển thị đồng hồ đếm ngược và khóa nút khi API giới h�
   const dialog = page.locator('.swal2-popup');
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText('Bạn thao tác quá nhiều lần');
-  await page.getByRole('button', { name: 'Đã hiểu' }).click();
+  await page.getByRole('button', { name: 'Thử lại' }).click();
   await expect(dialog).toBeHidden();
 
   await expect(page.getByRole('status')).toContainText(/01:0[0-5]/);
