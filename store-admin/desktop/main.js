@@ -335,6 +335,9 @@ async function runE2e(target) {
 
     const e2eEnvPath = path.join(projectDir, '.env.e2e');
     const e2eEnvironment = existsSync(e2eEnvPath) ? dotenv.parse(readFileSync(e2eEnvPath)) : {};
+    if (target === 'render' && e2eEnvironment.E2E_ALLOW_MUTATIONS === '1') {
+      throw new Error('Từ chối chạy E2E ghi dữ liệu trên Render. Hãy đặt E2E_ALLOW_MUTATIONS=0 trong .env.e2e.');
+    }
     const environment = {
       ...process.env,
       E2E_BASE_URL: parsedBaseUrl.origin,
