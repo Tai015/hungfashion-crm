@@ -155,6 +155,7 @@ router.post('/pay/demo/:token/confirm', isEnabled, limitRequests, async (req, re
       source: 'demo_qr',
       customerId: order.customer_id,
       paymentId: paidRows[0].payment_id,
+      paymentMethod: order.method,
       transactionId: transactionRef,
     });
     await client.query(

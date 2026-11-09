@@ -716,7 +716,7 @@ router.post('/', async (req, res) => {
     await enqueueTransactionEvent(client, {
       eventType: 'order_created', orderId: order.order_id, amount: total_amount,
       status: order.order_status, source: 'orders_api', userId: req.user.account_id,
-      customerId: customer_id, paymentId: payment.payment_id,
+      customerId: customer_id, paymentId: payment.payment_id, paymentMethod: payment_method,
       itemCount: pricedItems.reduce((sum, item) => sum + item.quantity, 0),
     });
     await client.query('COMMIT');
@@ -945,6 +945,7 @@ router.patch('/:id/payment', async (req, res) => {
         orderId: Number(req.params.id), amount: rows[0].amount, status,
         source: 'orders_payment_api', userId: req.user.account_id,
         customerId: order.customer_id, paymentId: rows[0].payment_id,
+        paymentMethod: order.payment_method,
         transactionId: rows[0].transaction_ref || null,
       });
     }
