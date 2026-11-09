@@ -149,3 +149,21 @@ test('Kafka producer boundary can be exercised with a mock producer', async () =
   assert.equal(sent[0].topic, 'transaction-events');
   assert.equal(sent[0].messages[0].key, '42');
 });
+
+
+test('payment method is included in transaction event payloads', async () => {
+  const calls = [];
+  const fakeClient = { query: async (_sql, params) => { calls.push(params); return { rowCount: 1 }; } };
+  const cod = await enqueueTransactionEvent(fakeClient, {
+    eventType: 'payment_completed', orderId: 8104, amount: 250000, status: 'Paid',
+    source: 'orders_payment_api', paymentMethod: 'Cash',
+  });
+  const qr = await enqueueTransactionEvent(fakeClient, {
+    eventType: 'payment_completed', orderId: 8105, amount: 350000, status: 'Paid',
+    source: 'demo_qr', paymentMethod: 'BankTransfer', transactionId: 'DEMO-QR-8105',
+  });
+  assert.equal(cod.paymentMethod, 'Cash');
+  assert.equal(qr.paymentMethod, 'BankTransfer');
+  assert.equal(JSON.parse(calls[0][3]).paymentMethod, 'Cash');
+  assert.equal(JSON.parse(calls[1][3]).paymentMethod, 'BankTransfer');
+});
