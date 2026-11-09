@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pool } from './db.js';
+import { logger } from './logger.js';
 
 const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const baselineVersion = '000';
@@ -48,9 +49,7 @@ async function ensureBaseline(client, baselineOnly) {
       [baselineVersion, 'schema.sql baseline']
     );
   });
-  console.log(schema
-    ? '✅ Applied initial schema baseline'
-    : '✅ Recorded existing schema baseline');
+  logger.info({ baselineType: schema ? 'created' : 'recorded' }, 'Database schema baseline ready');
 }
 
 export async function runMigrations({ baselineOnly = false } = {}) {
@@ -96,7 +95,7 @@ export async function runMigrations({ baselineOnly = false } = {}) {
           [version, filename]
         );
       });
-      console.log(`✅ Applied migration ${filename}`);
+      logger.info({ migration: filename, version }, 'Database migration applied');
     }
   } finally {
     try {
