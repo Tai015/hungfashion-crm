@@ -129,7 +129,7 @@ test('API + PostgreSQL thật: đăng nhập nhân viên bằng tài khoản n�
   await page.getByLabel('Duy trì đăng nhập').check();
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await dismissSuccess(page);
-  await expect(page).toHaveURL(/#\\/admin\\/dashboard$/);
+  await expect(page).toHaveURL(/#\/admin\/dashboard$/);
   await expect.poll(() => page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).not.toBeNull();
   expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
 });
