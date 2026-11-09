@@ -1,5 +1,21 @@
 export const TOKEN_KEY = 'hung-fashion-access-token';
 
+export function getAuthToken() {
+  return window.localStorage.getItem(TOKEN_KEY) || window.sessionStorage.getItem(TOKEN_KEY);
+}
+
+export function saveAuthToken(token, rememberMe) {
+  const persistentStorage = rememberMe ? window.localStorage : window.sessionStorage;
+  const temporaryStorage = rememberMe ? window.sessionStorage : window.localStorage;
+  temporaryStorage.removeItem(TOKEN_KEY);
+  persistentStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearAuthToken() {
+  clearAuthToken();
+  window.sessionStorage.removeItem(TOKEN_KEY);
+}
+
 export async function checkRuntimeServices() {
   const healthResponse = await fetch('/api/health', { signal: AbortSignal.timeout(4000) });
   return { apiReady: healthResponse.ok };
@@ -7,7 +23,7 @@ export async function checkRuntimeServices() {
 
 export function authHeaders(extraHeaders = {}) {
   const headers = new Headers(extraHeaders);
-  const token = window.localStorage.getItem(TOKEN_KEY);
+  const token = getAuthToken();
   if (token) headers.set('authorization', `Bearer ${token}`);
   return headers;
 }
