@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { pool } from '../db.js';
 import { calcPointsEarned } from '../domain/index.js';
 import { enqueueTransactionEvent } from '../transaction-events.js';
+import { logger } from '../logger.js';
 
 const router = Router();
 const rateLimits = new Map();
@@ -197,7 +198,7 @@ router.post('/pay/demo/:token/confirm', isEnabled, limitRequests, async (req, re
     return res.json({ success: true, already_paid: false });
   } catch (error) {
     await client?.query('ROLLBACK').catch(() => {});
-    console.error('Demo payment confirmation failed:', error.message);
+    logger.error({ err: error, requestId: req.requestId }, 'Demo payment confirmation failed');
     return res.status(500).json({ message: 'Không thể xác nhận thanh toán demo.' });
   } finally {
     client?.release();
