@@ -414,7 +414,11 @@ app.get('/api/events/status', (_req, res) => {
 const clientDist = path.resolve(serverDir, '../client/dist');
 const clientIndex = path.join(clientDist, 'index.html');
 const hasClientBuild = existsSync(clientIndex);
-const shouldServeClient = process.env.NODE_ENV === 'production' || hasClientBuild;
+app.use('/uploads/products', express.static(path.join(serverDir, 'uploads/products'), { maxAge: '1h' }));
+const serveClientSetting = String(process.env.SERVE_CLIENT || '').trim().toLowerCase();
+const shouldServeClient = serveClientSetting === 'false'
+  ? false
+  : process.env.NODE_ENV === 'production' || hasClientBuild;
 
 if (!hasClientBuild) {
   logger.warn({ clientBuildPath: clientIndex }, 'Frontend build not found; Express will serve API routes only');

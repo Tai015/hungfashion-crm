@@ -144,6 +144,8 @@ Bản mẫu ở [server/.env.example](./server/.env.example). Tạo `server/.env
 | `TRUST_PROXY_HOPS` | Số proxy tin cậy để Express lấy IP client; phải khớp cấu hình máy chủ |
 | `AUTH_RATE_LIMIT_WINDOW_MS`, `AUTH_LOGIN_RATE_LIMIT_MAX`, `AUTH_REGISTER_RATE_LIMIT_MAX` | Giới hạn thử đăng nhập và đăng ký |
 | `FEEDBACK_UPLOAD_DIR`, `CHAT_UPLOAD_DIR` | Thư mục lưu tệp tải lên |
+| `MEDIA_STORAGE` | `local` (mặc định) hoặc `cloudinary` cho ảnh/video phản hồi và các tệp chat |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Credential backend dùng khi `MEDIA_STORAGE=cloudinary`; chỉ cấu hình trên server |
 | `ENABLE_DATABASE_BROWSER`, `ENABLE_DATABASE_RESTORE` | Bật/tắt chức năng xem và phục hồi database |
 | `PYTHON_EXECUTABLE` | Lệnh hoặc đường dẫn Python dùng cho scraper |
 | `PG_DUMP_PATH`, `PG_RESTORE_PATH` | Đường dẫn công cụ sao lưu/phục hồi PostgreSQL |
@@ -159,7 +161,7 @@ Với Railway, tạo PostgreSQL, Kafka và app trong cùng project; kết nối 
 
 ### Lưu tệp tải lên
 
-Ảnh/video đánh giá và tệp chat nằm trong các thư mục được đặt bởi `FEEDBACK_UPLOAD_DIR` và `CHAT_UPLOAD_DIR`. Khi deploy, dùng persistent volume và sao lưu riêng thư mục này cùng database. Giới hạn và loại tệp được kiểm tra ở API.
+Ở chế độ local, ảnh sản phẩm được lưu trong `server/uploads/products` và phục vụ tại `/uploads/products/...`; ảnh/video phản hồi và tệp chat dùng `FEEDBACK_UPLOAD_DIR` và `CHAT_UPLOAD_DIR`. Trên Render, cần persistent disk để giữ các tệp local qua deploy. Để dùng Cloudinary, đặt `MEDIA_STORAGE=cloudinary` cùng ba biến credential trong môi trường backend. Ảnh/video phản hồi và tệp chat được tải lên ở chế độ authenticated, sau đó đi qua endpoint API đã kiểm tra quyền. Ảnh sản phẩm được tải lên ở chế độ public để storefront hiển thị trực tiếp bằng URL. API Secret chỉ cấu hình ở backend, không đưa vào frontend. Các tệp đã lưu local không tự được chuyển sang Cloudinary. Giới hạn và loại tệp vẫn được kiểm tra ở API.
 
 ## Database và migration
 

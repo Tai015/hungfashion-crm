@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { randomUUID } from 'node:crypto';
-import { mkdir, open, unlink } from 'node:fs/promises';
+import { mkdir, open } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pool } from '../db.js';
 import { logger } from '../logger.js';
 import { canUseChat, isChatStaff } from '../chat-access.js';
 import { chatAttachmentTypes, validateChatAttachment } from '../chat-attachment-types.js';
+import { cleanupTemporaryCopies, cleanupUploadedMedia, isCloudinaryRef, storeUploadedMedia, streamCloudinaryMedia } from '../media-storage.js';
 
 const router = Router();
 const chatEventSubscribers = new Set();
@@ -27,7 +28,7 @@ const chatMediaUpload = multer({
 });
 
 async function removeUploadedImages(files = []) {
-  await Promise.all(files.map(file => unlink(file.path).catch(() => {})));
+  await cleanupUploadedMedia(files);
 }
 
 function receiveChatMedia(req, res, next) {
@@ -58,6 +59,13 @@ function receiveChatMedia(req, res, next) {
         return res.status(validationError.status).json({ message: validationError.message });
       }
     }
+    try {
+      for (const file of files) await storeUploadedMedia(file, 'chat');
+    } catch (uploadError) {
+      await removeUploadedImages(files);
+      console.error('[chat] Cloudinary upload failed:', uploadError);
+      return res.status(502).json({ message: 'Không thể lưu tệp đính kèm. Vui lòng thử lại.' });
+    }
     return next();
   });
 }
@@ -69,7 +77,7 @@ async function insertChatAttachments(client, messageId, files) {
       `INSERT INTO chat_message_attachment (message_id, storage_name, original_name, mime_type, file_size)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING attachment_id, original_name, mime_type, file_size`,
-      [messageId, path.basename(file.filename), path.basename(file.originalname).slice(0, 255), file.mimetype, file.size],
+      [messageId, file.storageRef || path.basename(file.filename), path.basename(file.originalname).slice(0, 255), file.mimetype, file.size],
     );
     attachments.push({
       attachment_id: attachment.attachment_id,
@@ -245,6 +253,14 @@ router.get('/media/:attachmentId', async (req, res) => {
     const isOwner = req.user.role_name === 'KHACH_HANG'
       && Number(attachment.customer_id) === Number(req.user.customer_id);
     if (!isOwner && !isChatStaff(req.user.role_name)) return res.sendStatus(403);
+    if (isCloudinaryRef(attachment.storage_name)) {
+      await streamCloudinaryMedia(res, attachment.storage_name, {
+        mimeType: attachment.mime_type,
+        filename: attachment.original_name,
+        attachment: !attachment.mime_type.startsWith('image/') && !attachment.mime_type.startsWith('video/'),
+      });
+      return;
+    }
     const storageName = path.basename(attachment.storage_name);
     res.set({ 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' });
     const storagePath = path.join(chatUploadDirectory, storageName);
@@ -426,6 +442,7 @@ router.post('/my-conversation/messages', receiveChatMedia, async (req, res) => {
       [conversationId]
     );
     await client.query('COMMIT');
+    await cleanupTemporaryCopies(files);
     emitChatEvent({ type: 'message', conversationId, customerId: req.user.customer_id, senderRole: 'KHACH_HANG' });
     res.status(201).json({
       message_id: rows[0].message_id,
@@ -564,6 +581,7 @@ router.post('/:id/messages', receiveChatMedia, async (req, res) => {
       [conversationId]
     );
     await client.query('COMMIT');
+    await cleanupTemporaryCopies(files);
     emitChatEvent({ type: 'message', conversationId, customerId: conv[0].customer_id, senderRole: req.user.role_name });
     res.status(201).json({ ...rows[0], sender_role: req.user.role_name, attachments });
   } catch (err) {

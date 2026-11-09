@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { useModalEffects } from '../hooks/useModalEffects';
-import { ChevronLeft, ChevronRight, Package, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ImagePlus, Package, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { apiFetch } from '../api';
 import Spinner from '../components/Spinner';
 import FilterPopover from '../components/FilterPopover';
@@ -35,7 +35,19 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
   const [variants, setVariants] = useState([]);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(product?.image_url || '');
   useSweetAlertMessages({ error });
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview(product?.image_url || '');
+      return undefined;
+    }
+    const preview = URL.createObjectURL(imageFile);
+    setImagePreview(preview);
+    return () => URL.revokeObjectURL(preview);
+  }, [imageFile, product?.image_url]);
 
   const updateVariant = (index, key, value) => setVariants(current => current.map((variant, row) =>
     row === index ? { ...variant, [key]: value } : variant
@@ -60,8 +72,11 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
           sku: variant.sku.trim(), quantity: Number(variant.quantity),
         })),
       };
-      if (isEdit) await apiFetch(`/api/products/${product.product_id}`, { method:'PATCH', body });
-      else        await apiFetch('/api/products', { method:'POST', body });
+      const data = new FormData();
+      data.append('data', JSON.stringify(body));
+      if (imageFile) data.append('image', imageFile);
+      if (isEdit) await apiFetch(`/api/products/${product.product_id}`, { method:'PATCH', body:data });
+      else        await apiFetch('/api/products', { method:'POST', body:data });
       onSaved();
     } catch(err) { setError(err.message); } finally { setBusy(false); }
   };
@@ -99,6 +114,22 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
             <div className="col-span-2">
               <Field label="Mô tả">
                 <textarea rows={3} maxLength={2000} className={`${INPUT} h-auto py-2.5 resize-y min-h-[70px]`} value={form.description} onChange={e => setForm({...form, description:e.target.value})} />
+              </Field>
+            </div>
+            <div className="col-span-2">
+              <Field label="Ảnh sản phẩm (JPG, PNG, WebP hoặc GIF; tối đa 5 MB)">
+                <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                  {imagePreview
+                    ? <img src={imagePreview} alt="Xem trước ảnh sản phẩm" className="h-24 w-24 rounded-lg border border-white/10 bg-white object-cover" />
+                    : <div className="grid h-24 w-24 place-items-center rounded-lg border border-dashed border-white/20 text-white/35"><ImagePlus size={24} /></div>}
+                  <div className="flex flex-col items-start gap-1.5">
+                    <label className={`${BTN_GHOST} cursor-pointer`}>
+                      <ImagePlus size={15} /> {imageFile ? 'Chọn ảnh khác' : imagePreview ? 'Đổi ảnh' : 'Chọn ảnh'}
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={event => setImageFile(event.target.files?.[0] || null)} />
+                    </label>
+                    <span className="text-xs text-white/40">Ảnh được tải lên Cloudinary khi lưu sản phẩm.</span>
+                  </div>
+                </div>
               </Field>
             </div>
           </div>
