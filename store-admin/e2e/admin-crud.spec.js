@@ -46,6 +46,20 @@ test.describe('Admin CRUD — Local only', () => {
     await loginAsAdmin(page);
   });
 
+  test('các màn hình quản trị cần kiểm thử đều mở được', async ({ page }) => {
+    const pages = [
+      ['/admin/products', 'Quản lý sản phẩm'],
+      ['/admin/customers', 'Khách hàng'],
+      ['/admin/employees', 'Nhân viên'],
+      ['/admin/promotions', 'Khuyến mãi'],
+      ['/admin/accounts', 'Tài khoản & phân quyền'],
+    ];
+    for (const [route, heading] of pages) {
+      await page.goto(`/#${route}`);
+      await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
+    }
+  });
+
   test('CRUD sản phẩm và xóa mềm không làm mất dữ liệu sản phẩm', async ({ page }) => {
     const [sizes, colors, categories] = await Promise.all([
       api(page, '/api/products/sizes'),
