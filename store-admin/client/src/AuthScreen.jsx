@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { apiFetch, TOKEN_KEY } from './api';
+import { apiFetch, saveAuthToken } from './api';
 import PasswordInput from './PasswordInput';
 import { showErrorAlert, showSuccessAlert } from './utils/notifications';
 
@@ -26,6 +26,7 @@ export default function AuthScreen({ onAuthenticated }) {
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [interests, setInterests] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const ageGroup = getAgeGroup(dateOfBirth);
 
   const submit = async (e) => {
@@ -55,7 +56,7 @@ export default function AuthScreen({ onAuthenticated }) {
       }
 
       // Chỉ lưu phiên và chuyển trang sau khi toast đăng nhập tự tắt.
-      window.localStorage.setItem(TOKEN_KEY, result.token);
+      saveAuthToken(result.token, rememberMe);
       onAuthenticated(result.user);
     } catch (err) {
       await showErrorAlert(authErrorMessage(err, audience), {
@@ -146,6 +147,18 @@ export default function AuthScreen({ onAuthenticated }) {
               placeholder="Nhập mật khẩu"
               value={password} onChange={e => setPassword(e.target.value)} />
           </label>
+
+          {mode === 'login' && (
+            <label className="flex items-center gap-2 text-sm text-stone-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-stone-400 accent-sky-700"
+              />
+              <span>Duy trì đăng nhập</span>
+            </label>
+          )}
 
           <button type="submit" disabled={busy || (mode === 'register' && !dateOfBirth)}
             aria-busy={busy}
