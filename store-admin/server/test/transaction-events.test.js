@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { after, test } from 'node:test';
 import pg from 'pg';
 import { enqueueTransactionEvent, persistTransactionEvent } from '../src/transaction-events.js';
-import { publishOutboxMessages } from '../src/outbox-relay.js';
+import { publishOutboxMessages } from '../src/outbox-publisher.js';
 
 const { Pool } = pg;
 const databaseUrl = process.env.TEST_DATABASE_URL;
