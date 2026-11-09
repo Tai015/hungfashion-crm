@@ -47,18 +47,22 @@ test.describe('Admin CRUD — Local only', () => {
   });
 
   test('CRUD sản phẩm và xóa mềm không làm mất dữ liệu sản phẩm', async ({ page }) => {
-    const [sizes, colors] = await Promise.all([
+    const [sizes, colors, categories] = await Promise.all([
       api(page, '/api/products/sizes'),
       api(page, '/api/products/colors'),
+      api(page, '/api/products/categories'),
     ]);
     expect(sizes.status).toBe(200);
     expect(colors.status).toBe(200);
-    test.skip(!sizes.body.length || !colors.body.length, 'Database Local cần có ít nhất một size và một màu.');
+    expect(categories.status).toBe(200);
+    test.skip(!sizes.body.length || !colors.body.length || !categories.body.length,
+      'Database Local cần có ít nhất một size, màu và danh mục.');
 
     const sku = unique('SKU').toUpperCase();
     const created = await api(page, '/api/products', {
       method: 'POST',
       body: {
+        category_id: categories.body[0].category_id,
         product_name: unique('Sản phẩm'),
         description: 'Playwright E2E product',
         import_price: 100000,
@@ -72,6 +76,8 @@ test.describe('Admin CRUD — Local only', () => {
       const updated = await api(page, `/api/products/${productId}`, {
         method: 'PATCH',
         body: {
+          category_id: created.body.category_id,
+          supplier_id: created.body.supplier_id,
           product_name: `${created.body.product_name} updated`,
           description: 'Updated by Playwright E2E',
           import_price: 110000,
@@ -217,10 +223,15 @@ test.describe('Admin CRUD — Local only', () => {
     const orderId = Number(process.env.E2E_ORDER_ID);
     test.skip(!Number.isSafeInteger(productId) || productId < 1 || !Number.isSafeInteger(orderId) || orderId < 1,
       'Cần E2E_ORDER_PRODUCT_ID và E2E_ORDER_ID của dữ liệu test Local.');
-    const before = await api(page, `/api/orders/${orderId}`);
+    const [before, product] = await Promise.all([
+      api(page, `/api/orders/${orderId}`),
+      api(page, `/api/products/${productId}`),
+    ]);
     expect(before.status, JSON.stringify(before.body)).toBe(200);
-    const orderJson = JSON.stringify(before.body);
-    expect(orderJson).toContain(String(productId));
+    expect(product.status, JSON.stringify(product.body)).toBe(200);
+    const productSkus = product.body.variants.map((variant) => variant.sku);
+    expect(productSkus.some((sku) => before.body.details.some((detail) => detail.sku === sku)),
+      'Sản phẩm fixture phải thực sự nằm trong đơn hàng fixture.').toBe(true);
     const removed = await api(page, `/api/products/${productId}`, { method: 'DELETE' });
     expect(removed.status, JSON.stringify(removed.body)).toBe(200);
     const after = await api(page, `/api/orders/${orderId}`);
