@@ -131,6 +131,13 @@ test.describe('Admin CRUD — Local only', () => {
       expect(blocked.status, JSON.stringify(blocked.body)).toBe(200);
       expect(blocked.body.status).toBe('Blocked');
 
+      const blockedLogin = await api(page, '/api/auth/login', {
+        method: 'POST',
+        body: { identifier: username, password: 'E2e-Test-Password-2026!', audience: 'staff' },
+      });
+      expect(blockedLogin.status).toBe(401);
+      expect(blockedLogin.body.message).toContain('đã bị khóa');
+
       const unlocked = await api(page, `/api/accounts/${accountId}/status`, {
         method: 'PATCH', body: { status: 'Active' },
       });
