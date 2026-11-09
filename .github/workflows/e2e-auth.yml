@@ -102,6 +102,7 @@ jobs:
       POSTGRES_DB: hungfashion_e2e
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ci-only-not-production-password
+      POSTGRES_SSL: "false"
       E2E_BASE_URL: http://127.0.0.1:5000
       E2E_CUSTOMER_IDENTIFIER: ${{ secrets.E2E_CUSTOMER_IDENTIFIER }}
       E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
