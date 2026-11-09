@@ -25,7 +25,7 @@ test('writes JSON logs and redacts sensitive fields and bearer tokens', () => {
   assert.equal(records[0].password, '[REDACTED]');
   assert.equal(records[0].authorization, '[REDACTED]');
   assert.equal(records[0].err.message, 'request failed');
-  assert.doesNotMatch(JSON.stringify(records[0]), /do-not-log|abc\.def\.ghi/);
+  assert.doesNotMatch(JSON.stringify(records[0]), /do-not-log|abc\.def\.ghi|db-secret/);
 });
 
 test('adds request id header and logs a route template without query parameters', async () => {
