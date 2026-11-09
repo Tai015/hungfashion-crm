@@ -1,17 +1,205 @@
 import { test, expect } from '@playwright/test';
 
 const TOKEN_KEY = 'hung-fashion-access-token';
-const loginPath = '/#/nhan-vien/login';
+const NEW_ACCOUNT = {
+  username: 'e2e-new-customer',
+  email: 'e2e-new-customer@example.test',
+  password: 'NewCustomerPass123!',
+  full_name: 'E2E New Customer',
+  date_of_birth: '1998-05-12',
+  interests: ['Áo thun'],
+};
+const EXISTING_CUSTOMER = {
+  username: 'e2e-existing-customer',
+  email: 'e2e-existing-customer@example.test',
+  password: 'ExistingCustomerPass123!',
+};
+const EXISTING_STAFF = {
+  username: 'e2e-existing-staff',
+  email: 'e2e-existing-staff@example.test',
+  password: 'ExistingStaffPass123!',
+};
 
-async function openStaffLogin(page) {
-  await page.route('**/api/health', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }));
-  await page.goto(loginPath);
-  await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toBeVisible();
-  await page.getByLabel('Tên đăng nhập hoặc email').fill('e2e-staff');
-  await page.locator('input[autocomplete="current-password"]').fill('WrongOrTestPass123!');
+async function prepareAuthPage(page, hash) {
+  await page.route('**/api/health', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true }),
+  }));
+  await page.goto(hash);
+  await expect(page.getByRole('heading', { name: /Đăng nhập|Tạo tài khoản/ })).toBeVisible();
 }
 
-test('hiện lại cảnh báo khi nhập sai cùng thông tin hai lần', async ({ page }) => {
+async function fillCustomerRegistration(page, account) {
+  await page.getByLabel('Họ và tên').fill(account.full_name);
+  await page.getByLabel('Ngày sinh').fill(account.date_of_birth);
+  await page.getByLabel('Tên đăng nhập').fill(account.username);
+  await page.getByLabel('Email').fill(account.email);
+  await page.locator('input[autocomplete="new-password"]').fill(account.password);
+}
+
+async function dismissSuccessToast(page) {
+  const toast = page.locator('.swal2-popup');
+  await expect(toast).toBeVisible();
+  await expect(toast).toContainText('Thành công');
+  await page.getByRole('button', { name: 'Đã hiểu' }).click();
+  await expect(toast).toBeHidden();
+}
+
+async function login(page, hash, account, audience, remember = false) {
+  await prepareAuthPage(page, hash);
+  await page.getByLabel('Tên đăng nhập hoặc email').fill(account.username);
+  await page.locator('input[autocomplete="current-password"]').fill(account.password);
+  if (remember) await page.getByLabel('Duy trì đăng nhập').check();
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await dismissSuccessToast(page);
+  const expectedRoute = audience === 'customer' ? /#\/khach-hang\/catalog$/ : /#\/admin\/dashboard$/;
+  await expect(page).toHaveURL(expectedRoute);
+}
+
+test('khách hàng đăng ký tài khoản mới rồi đăng nhập bằng chính tài khoản vừa tạo', async ({ page }) => {
+  const accounts = new Map();
+  await page.route('**/api/auth/register', async route => {
+    const submitted = route.request().postDataJSON();
+    const key = submitted.username.toLowerCase();
+    if (accounts.has(key) || [...accounts.values()].some(item => item.email.toLowerCase() === submitted.email.toLowerCase())) {
+      return route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Tên đăng nhập hoặc email đã được sử dụng.' }),
+      });
+    }
+    accounts.set(key, submitted);
+    return route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'registration-token-must-not-be-stored',
+        user: { account_id: 101, username: submitted.username, full_name: submitted.full_name, role: 'KHACH_HANG' },
+      }),
+    });
+  });
+  await page.route('**/api/auth/login', async route => {
+    const submitted = route.request().postDataJSON();
+    const account = accounts.get(submitted.identifier.toLowerCase());
+    if (submitted.audience !== 'customer' || !account || account.password !== submitted.password) {
+      return route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Tài khoản không tồn tại hoặc thông tin đăng nhập không chính xác.' }),
+      });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'new-customer-login-token',
+        user: { account_id: 101, username: account.username, full_name: account.full_name, role: 'KHACH_HANG' },
+      }),
+    });
+  });
+  await page.route('**/api/auth/heartbeat', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ role: 'KHACH_HANG' }),
+  }));
+
+  await prepareAuthPage(page, '/#/khach-hang/register');
+  await fillCustomerRegistration(page, NEW_ACCOUNT);
+  await page.getByRole('button', { name: 'Đăng ký' }).click();
+  await dismissSuccessToast(page);
+
+  await expect(page).toHaveURL(/#\/khach-hang\/login$/);
+  expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
+  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
+  await expect(page.getByLabel('Tên đăng nhập hoặc email')).toHaveValue(NEW_ACCOUNT.username);
+
+  await page.locator('input[autocomplete="current-password"]').fill(NEW_ACCOUNT.password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+  await dismissSuccessToast(page);
+  await expect(page).toHaveURL(/#\/khach-hang\/catalog$/);
+  await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBe('new-customer-login-token');
+  expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
+});
+
+test('khách hàng đăng ký bằng tài khoản cũ phải nhận lỗi trùng username/email', async ({ page }) => {
+  let registrationAttempts = 0;
+  await page.route('**/api/auth/register', async route => {
+    registrationAttempts += 1;
+    return route.fulfill({
+      status: 409,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Tên đăng nhập hoặc email đã được sử dụng.' }),
+    });
+  });
+
+  await prepareAuthPage(page, '/#/khach-hang/register');
+  await fillCustomerRegistration(page, {
+    ...NEW_ACCOUNT,
+    username: EXISTING_CUSTOMER.username,
+    email: EXISTING_CUSTOMER.email,
+  });
+  await page.getByRole('button', { name: 'Đăng ký' }).click();
+
+  const dialog = page.locator('.swal2-popup');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('Đăng ký thất bại');
+  await expect(dialog).toContainText('Tên đăng nhập hoặc email đã được sử dụng.');
+  await page.getByRole('button', { name: 'Thử lại' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page).toHaveURL(/#\/khach-hang\/register$/);
+  expect(registrationAttempts).toBe(1);
+  expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
+  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
+});
+
+test('đăng nhập khách hàng bằng tài khoản cũ và lưu token trong sessionStorage mặc định', async ({ page }) => {
+  await page.route('**/api/auth/login', route => {
+    const submitted = route.request().postDataJSON();
+    expect(submitted.audience).toBe('customer');
+    expect(submitted.identifier).toBe(EXISTING_CUSTOMER.username);
+    expect(submitted.password).toBe(EXISTING_CUSTOMER.password);
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'existing-customer-token',
+        user: { account_id: 201, username: EXISTING_CUSTOMER.username, full_name: 'Existing Customer', role: 'KHACH_HANG' },
+      }),
+    });
+  });
+  await page.route('**/api/auth/heartbeat', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ role: 'KHACH_HANG' }),
+  }));
+
+  await login(page, '/#/khach-hang/login', EXISTING_CUSTOMER, 'customer');
+  await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBe('existing-customer-token');
+  expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
+});
+
+test('đăng nhập nhân viên bằng tài khoản cũ và lưu token localStorage khi bật duy trì đăng nhập', async ({ page }) => {
+  await page.route('**/api/auth/login', route => {
+    const submitted = route.request().postDataJSON();
+    expect(submitted.audience).toBe('staff');
+    expect(submitted.identifier).toBe(EXISTING_STAFF.username);
+    expect(submitted.password).toBe(EXISTING_STAFF.password);
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'existing-staff-token',
+        user: { account_id: 202, username: EXISTING_STAFF.username, full_name: 'Existing Staff', role: 'ADMIN' },
+      }),
+    });
+  });
+  await page.route('**/api/auth/heartbeat', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ role: 'ADMIN' }),
+  }));
+
+  await login(page, '/#/nhan-vien/login', EXISTING_STAFF, 'staff', true);
+  await expect.poll(() => page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBe('existing-staff-token');
+  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
+});
+
+test('hiện lại cảnh báo khi đăng nhập sai cùng thông tin hai lần liên tiếp', async ({ page }) => {
   let attempts = 0;
   await page.route('**/api/auth/login', route => {
     attempts += 1;
@@ -22,7 +210,9 @@ test('hiện lại cảnh báo khi nhập sai cùng thông tin hai lần', async
     });
   });
 
-  await openStaffLogin(page);
+  await prepareAuthPage(page, '/#/nhan-vien/login');
+  await page.getByLabel('Tên đăng nhập hoặc email').fill(EXISTING_STAFF.username);
+  await page.locator('input[autocomplete="current-password"]').fill('WrongPassword123!');
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     await page.getByRole('button', { name: 'Đăng nhập' }).click();
@@ -35,55 +225,5 @@ test('hiện lại cảnh báo khi nhập sai cùng thông tin hai lần', async
 
   expect(attempts).toBe(2);
   expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
-});
-
-test('chỉ lưu token và chuyển trang sau khi xác nhận đăng nhập thành công', async ({ page }) => {
-  await page.route('**/api/auth/login', route => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({
-      token: 'e2e-success-token',
-      user: { account_id: 7, username: 'e2e-staff', full_name: 'E2E Staff', role: 'ADMIN' },
-    }),
-  }));
-
-  await openStaffLogin(page);
-  await page.locator('input[autocomplete="current-password"]').fill('CorrectTestPass123!');
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-
-  const dialog = page.locator('.swal2-popup');
-  await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText('Đăng nhập thành công');
-  expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
-  await expect(page).toHaveURL(/#\/nhan-vien\/login$/);
-
-  await page.getByRole('button', { name: 'Tiếp tục' }).click();
-  await expect(dialog).toBeHidden();
-  await expect.poll(() => page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBe('e2e-success-token');
-  await expect(page).toHaveURL(/#\/admin\/dashboard$/);
-});
-
-test('bấm bên ngoài thông báo thành công vẫn lưu token và chuyển trang', async ({ page }) => {
-  await page.route('**/api/auth/login', route => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({
-      token: 'e2e-outside-token',
-      user: { account_id: 8, username: 'e2e-staff', full_name: 'E2E Staff', role: 'ADMIN' },
-    }),
-  }));
-
-  await openStaffLogin(page);
-  await page.locator('input[autocomplete="current-password"]').fill('CorrectTestPass123!');
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-
-  const dialog = page.locator('.swal2-popup');
-  await expect(dialog).toBeVisible();
-  expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
-
-  // Click the backdrop, well outside the centered SweetAlert popup.
-  await page.mouse.click(8, 8);
-  await expect(dialog).toBeHidden();
-  await expect.poll(() => page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBe('e2e-outside-token');
-  await expect(page).toHaveURL(/#\/admin\/dashboard$/);
+  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
 });
