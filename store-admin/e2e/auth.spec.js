@@ -9,6 +9,12 @@ async function gotoApp(page, path) {
   // Vercel Deployment Protection renders its own login page instead of the app.
   // Detect it explicitly so the failure explains the missing automation bypass.
   const vercelProtection = page.getByRole('heading', { name: /Log in to Vercel/i });
+  const securityCheckpoint = page.getByText(/Security Checkpoint/i).first();
+  if (await securityCheckpoint.isVisible().catch(() => false)) {
+    throw new Error(
+      'Vercel is showing a Security Checkpoint instead of the application. This is a Vercel edge/security challenge, not an application login failure. Review Vercel security/deployment settings and allow the GitHub Actions Preview request; do not weaken protection globally. The failure screenshot is retained as an artifact.'
+    );
+  }
   if (await vercelProtection.isVisible().catch(() => false)) {
     throw new Error(
       'Vercel Deployment Protection is blocking the Preview. Add the Vercel-generated automation bypass value as the GitHub Actions secret VERCEL_AUTOMATION_BYPASS_SECRET, then rerun this workflow. The test screenshot is retained as an artifact.'
