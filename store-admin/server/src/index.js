@@ -54,7 +54,7 @@ const eventRateLimitMax = Number(process.env.EVENT_RATE_LIMIT_MAX || 1200);
 const outboxMaxBacklog = Number(process.env.OUTBOX_MAX_BACKLOG || 10000);
 const eventRateLimits = new Map();
 
-app.use(cors());
+app.use(cors({ exposedHeaders: ['X-Request-Id'] }));
 app.use(express.json({ limit: '100kb' }));
 app.use(demoPaymentRouter);
 
