@@ -1,6 +1,7 @@
 import { createKafkaClient } from './kafka.js';
 import { pool } from './db.js';
 import { kafkaMetrics } from './kafka-metrics.js';
+import { publishOutboxMessages } from './outbox-publisher.js';
 
 const kafka = createKafkaClient('store-admin-outbox-relay');
 const producer = kafka.producer({ idempotent: true });
@@ -45,9 +46,7 @@ async function publishBatch() {
     // Bước này thực hiện ngoài DB transaction để không block DB connection quá lâu
     // Tuy nhiên trong code hiện tại, ta vẫn để trong BEGIN/COMMIT để đảm bảo tính nguyên tử
     // nếu broker lỗi thì ROLLBACK toàn bộ batch.
-    for (const [topic, messages] of Object.entries(messagesByTopic)) {
-      await producer.send({ topic, messages });
-    }
+    await publishOutboxMessages(producer, messagesByTopic);
 
     // Cập nhật trạng thái hàng loạt
     const eventIds = rows.map(r => r.event_id);

@@ -1,0 +1,72 @@
+name: Backend transaction outbox tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "store-admin/server/src/transaction-events.js"
+      - "store-admin/server/src/outbox-writer.js"
+      - "store-admin/server/src/outbox-relay.js"
+      - "store-admin/server/src/outbox-publisher.js"
+      - "store-admin/server/src/routes/order.js"
+      - "store-admin/server/src/routes/demo-payment.js"
+      - "store-admin/server/src/index.js"
+      - "store-admin/server/sql/migrations/**"
+      - "store-admin/server/test/**"
+      - "store-admin/server/package.json"
+      - "store-admin/package-lock.json"
+      - ".github/workflows/backend-outbox-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: store_admin_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d store_admin_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/store_admin_test
+      KAFKA_MOCK: "true"
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: store_admin_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_SSL: "false"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Apply migrations to the isolated PostgreSQL service
+        working-directory: store-admin
+        run: npm run db:migrate --workspace server
+
+      - name: Run backend tests (PostgreSQL service; Kafka producer boundary mocked)
+        working-directory: store-admin
+        run: npm test --workspace server
