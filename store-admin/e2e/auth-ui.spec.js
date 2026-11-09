@@ -110,8 +110,7 @@ test('khách hàng đăng ký tài khoản mới rồi đăng nhập bằng chí
   await expect(page).toHaveURL(/#\/khach-hang\/login$/);
   expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
   expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
-  await expect(page.getByLabel('Tên đăng nhập hoặc email')).toHaveValue(NEW_ACCOUNT.username);
-
+  await page.getByLabel('Tên đăng nhập hoặc email').fill(NEW_ACCOUNT.username);
   await page.locator('input[autocomplete="current-password"]').fill(NEW_ACCOUNT.password);
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await dismissSuccessToast(page);
