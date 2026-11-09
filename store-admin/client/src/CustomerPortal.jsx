@@ -120,21 +120,27 @@ function CustomerCatalog({ onGoCart, guest = false, onLogin }) {
   const [search, setSearch]     = useState('');
   const [sort, setSort]         = useState('created_at');
   const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [page, setPage]         = useState(1);
   const [total, setTotal]       = useState(0);
   const [loading, setLoading]   = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError]       = useState('');
+  const [retryCount, setRetryCount] = useState(0);
   const [modalProduct, setModalProduct] = useState(null);
   const [addedMsg, setAddedMsg] = useState('');
   useSweetAlertMessages({ error, success: addedMsg });
   const limit = 24;
 
   useEffect(() => {
+    let active = true;
+    setCategoriesLoading(true);
     apiFetch('/api/products/categories')
-      .then(rows => setCategories(Array.isArray(rows) ? rows : []))
-      .catch(e => setError(e.message));
-  }, []);
+      .then(rows => { if (active) setCategories(Array.isArray(rows) ? rows : []); })
+      .catch(e => { if (active) setError(e.message); })
+      .finally(() => { if (active) setCategoriesLoading(false); });
+    return () => { active = false; };
+  }, [retryCount]);
 
   useEffect(() => {
     let active = true; setLoading(true); setError('');
@@ -145,7 +151,7 @@ function CustomerCatalog({ onGoCart, guest = false, onLogin }) {
       .catch(e => { if(active) setError(e.message); })
       .finally(() => { if(active) { setLoading(false); setHasLoadedOnce(true); } });
     return () => { active = false; };
-  }, [page, search, sort]);
+  }, [page, search, sort, retryCount]);
 
   const handleAdded = () => {
     setAddedMsg('Đã thêm vào giỏ hàng!');
@@ -174,7 +180,15 @@ function CustomerCatalog({ onGoCart, guest = false, onLogin }) {
       </div>
 
 
-      {loading ? <div className="customer-catalog-loading"><Spinner portalTheme /></div> : (
+      {loading || (guest && categoriesLoading) ? <div className="customer-catalog-loading" role="status" aria-live="polite"><Spinner portalTheme label={guest ? 'Đang lấy dữ liệu, vui lòng chờ…' : 'Đang tải...'} /></div> : guest && error ? (
+        <div className="portal-empty col-span-full flex flex-col items-center gap-3 py-16 text-center" role="alert">
+          <ShoppingBag size={30} aria-hidden="true" />
+          <p className="m-0 text-sm">Không thể tải dữ liệu cửa hàng. Vui lòng kiểm tra kết nối và thử lại.</p>
+          <button type="button" className={CATALOG_PRIMARY} onClick={() => { setError(''); setLoading(true); setRetryCount(value => value + 1); }}>
+            Thử tải lại
+          </button>
+        </div>
+      ) : (
         <>
           <section key={page} className="app-page-enter grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
             {products.map(p => (
