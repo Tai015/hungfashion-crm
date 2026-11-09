@@ -149,7 +149,8 @@ app.get('/api/database/tables', requireDatabaseBrowser, async (_req, res) => {
     `);
     res.json({ tables: rows });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error({ err, requestId: req.requestId }, 'Database table listing failed');
+    res.status(500).json({ message: 'Không thể tải danh sách bảng.', requestId: req.requestId });
   }
 });
 
@@ -192,7 +193,8 @@ app.get('/api/database/tables/:tableName/rows', requireDatabaseBrowser, async (r
       offset,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error({ err, requestId: req.requestId }, 'Database table rows query failed');
+    res.status(500).json({ message: 'Không thể tải dữ liệu bảng.', requestId: req.requestId });
   }
 });
 
@@ -372,7 +374,8 @@ app.post('/api/events/user', requireAuth, validateEvent, async (req, res) => {
   try {
     await enqueueEvent('user-events', req, res);
   } catch (err) {
-    res.status(500).json({ message: `Could not queue event: ${err.message}` });
+    logger.error({ err, requestId: req.requestId, topic: 'user-events' }, 'Could not queue user event');
+    res.status(500).json({ message: 'Could not queue event.', requestId: req.requestId });
   }
 });
 
@@ -380,7 +383,8 @@ app.post('/api/events/transaction', requireAuth, validateEvent, async (req, res)
   try {
     await enqueueEvent('transaction-events', req, res);
   } catch (err) {
-    res.status(500).json({ message: `Could not queue event: ${err.message}` });
+    logger.error({ err, requestId: req.requestId, topic: 'transaction-events' }, 'Could not queue transaction event');
+    res.status(500).json({ message: 'Could not queue event.', requestId: req.requestId });
   }
 });
 
@@ -397,7 +401,8 @@ app.get('/api/events/outbox-status', async (_req, res) => {
       oldestPendingAgeSeconds: status.oldest_pending_age_seconds,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error({ err, requestId: _req.requestId }, 'Outbox status query failed');
+    res.status(500).json({ message: 'Không thể tải trạng thái Outbox.', requestId: _req.requestId });
   }
 });
 
