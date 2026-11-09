@@ -226,3 +226,31 @@ test('hiện lại cảnh báo khi đăng nhập sai cùng thông tin hai lần 
   expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
   expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
 });
+
+
+test('hiển thị đồng hồ đếm ngược và khóa nút khi API giới hạn đăng nhập', async ({ page }) => {
+  await page.route('**/api/auth/login', route => route.fulfill({
+    status: 429,
+    headers: { 'retry-after': '65' },
+    contentType: 'application/json',
+    body: JSON.stringify({
+      code: 'AUTH_RATE_LIMITED',
+      message: 'Bạn thao tác quá nhiều lần.',
+      retryAfterSeconds: 65,
+    }),
+  }));
+
+  await prepareAuthPage(page, '/#/khach-hang/login');
+  await page.getByLabel('Tên đăng nhập hoặc email').fill(EXISTING_CUSTOMER.username);
+  await page.locator('input[autocomplete="current-password"]').fill(EXISTING_CUSTOMER.password);
+  await page.getByRole('button', { name: 'Đăng nhập' }).click();
+
+  const dialog = page.locator('.swal2-popup');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('Bạn thao tác quá nhiều lần');
+  await page.getByRole('button', { name: 'Thử lại' }).click();
+  await expect(dialog).toBeHidden();
+
+  await expect(page.getByRole('status')).toContainText(/01:0[0-5]/);
+  await expect(page.getByRole('button', { name: /Vui lòng chờ 01:0[0-5]/ })).toBeDisabled();
+});

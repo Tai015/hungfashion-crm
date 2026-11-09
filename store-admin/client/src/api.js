@@ -191,6 +191,12 @@ export async function apiFetch(url, options = {}) {
     }
     const error = new Error(result?.message || `Yêu cầu thất bại (${response.status}).`);
     error.status = response.status;
+    const retryAfterHeader = response.headers.get('retry-after');
+    const rateLimitResetHeader = response.headers.get('ratelimit-reset');
+    const retryAfterSeconds = Number(result?.retryAfterSeconds ?? retryAfterHeader ?? rateLimitResetHeader);
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+      error.retryAfterSeconds = Math.ceil(retryAfterSeconds);
+    }
     throw error;
   }
   return result;
