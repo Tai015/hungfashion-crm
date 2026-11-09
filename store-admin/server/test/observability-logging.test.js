@@ -46,7 +46,8 @@ test('adds request id header and logs a route template without query parameters'
     assert.equal(records[0].route, '/api/orders/:orderId');
     assert.equal(records[0].statusCode, 200);
     assert.equal(records[0].level, 'info');
-    assert.doesNotMatch(JSON.stringify(records[0]), /\\/api\\/orders\\/123|private/);
+    assert.equal(JSON.stringify(records[0]).includes('/api/orders/123'), false);
+    assert.equal(JSON.stringify(records[0]).includes('private'), false);
   } finally {
     await new Promise(resolve => server.close(resolve));
   }
