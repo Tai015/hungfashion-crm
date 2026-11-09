@@ -3,9 +3,9 @@ const SECRET_FIELD = /authorization|cookie|password|token|secret|api.?key|connec
 
 function redactString(value) {
   return value
-    .replace(/(Bearer\\s+)[A-Za-z0-9._~+\\/-]+=*/gi, '$1[REDACTED]')
-    .replace(/(postgres(?:ql)?:\\/\\/[^:/\\s]+:)[^@\\s]+@/gi, '$1[REDACTED]@')
-    .replace(/([?&](?:token|access_token|api_key|secret|password)=)[^&\\s]*/gi, '$1[REDACTED]');
+    .replace(/(Bearer\s+)[A-Za-z0-9._~+\/-]+=*/gi, '$1[REDACTED]')
+    .replace(/(postgres(?:ql)?:\/\/[^:/\s]+:)[^@\s]+@/gi, '$1[REDACTED]@')
+    .replace(/([?&](?:token|access_token|api_key|secret|password)=)[^&\s]*/gi, '$1[REDACTED]');
 }
 
 function normalize(value, key = '') {
@@ -49,7 +49,7 @@ export function createLogger({ service = 'hungfashion-api', level, destination =
       service,
       ...(msg ? { msg: redactString(msg) } : {}),
     };
-    destination.write(`${JSON.stringify(record)}\\n`);
+    destination.write(JSON.stringify(record) + '\n');
   }
 
   return {
