@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import { pool } from '../db.js';
+import { logger } from '../logger.js';
 
 const ADMIN_GUARD_LOCK_ID = 741029001;
 
@@ -140,7 +141,7 @@ export function createAccountRouter(database = pool) {
       );
       res.json({ data: rows, total: countRows[0].total, page: parsedPage, limit: parsedLimit });
     } catch (err) {
-      console.error('[accounts] list failed:', err);
+      logger.error({ err, requestId: req.requestId }, 'Account list failed');
       res.status(500).json({ message: 'Không thể tải danh sách tài khoản.' });
     }
   });
@@ -151,7 +152,7 @@ export function createAccountRouter(database = pool) {
       const { rows } = await database.query('SELECT role_id, role_name, description FROM role ORDER BY role_id');
       res.json(rows);
     } catch (err) {
-      console.error('[accounts] roles list failed:', err);
+      logger.error({ err, requestId: req.requestId }, 'Account roles list failed');
       res.status(500).json({ message: 'Không thể tải danh sách vai trò.' });
     }
   });
@@ -169,7 +170,7 @@ export function createAccountRouter(database = pool) {
       if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy tài khoản' });
       return res.json(rows[0]);
     } catch (err) {
-      console.error('[accounts] detail failed:', err);
+      logger.error({ err, requestId: req.requestId }, 'Account detail failed');
       return res.status(500).json({ message: 'Không thể tải tài khoản.' });
     }
   });
@@ -213,7 +214,7 @@ export function createAccountRouter(database = pool) {
     } catch (err) {
       await client?.query('ROLLBACK').catch(() => {});
       if (err.code === '23505') return res.status(409).json({ message: 'Username hoặc email đã tồn tại' });
-      console.error('[accounts] create failed:', err);
+      logger.error({ err, requestId: req.requestId }, 'Account creation failed');
       return res.status(500).json({ message: 'Không thể tạo tài khoản lúc này.' });
     } finally {
       client?.release();
@@ -267,7 +268,7 @@ export function createAccountRouter(database = pool) {
       return res.json(rows[0]);
     } catch (err) {
       await client.query('ROLLBACK').catch(() => {});
-      console.error('[accounts] status update failed:', err);
+      logger.error({ err, requestId: req.requestId }, 'Account status update failed');
       return res.status(500).json({ message: 'Không thể cập nhật trạng thái tài khoản lúc này.' });
     } finally { client.release(); }
   });
@@ -319,7 +320,7 @@ export function createAccountRouter(database = pool) {
       return res.json(rows[0]);
     } catch (err) {
       await client.query('ROLLBACK').catch(() => {});
-      console.error('[accounts] role update failed:', err);
+      logger.error({ err, requestId: req.requestId }, 'Account role update failed');
       return res.status(500).json({ message: 'Không thể cập nhật vai trò tài khoản lúc này.' });
     } finally { client.release(); }
   });
@@ -364,7 +365,7 @@ export function createAccountRouter(database = pool) {
       if (err.code === '23503') {
         return res.status(409).json({ message: 'Tài khoản đã có dữ liệu liên quan, hãy khóa thay vì xóa.' });
       }
-      console.error('[accounts] delete failed:', err);
+      logger.error({ err, requestId: req.requestId }, 'Account deletion failed');
       return res.status(500).json({ message: 'Không thể xóa tài khoản lúc này.' });
     } finally { client.release(); }
   });
