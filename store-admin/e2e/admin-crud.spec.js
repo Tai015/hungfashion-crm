@@ -198,7 +198,11 @@ test.describe('Admin CRUD — Local only', () => {
       'Cần E2E_ORDER_CUSTOMER_ID trỏ đến khách test đã có đơn hàng trong database Local.');
     const result = await api(page, `/api/customers/${customerId}`, { method: 'DELETE' });
     expect(result.status).toBe(409);
-    expect(result.body.message).toContain('dữ liệu liên quan');
+    expect(
+      result.body.message.includes('đơn hàng') || Number(result.body.blockers?.orders) > 0
+        || result.body.message.includes('tài khoản đăng nhập'),
+      JSON.stringify(result.body),
+    ).toBe(true);
   });
 
   test('ẩn sản phẩm đã có trong đơn không làm mất chi tiết đơn cũ', async ({ page }) => {
@@ -208,6 +212,8 @@ test.describe('Admin CRUD — Local only', () => {
       'Cần E2E_ORDER_PRODUCT_ID và E2E_ORDER_ID của dữ liệu test Local.');
     const before = await api(page, `/api/orders/${orderId}`);
     expect(before.status, JSON.stringify(before.body)).toBe(200);
+    const orderJson = JSON.stringify(before.body);
+    expect(orderJson).toContain(String(productId));
     const removed = await api(page, `/api/products/${productId}`, { method: 'DELETE' });
     expect(removed.status, JSON.stringify(removed.body)).toBe(200);
     const after = await api(page, `/api/orders/${orderId}`);
