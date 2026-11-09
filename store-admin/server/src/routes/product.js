@@ -1,7 +1,60 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { pool } from '../db.js';
+import { cleanupProductImage, storeProductImage } from '../media-storage.js';
 
 const router = Router();
+const productImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, callback) => {
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype)) {
+      const error = new Error('Ảnh sản phẩm chỉ hỗ trợ JPG, PNG, WebP hoặc GIF.');
+      error.status = 400;
+      return callback(error);
+    }
+    callback(null, true);
+  },
+});
+
+function receiveProductImage(req, res, next) {
+  productImageUpload.single('image')(req, res, error => {
+    if (!error) return next();
+    const status = error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE'
+      ? 413
+      : error.status || 400;
+    return res.status(status).json({ message: status === 413 ? 'Ảnh sản phẩm tối đa 5 MB.' : error.message });
+  });
+}
+
+function productRequestData(req) {
+  if (typeof req.body?.data !== 'string') return req.body || {};
+  const data = JSON.parse(req.body.data);
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Thông tin sản phẩm không hợp lệ.');
+  return data;
+}
+
+function productImageMatchesSignature(file) {
+  if (!file) return true;
+  const bytes = file.buffer;
+  if (file.mimetype === 'image/jpeg') return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  if (file.mimetype === 'image/png') return bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  if (file.mimetype === 'image/webp') return bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
+  if (file.mimetype === 'image/gif') return ['GIF87a', 'GIF89a'].includes(bytes.toString('ascii', 0, 6));
+  return false;
+}
+
+function parseProductImage(req, res, next) {
+  try {
+    productRequestData(req);
+  } catch {
+    return res.status(400).json({ message: 'Thông tin sản phẩm không hợp lệ.' });
+  }
+  if (req.file && !productImageMatchesSignature(req.file)) {
+    return res.status(400).json({ message: 'Nội dung tệp không phải ảnh hợp lệ.' });
+  }
+  next();
+}
 
 // ── CATEGORY ──────────────────────────────────────────────
 
@@ -175,16 +228,23 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/products – thêm sản phẩm + biến thể
-router.post('/', async (req, res) => {
-  const client = await pool.connect();
+router.post('/', receiveProductImage, parseProductImage, async (req, res) => {
+  let client;
+  let transactionStarted = false;
+  let uploadedImage;
   try {
+    const { category_id, product_name, description, import_price, selling_price, image_url, variants = [] } = productRequestData(req);
+    if (!Array.isArray(variants)) return res.status(400).json({ message: 'Danh sách biến thể không hợp lệ.' });
+    if (req.file) uploadedImage = await storeProductImage(req.file.buffer, req.file.mimetype);
+
+    client = await pool.connect();
     await client.query('BEGIN');
-    const { category_id, product_name, description, import_price, selling_price, image_url, variants = [] } = req.body;
+    transactionStarted = true;
 
     const { rows } = await client.query(
       `INSERT INTO product (category_id, product_name, description, import_price, selling_price, image_url)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [category_id, product_name, description, import_price, selling_price, image_url]
+      [category_id, product_name, description, import_price, selling_price, uploadedImage?.url || image_url || null]
     );
     const product = rows[0];
 
@@ -197,34 +257,52 @@ router.post('/', async (req, res) => {
     }
 
     await client.query('COMMIT');
+    transactionStarted = false;
     res.status(201).json(product);
   } catch (err) {
-    await client.query('ROLLBACK');
-    res.status(500).json({ message: err.message });
+    if (transactionStarted) await client?.query('ROLLBACK').catch(() => {});
+    await cleanupProductImage(uploadedImage);
+    console.error('[products] create failed:', err);
+    const storageFailed = req.file && !uploadedImage;
+    const cloudinaryMode = String(process.env.MEDIA_STORAGE || '').trim().toLowerCase() === 'cloudinary';
+    res.status(storageFailed && cloudinaryMode ? 502 : 500).json({
+      message: storageFailed ? `Không thể lưu ảnh${cloudinaryMode ? ' lên Cloudinary' : ''}. Vui lòng thử lại.` : err.message,
+    });
   } finally {
-    client.release();
+    client?.release();
   }
 });
 
 // PUT/PATCH /api/products/:id – cập nhật sản phẩm (PATCH là alias cho PUT)
 async function updateProduct(req, res) {
+  let uploadedImage;
   try {
-    const { category_id, supplier_id, product_name, description, import_price, selling_price, image_url } = req.body;
+    const { category_id, supplier_id, product_name, description, import_price, selling_price, image_url } = productRequestData(req);
+    if (req.file) uploadedImage = await storeProductImage(req.file.buffer, req.file.mimetype);
     const { rows } = await pool.query(
       `UPDATE product
        SET category_id=$1, supplier_id=$2, product_name=$3, description=$4,
-           import_price=$5, selling_price=$6, image_url=$7, updated_at=NOW()
+           import_price=$5, selling_price=$6, image_url=COALESCE($7, image_url), updated_at=NOW()
        WHERE product_id=$8 RETURNING *`,
-      [category_id||null, supplier_id||null, product_name, description, import_price, selling_price, image_url||null, req.params.id]
+      [category_id||null, supplier_id||null, product_name, description, import_price, selling_price, uploadedImage?.url || image_url || null, req.params.id]
     );
-    if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+    if (!rows.length) {
+      await cleanupProductImage(uploadedImage);
+      return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+    }
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    await cleanupProductImage(uploadedImage);
+    console.error('[products] update failed:', err);
+    const storageFailed = req.file && !uploadedImage;
+    const cloudinaryMode = String(process.env.MEDIA_STORAGE || '').trim().toLowerCase() === 'cloudinary';
+    res.status(storageFailed && cloudinaryMode ? 502 : 500).json({
+      message: storageFailed ? `Không thể lưu ảnh${cloudinaryMode ? ' lên Cloudinary' : ''}. Vui lòng thử lại.` : err.message,
+    });
   }
 }
-router.put('/:id', updateProduct);
-router.patch('/:id', updateProduct);
+router.put('/:id', receiveProductImage, parseProductImage, updateProduct);
+router.patch('/:id', receiveProductImage, parseProductImage, updateProduct);
 
 // DELETE /api/products/:id – soft delete
 router.delete('/:id', async (req, res) => {

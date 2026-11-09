@@ -406,6 +406,7 @@ app.get('/api/events/status', (_req, res) => {
 const clientDist = path.resolve(serverDir, '../client/dist');
 const clientIndex = path.join(clientDist, 'index.html');
 const hasClientBuild = existsSync(clientIndex);
+app.use('/uploads/products', express.static(path.join(serverDir, 'uploads/products'), { maxAge: '1h' }));
 const serveClientSetting = String(process.env.SERVE_CLIENT || '').trim().toLowerCase();
 const shouldServeClient = serveClientSetting === 'false'
   ? false

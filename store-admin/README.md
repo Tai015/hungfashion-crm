@@ -161,7 +161,7 @@ Với Railway, tạo PostgreSQL, Kafka và app trong cùng project; kết nối 
 
 ### Lưu tệp tải lên
 
-Mặc định, ảnh/video phản hồi và tệp chat được lưu local theo `FEEDBACK_UPLOAD_DIR` và `CHAT_UPLOAD_DIR`; khi dùng chế độ này trên Render, cần persistent disk để giữ file qua deploy. Để lưu trên Cloudinary, đặt `MEDIA_STORAGE=cloudinary` cùng ba biến credential trong môi trường backend. Asset được tải lên ở chế độ authenticated và vẫn đi qua endpoint API đã kiểm tra quyền; API Secret không được đưa vào frontend. Các tệp đã lưu local không tự được chuyển sang Cloudinary. Giới hạn và loại tệp vẫn được kiểm tra ở API.
+Ở chế độ local, ảnh sản phẩm được lưu trong `server/uploads/products` và phục vụ tại `/uploads/products/...`; ảnh/video phản hồi và tệp chat dùng `FEEDBACK_UPLOAD_DIR` và `CHAT_UPLOAD_DIR`. Trên Render, cần persistent disk để giữ các tệp local qua deploy. Để dùng Cloudinary, đặt `MEDIA_STORAGE=cloudinary` cùng ba biến credential trong môi trường backend. Ảnh/video phản hồi và tệp chat được tải lên ở chế độ authenticated, sau đó đi qua endpoint API đã kiểm tra quyền. Ảnh sản phẩm được tải lên ở chế độ public để storefront hiển thị trực tiếp bằng URL. API Secret chỉ cấu hình ở backend, không đưa vào frontend. Các tệp đã lưu local không tự được chuyển sang Cloudinary. Giới hạn và loại tệp vẫn được kiểm tra ở API.
 
 ## Database và migration
 

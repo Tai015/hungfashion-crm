@@ -5,6 +5,10 @@
       "destination": "https://hungfashion-crm.onrender.com/api/:path*"
     },
     {
+      "source": "/uploads/products/:path*",
+      "destination": "https://hungfashion-crm.onrender.com/uploads/products/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

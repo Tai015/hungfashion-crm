@@ -55,6 +55,10 @@ export default defineConfig({
         timeout: 0,
         proxyTimeout: 0,
       },
+      '/uploads/products': {
+        target: `http://${localApiHost}:${localApiPort}`,
+        changeOrigin: true,
+      },
     },
   },
 });

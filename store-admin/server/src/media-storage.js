@@ -1,11 +1,19 @@
 import { v2 as cloudinary } from 'cloudinary';
-import { unlink } from 'node:fs/promises';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 
 const CLOUDINARY_REF_PREFIX = 'cloudinary:v1:';
+const PRODUCT_UPLOAD_DIRECTORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../uploads/products');
+const PRODUCT_IMAGE_EXTENSIONS = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+};
 
 function mediaStorageMode() {
   return String(process.env.MEDIA_STORAGE || 'local').trim().toLowerCase();
@@ -92,6 +100,50 @@ export async function storeUploadedMedia(file, folder) {
     format: asset.format || extension.replace(/^\./, '') || 'bin',
   });
   return file.storageRef;
+}
+
+export async function storeProductImage(buffer, mimetype) {
+  if (mediaStorageMode() !== 'cloudinary') {
+    const filename = `${randomUUID()}${PRODUCT_IMAGE_EXTENSIONS[mimetype] || '.img'}`;
+    const localPath = path.join(PRODUCT_UPLOAD_DIRECTORY, filename);
+    await mkdir(PRODUCT_UPLOAD_DIRECTORY, { recursive: true });
+    await writeFile(localPath, buffer, { flag: 'wx' });
+    return { url: `/uploads/products/${filename}`, localPath, storage: 'local' };
+  }
+  configureCloudinary();
+  return new Promise((resolve, reject) => {
+    const upload = cloudinary.uploader.upload_stream({
+      resource_type: 'image',
+      type: 'upload',
+      asset_folder: 'hungfashion/products',
+      public_id: randomUUID(),
+      use_filename: false,
+      unique_filename: false,
+      overwrite: false,
+    }, (error, asset) => {
+      if (error) return reject(error);
+      resolve({ url: asset.secure_url, publicId: asset.public_id, resourceType: asset.resource_type, storage: 'cloudinary' });
+    });
+    upload.end(buffer);
+  });
+}
+
+export async function cleanupProductImage(asset) {
+  if (asset?.storage === 'local') {
+    if (asset.localPath) await unlink(asset.localPath).catch(() => {});
+    return;
+  }
+  if (!asset?.publicId || !cloudinaryConfigured()) return;
+  try {
+    configureCloudinary();
+    await cloudinary.uploader.destroy(asset.publicId, {
+      resource_type: asset.resourceType || 'image',
+      type: 'upload',
+      invalidate: true,
+    });
+  } catch {
+    // Cleanup is best-effort; preserve the original database error.
+  }
 }
 
 export async function cleanupUploadedMedia(files = []) {
