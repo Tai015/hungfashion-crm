@@ -7,7 +7,7 @@ on:
       - "store-admin/e2e/**"
       - "store-admin/playwright.config.js"
       - "store-admin/server/src/db.js"
-      - "store-admin/server/scripts/seed-e2e-auth.js"
+      - "store-admin/server/seed-e2e-auth.js"
       - ".github/workflows/e2e-auth.yml"
   workflow_dispatch:
 
@@ -128,7 +128,7 @@ jobs:
 
       - name: Seed dedicated E2E customer and staff accounts
         working-directory: store-admin
-        run: node server/scripts/seed-e2e-auth.js
+        run: node server/seed-e2e-auth.js
 
       - name: Start local API backend
         working-directory: store-admin
