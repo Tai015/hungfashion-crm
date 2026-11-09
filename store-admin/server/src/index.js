@@ -435,6 +435,19 @@ if (shouldServeClient && hasClientBuild) {
   });
 }
 
+// Centralized fallback for parser errors and failures not handled by a route.
+app.use((err, req, res, next) => {
+  logger.error({ err, requestId: req.requestId }, 'Unhandled HTTP request error');
+  if (res.headersSent) return next(err);
+  const statusCode = Number.isInteger(err.status) && err.status >= 400 && err.status < 600
+    ? err.status
+    : 500;
+  return res.status(statusCode).json({
+    message: statusCode >= 500 ? 'Đã xảy ra lỗi máy chủ.' : err.message,
+    requestId: req.requestId,
+  });
+});
+
 // ── Khởi động server ──────────────────────────────────────
 async function waitForDatabase() {
   let lastError;
