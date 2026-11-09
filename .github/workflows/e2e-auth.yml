@@ -23,6 +23,7 @@ permissions:
 jobs:
   auth-ui-e2e:
     name: UI E2E (local frontend + API)
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -157,6 +158,7 @@ jobs:
 
   auth-api-e2e:
     name: API E2E (isolated PostgreSQL)
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
