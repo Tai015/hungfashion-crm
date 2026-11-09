@@ -4,13 +4,14 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "store-admin/e2e/**"
-      - "store-admin/playwright.config.js"
-      - "store-admin/server/seed-e2e-auth.js"
-      - "store-admin/server/src/**"
-      - "store-admin/server/package.json"
-      - "store-admin/package.json"
-      - "store-admin/package-lock.json"
+      - "store-admin/**"
+      - "database/schema.sql"
+      - "database/migrations/**"
+      - ".github/workflows/e2e-auth.yml"
+  push:
+    branches: [main]
+    paths:
+      - "store-admin/**"
       - "database/schema.sql"
       - "database/migrations/**"
       - ".github/workflows/e2e-auth.yml"
@@ -263,5 +264,141 @@ jobs:
             store-admin/playwright-report/
             store-admin/test-results/
             /tmp/hungfashion-api.log
+          if-no-files-found: warn
+          retention-days: 14
+
+
+  auth-preview-e2e:
+    name: UI E2E (deployed Vercel Preview)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      E2E_BASE_URL: ${{ vars.E2E_PREVIEW_BASE_URL }}
+      E2E_VERCEL_BYPASS_TOKEN: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Preview URL and Vercel bypass secret
+        shell: bash
+        run: |
+          test -n "$E2E_BASE_URL" || { echo "::error::Missing repository variable E2E_PREVIEW_BASE_URL (the stable Vercel Preview URL for this PR branch)."; exit 1; }
+          test -n "$E2E_VERCEL_BYPASS_TOKEN" || { echo "::error::Missing repository secret VERCEL_AUTOMATION_BYPASS_SECRET (Vercel Deployment Protection automation bypass)."; exit 1; }
+          case "$E2E_BASE_URL" in
+            https://*.vercel.app) ;;
+            *) echo "::error::E2E_PREVIEW_BASE_URL must be an HTTPS Vercel Preview URL."; exit 1 ;;
+          esac
+          echo "Preview URL configuration is present."
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install project dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Install Playwright test runner
+        working-directory: store-admin
+        run: npm install --no-save --package-lock=false @playwright/test
+
+      - name: Install Chromium
+        working-directory: store-admin
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for Vercel Preview to become accessible
+        shell: bash
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent --show-error \
+              --header "x-vercel-protection-bypass: $E2E_VERCEL_BYPASS_TOKEN" \
+              "$E2E_BASE_URL/" --output /tmp/hungfashion-preview.html 2>/dev/null; then
+              if grep -q 'id="root"' /tmp/hungfashion-preview.html; then
+                echo "Vercel Preview is serving the application."
+                exit 0
+              fi
+            fi
+            sleep 10
+          done
+          echo "::error::Vercel Preview did not become accessible or did not serve the application within 10 minutes. Check Vercel deployment status, E2E_PREVIEW_BASE_URL, and VERCEL_AUTOMATION_BYPASS_SECRET."
+          exit 1
+
+      - name: Run read-only login-screen UI E2E on Preview
+        working-directory: store-admin
+        run: npx playwright test e2e/auth.spec.js --grep "màn hình đăng nhập"
+
+      - name: Upload Preview Playwright report and failure artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-preview-playwright-report
+          path: |
+            store-admin/playwright-report/
+            store-admin/test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+  production-smoke-e2e:
+    name: Production smoke E2E (read-only)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      E2E_BASE_URL: https://hungfashion-crm.vercel.app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install project dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Install Playwright test runner
+        working-directory: store-admin
+        run: npm install --no-save --package-lock=false @playwright/test
+
+      - name: Install Chromium
+        working-directory: store-admin
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for Production frontend and API
+        shell: bash
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent "$E2E_BASE_URL/" --output /tmp/hungfashion-production.html \
+              && grep -q 'id="root"' /tmp/hungfashion-production.html \
+              && curl --fail --silent "$E2E_BASE_URL/api/health" --output /tmp/hungfashion-production-health.json \
+              && grep -q '"status":"ok"' /tmp/hungfashion-production-health.json; then
+              echo "Production frontend and API health endpoint are responding."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Production did not become healthy within 10 minutes. Check Vercel deployment and Render backend health."
+          exit 1
+
+      - name: Run read-only Production UI and API smoke E2E
+        working-directory: store-admin
+        run: npx playwright test e2e/auth.spec.js e2e/production-smoke.spec.js --grep-invert "đăng nhập thành công"
+
+      - name: Upload Production smoke report and failure artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-playwright-report
+          path: |
+            store-admin/playwright-report/
+            store-admin/test-results/
           if-no-files-found: warn
           retention-days: 14
