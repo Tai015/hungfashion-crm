@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { apiFetch, saveAuthToken } from './api';
 import PasswordInput from './PasswordInput';
 import { showErrorAlert, showSuccessAlert } from './utils/notifications';
@@ -8,6 +8,7 @@ const CUSTOMER_INTERESTS = ['Áo thun', 'Áo sơ mi', 'Áo khoác', 'Quần jean
 
 function authErrorMessage(error, audience) {
   if (error?.name === 'TypeError') return 'Không thể kết nối máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.';
+  if (error?.status === 429) return 'Bạn thao tác quá nhiều lần. Vui lòng chờ hết thời gian đếm ngược rồi thử lại.';
   if (error?.status === 401 && audience === 'customer') return 'Tài khoản không tồn tại hoặc thông tin đăng nhập không chính xác.';
   if (error?.status === 401) return 'Thông tin đăng nhập không chính xác. Vui lòng kiểm tra lại.';
   if (error?.status >= 500) return 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.';
@@ -27,11 +28,24 @@ export default function AuthScreen({ onAuthenticated }) {
   const [interests, setInterests] = useState([]);
   const [busy, setBusy] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [rateLimitUntil, setRateLimitUntil] = useState(0);
+  const [countdownNow, setCountdownNow] = useState(() => Date.now());
+  const rateLimitRemaining = Math.max(0, Math.ceil((rateLimitUntil - countdownNow) / 1000));
   const ageGroup = getAgeGroup(dateOfBirth);
+
+  useEffect(() => {
+    if (!rateLimitUntil || rateLimitRemaining <= 0) return undefined;
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      setCountdownNow(now);
+      if (now >= rateLimitUntil) window.clearInterval(timer);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [rateLimitUntil, rateLimitRemaining > 0]);
 
   const submit = async (e) => {
     e.preventDefault();
-    if (busy) return;
+    if (busy || Date.now() < rateLimitUntil) return;
     setBusy(true);
 
     try {
@@ -59,6 +73,11 @@ export default function AuthScreen({ onAuthenticated }) {
       saveAuthToken(result.token, rememberMe);
       onAuthenticated(result.user);
     } catch (err) {
+      if (err?.status === 429) {
+        const waitSeconds = Math.max(1, Number(err.retryAfterSeconds) || 5 * 60);
+        setCountdownNow(Date.now());
+        setRateLimitUntil(Date.now() + waitSeconds * 1000);
+      }
       await showErrorAlert(authErrorMessage(err, audience), {
         title: mode === 'login' ? 'Đăng nhập thất bại' : 'Đăng ký thất bại',
         confirmButtonText: 'Thử lại',
@@ -160,10 +179,15 @@ export default function AuthScreen({ onAuthenticated }) {
             </label>
           )}
 
-          <button type="submit" disabled={busy || (mode === 'register' && !dateOfBirth)}
+          {rateLimitRemaining > 0 && (
+            <p className="m-0 text-center text-sm font-medium text-rose-700" role="status" aria-live="polite">
+              Bạn thao tác quá nhiều lần. Vui lòng chờ {formatCountdown(rateLimitRemaining)} để thử lại.
+            </p>
+          )}
+          <button type="submit" disabled={busy || rateLimitRemaining > 0 || (mode === 'register' && !dateOfBirth)}
             aria-busy={busy}
             className="w-full h-11 mt-1 bg-gradient-to-br from-teal-400 to-sky-400 text-[#082f2a] font-semibold rounded-xl shadow-[0_10px_25px_rgba(45,212,191,0.28)] hover:shadow-[0_14px_32px_rgba(45,212,191,0.38)] hover:-translate-y-px transition-all disabled:opacity-55 disabled:cursor-not-allowed disabled:translate-y-0 cursor-pointer">
-            {busy ? 'Đang xử lý...' : mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
+            {rateLimitRemaining > 0 ? `Vui lòng chờ ${formatCountdown(rateLimitRemaining)}` : busy ? 'Đang xử lý...' : mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
           </button>
         </form>
 
@@ -182,6 +206,12 @@ export default function AuthScreen({ onAuthenticated }) {
       </section>
     </main>
   );
+}
+
+function formatCountdown(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function getAgeGroup(value) {
