@@ -6,7 +6,6 @@ on:
     paths:
       - "store-admin/e2e/**"
       - "store-admin/playwright.config.js"
-      - "store-admin/server/src/db.js"
       - "store-admin/server/seed-e2e-auth.js"
       - ".github/workflows/e2e-auth.yml"
   workflow_dispatch:
@@ -96,7 +95,13 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     env:
+      # Keep DATABASE_URL only for the standalone E2E seed script.
       DATABASE_URL: postgres://postgres:ci-only-not-production-password@127.0.0.1:5432/hungfashion_e2e
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: hungfashion_e2e
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ci-only-not-production-password
       E2E_BASE_URL: http://127.0.0.1:5000
       E2E_CUSTOMER_IDENTIFIER: ${{ secrets.E2E_CUSTOMER_IDENTIFIER }}
       E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
