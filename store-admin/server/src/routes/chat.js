@@ -5,6 +5,7 @@ import { mkdir, open, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pool } from '../db.js';
+import { logger } from '../logger.js';
 import { canUseChat, isChatStaff } from '../chat-access.js';
 import { chatAttachmentTypes, validateChatAttachment } from '../chat-attachment-types.js';
 
@@ -82,7 +83,7 @@ async function insertChatAttachments(client, messageId, files) {
 }
 
 function logChatError(context, error) {
-  console.error(`[chat] ${context}:`, error);
+  logger.error({ err: error, context }, 'Chat operation failed');
 }
 
 function sendChatServerError(res, context, error) {
