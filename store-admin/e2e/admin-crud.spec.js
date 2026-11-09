@@ -203,13 +203,13 @@ test.describe('Admin CRUD — Local only', () => {
     const customerId = Number(process.env.E2E_ORDER_CUSTOMER_ID);
     test.skip(!Number.isSafeInteger(customerId) || customerId < 1,
       'Cần E2E_ORDER_CUSTOMER_ID trỏ đến khách test đã có đơn hàng trong database Local.');
+    const orderHistory = await api(page, `/api/customers/${customerId}/orders`);
+    expect(orderHistory.status, JSON.stringify(orderHistory.body)).toBe(200);
+    expect(orderHistory.body.length).toBeGreaterThan(0);
     const result = await api(page, `/api/customers/${customerId}`, { method: 'DELETE' });
     expect(result.status).toBe(409);
-    expect(
-      result.body.message.includes('đơn hàng') || Number(result.body.blockers?.orders) > 0
-        || result.body.message.includes('tài khoản đăng nhập'),
-      JSON.stringify(result.body),
-    ).toBe(true);
+    expect(Number(result.body.blockers?.orders)).toBeGreaterThan(0);
+    expect(result.body.message).toContain('đơn hàng');
   });
 
   test('ẩn sản phẩm đã có trong đơn không làm mất chi tiết đơn cũ', async ({ page }) => {
