@@ -343,6 +343,12 @@ async function runE2e(target) {
       E2E_CUSTOMER_PASSWORD: e2eEnvironment.E2E_CUSTOMER_PASSWORD || process.env.E2E_CUSTOMER_PASSWORD || '',
       E2E_STAFF_IDENTIFIER: e2eEnvironment.E2E_STAFF_IDENTIFIER || process.env.E2E_STAFF_IDENTIFIER || '',
       E2E_STAFF_PASSWORD: e2eEnvironment.E2E_STAFF_PASSWORD || process.env.E2E_STAFF_PASSWORD || '',
+      E2E_ADMIN_IDENTIFIER: e2eEnvironment.E2E_ADMIN_IDENTIFIER || process.env.E2E_ADMIN_IDENTIFIER || '',
+      E2E_ADMIN_PASSWORD: e2eEnvironment.E2E_ADMIN_PASSWORD || process.env.E2E_ADMIN_PASSWORD || '',
+      E2E_ALLOW_MUTATIONS: e2eEnvironment.E2E_ALLOW_MUTATIONS || '0',
+      E2E_ORDER_CUSTOMER_ID: e2eEnvironment.E2E_ORDER_CUSTOMER_ID || '',
+      E2E_ORDER_ID: e2eEnvironment.E2E_ORDER_ID || '',
+      E2E_ORDER_PRODUCT_ID: e2eEnvironment.E2E_ORDER_PRODUCT_ID || '',
     };
 
     if (target === 'local') {
