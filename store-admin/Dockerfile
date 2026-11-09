@@ -39,7 +39,6 @@ RUN npm ci --omit=dev
 COPY server ./server
 COPY scripts ./scripts
 COPY data ./data
-COPY --from=build /app/client/dist ./client/dist
 RUN /opt/venv/bin/pip install --no-cache-dir -r server/settings/requirements.txt \
     && mkdir -p /data/feedback /data/chat
 
