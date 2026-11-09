@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createKafkaClient } from './kafka.js';
+import { logger } from './logger.js';
+import { createRequestLoggingMiddleware } from './request-logging.js';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -45,6 +47,7 @@ if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0) {
   throw new Error('TRUST_PROXY_HOPS must be a non-negative integer.');
 }
 app.set('trust proxy', trustProxyHops);
+app.use(createRequestLoggingMiddleware());
 const databaseBrowserEnabled = process.env.ENABLE_DATABASE_BROWSER === 'true';
 const eventRateLimitWindowMs = Number(process.env.EVENT_RATE_LIMIT_WINDOW_MS || 1000);
 const eventRateLimitMax = Number(process.env.EVENT_RATE_LIMIT_MAX || 1200);
@@ -204,13 +207,13 @@ setInterval(() => {
   const now = Date.now();
   for (const [role, metrics] of Object.entries(kafkaMetrics)) {
     const intervalSeconds = (now - metrics.windowStartedAt) / 1000;
-    console.log(JSON.stringify({
+    logger.info({
       type: 'kafka_pipeline_metrics', role,
       intervalSeconds: Number(intervalSeconds.toFixed(1)),
       messages: metrics.windowMessages, failures: metrics.windowFailures,
       totalMessages: metrics.total, totalFailures: metrics.failed,
       messagesPerSecond: Number((metrics.windowMessages / intervalSeconds).toFixed(2)),
-    }));
+    }, 'Kafka pipeline metrics');
     metrics.windowMessages = 0;
     metrics.windowFailures = 0;
     metrics.windowStartedAt = now;
@@ -254,7 +257,7 @@ async function ensureKafkaTopics() {
     for (const topic of topics) {
       if (!existing.includes(topic.topic)) {
         await admin.createTopics({ topics: [topic], waitForLeaders: true });
-        console.log(`Created Kafka topic: ${topic.topic}`);
+        logger.info({ topic: topic.topic }, 'Created Kafka topic');
       }
     }
   } finally {
@@ -409,7 +412,7 @@ const hasClientBuild = existsSync(clientIndex);
 const shouldServeClient = process.env.NODE_ENV === 'production' || hasClientBuild;
 
 if (!hasClientBuild) {
-  console.warn(`⚠️ Frontend build not found at ${clientIndex}; Express will serve API routes only.`);
+  logger.warn({ clientBuildPath: clientIndex }, 'Frontend build not found; Express will serve API routes only');
 } else if (shouldServeClient) {
   app.use(express.static(clientDist, { index: false, maxAge: '1h' }));
 }
@@ -450,7 +453,7 @@ async function waitForDatabase() {
 async function connectDatabase() {
   await waitForDatabase();
   await runMigrations();
-  console.log('✅ Connected to PostgreSQL');
+  logger.info('Connected to PostgreSQL');
 }
 
 async function startServer() {
@@ -460,17 +463,17 @@ async function startServer() {
   // 2. Khởi động Express ngay — không chờ Kafka
   const listenHost = process.env.DEMO_PAYMENT === 'true' ? '0.0.0.0' : null;
   const onListening = () => {
-    console.log(`🚀 Hung Fashion API running at http://localhost:${PORT}`);
-    if (listenHost) console.log(`   Demo payment enabled; listening on ${listenHost}:${PORT} for LAN/tunnel access.`);
-    console.log(`   Routes: /api/accounts | /api/customers | /api/products`);
-    console.log(`           /api/inventory | /api/orders | /api/promotions`);
-    console.log(`           /api/feedbacks | /api/surveys | /api/reports`);
+    logger.info({ port: PORT }, 'Hung Fashion API listening');
+    if (listenHost) logger.info({ host: listenHost, port: PORT }, 'Demo payment listening for LAN/tunnel access');
+    logger.info('Routes registered: accounts, customers, products');
+    logger.info('Routes registered: inventory, orders, promotions');
+    logger.info('Routes registered: feedbacks, surveys, reports');
   };
   if (listenHost) app.listen(PORT, listenHost, onListening);
   else app.listen(PORT, onListening);
 
   startOutboxRelay().catch((err) => {
-    console.error('Outbox relay stopped unexpectedly:', err);
+    logger.error({ err }, 'Outbox relay stopped unexpectedly');
   });
 
   // 3. Kafka kết nối nền — không block web server
@@ -486,20 +489,20 @@ async function connectKafka() {
       await ensureKafkaTopics();
       await consumeEvents();
       kafkaReady = true;   // ← bật flag: từ giờ dùng Kafka thay vì DB fallback
-      console.log('✅ Kafka connected');
+      logger.info('Kafka connected');
       break;
     } catch (err) {
-      console.warn(`⚠️  Kafka attempt ${attempt} failed: ${err.message}`);
+      logger.warn({ err, attempt }, 'Kafka connection attempt failed');
       kafkaReady = false;
       await consumer.disconnect().catch(() => {});
       const retryDelayMs = Math.min(3000 * attempt, 30_000);
-      console.warn(`Kafka will retry in ${retryDelayMs}ms.`);
+      logger.warn({ retryDelayMs }, 'Kafka connection will retry');
       await new Promise(r => setTimeout(r, retryDelayMs));
     }
   }
 }
 
 startServer().catch((err) => {
-  console.error('Server startup failed:', err);
+  logger.fatal({ err }, 'Server startup failed');
   process.exit(1);
 });
