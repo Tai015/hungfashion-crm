@@ -16,6 +16,7 @@ import { runMigrations } from './migrations.js';
 import { kafkaMetrics } from './kafka-metrics.js';
 import { startOutboxRelay } from './outbox-relay.js';
 import { writeOutboxEvent } from './outbox-writer.js';
+import { persistTransactionEvent } from './transaction-events.js';
 import { allowRoles, requireAuth } from './auth.js';
 import authRouter       from './routes/auth.js';
 import accountRouter   from './routes/account.js';
@@ -283,27 +284,7 @@ async function persistEvent(topic, payload, source, fallbackEventId) {
   const userId = textValue(event.userId);
 
   if (topic === 'transaction-events') {
-    const parsedAmount = event.amount == null || event.amount === '' ? NaN : Number(event.amount);
-    const parsedItemCount = event.itemCount == null || event.itemCount === ''
-      ? NaN
-      : Number(event.itemCount);
-    const amount = Number.isFinite(parsedAmount) ? parsedAmount : null;
-    const itemCount = Number.isInteger(parsedItemCount) ? parsedItemCount : null;
-    await pool.query(
-      `INSERT INTO transactions
-         (event_id, user_id, session_id, event_type, transaction_id, benchmark_run_id,
-          amount, currency, status, item_count, page, action, producer_source,
-          source, occurred_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,COALESCE($15,NOW()))
-       ON CONFLICT (event_id) DO NOTHING`,
-      [
-        eventId, userId, textValue(event.sessionId),
-        textValue(event.eventType) || 'unknown', textValue(event.transactionId),
-        textValue(event.benchmarkRunId), amount, textValue(event.currency),
-        textValue(event.status), itemCount, textValue(event.page),
-        textValue(event.event), textValue(event.source), source, occurredAt,
-      ]
-    );
+    await persistTransactionEvent(pool, event, source, fallbackEventId);
     return;
   }
 
