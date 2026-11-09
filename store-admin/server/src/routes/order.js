@@ -694,9 +694,10 @@ router.post('/', async (req, res) => {
     }
 
     const paymentStatus = paymentRequired ? 'Pending' : 'Paid';
-    await client.query(
+    const { rows: [payment] } = await client.query(
       `INSERT INTO payment (order_id, method, amount, status, paid_at)
-       VALUES ($1, $2, $3, $4, CASE WHEN $3::numeric = 0 THEN NOW() ELSE NULL END)`,
+       VALUES ($1, $2, $3, $4, CASE WHEN $3::numeric = 0 THEN NOW() ELSE NULL END)
+       RETURNING payment_id`,
       [order.order_id, payment_method, total_amount, paymentStatus]
     );
 
@@ -715,7 +716,8 @@ router.post('/', async (req, res) => {
     await enqueueTransactionEvent(client, {
       eventType: 'order_created', orderId: order.order_id, amount: total_amount,
       status: order.order_status, source: 'orders_api', userId: req.user.account_id,
-      customerId: customer_id, itemCount: pricedItems.reduce((sum, item) => sum + item.quantity, 0),
+      customerId: customer_id, paymentId: payment.payment_id,
+      itemCount: pricedItems.reduce((sum, item) => sum + item.quantity, 0),
     });
     await client.query('COMMIT');
     const instructions = demoPaymentUrl ? { demo_url: demoPaymentUrl } : null;
