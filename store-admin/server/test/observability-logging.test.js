@@ -31,7 +31,7 @@ test('writes JSON logs and redacts sensitive fields and bearer tokens', () => {
 test('adds request id header and logs a route template without query parameters', async () => {
   const { records, logger } = captureLogger();
   const app = express();
-  app.use(createRequestLoggingMiddleware({ logger, requestIdFactory: () => 'req-test-123' }));
+  app.use(createRequestLoggingMiddleware({ logger, requestIdFactory: () => 'req-test-fixed' }));
   app.get('/api/orders/:orderId', (_req, res) => res.status(200).json({ ok: true }));
 
   const server = app.listen(0, '127.0.0.1');
@@ -39,10 +39,10 @@ test('adds request id header and logs a route template without query parameters'
   try {
     const response = await fetch(`http://127.0.0.1:${server.address().port}/api/orders/123?token=private`);
     assert.equal(response.status, 200);
-    assert.equal(response.headers.get('x-request-id'), 'req-test-123');
+    assert.equal(response.headers.get('x-request-id'), 'req-test-fixed');
     await response.text();
     assert.equal(records.length, 1);
-    assert.equal(records[0].requestId, 'req-test-123');
+    assert.equal(records[0].requestId, 'req-test-fixed');
     assert.equal(records[0].route, '/api/orders/:orderId');
     assert.equal(records[0].statusCode, 200);
     assert.equal(records[0].level, 'info');
