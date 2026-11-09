@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { after, test } from 'node:test';
 import pg from 'pg';
 import { enqueueTransactionEvent, persistTransactionEvent } from '../src/transaction-events.js';
+import { publishOutboxMessages } from '../src/outbox-relay.js';
 
 const { Pool } = pg;
 const databaseUrl = process.env.TEST_DATABASE_URL;
@@ -136,4 +137,15 @@ test('transactionId is not derived from orderId', async () => {
   assert.equal(payload.orderId, '777');
   assert.equal(Object.hasOwn(payload, 'transactionId'), false);
   assert.equal(event.transactionId, undefined);
+});
+
+test('Kafka producer boundary can be exercised with a mock producer', async () => {
+  const sent = [];
+  const mockProducer = { send: async message => { sent.push(message); } };
+  await publishOutboxMessages(mockProducer, {
+    'transaction-events': [{ key: '42', value: '{"eventType":"order_created"}' }],
+  });
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].topic, 'transaction-events');
+  assert.equal(sent[0].messages[0].key, '42');
 });
