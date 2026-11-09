@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { apiFetch, TOKEN_KEY } from './api';
 import PasswordInput from './PasswordInput';
+import { showErrorAlert } from './utils/notifications';
 
 const INPUT = 'w-full h-11 px-3 bg-white/70 border border-stone-400 rounded-xl text-stone-900 text-sm placeholder-stone-500 outline-none focus:border-sky-700 focus:ring-2 focus:ring-sky-700/30 transition-all disabled:bg-stone-100 disabled:text-stone-500 disabled:cursor-not-allowed';
 const CUSTOMER_INTERESTS = ['Áo thun', 'Áo sơ mi', 'Áo khoác', 'Quần jean', 'Quần kaki', 'Váy', 'Phụ kiện', 'Giày dép'];
@@ -55,11 +56,8 @@ export default function AuthScreen({ onAuthenticated }) {
       window.localStorage.setItem(TOKEN_KEY, result.token);
       onAuthenticated(result.user);
     } catch (err) {
-      const { default: Swal } = await import('sweetalert2');
-      await Swal.fire({
-        icon: 'error',
+      await showErrorAlert(authErrorMessage(err, audience), {
         title: mode === 'login' ? 'Đăng nhập thất bại' : 'Đăng ký thất bại',
-        text: authErrorMessage(err, audience),
         confirmButtonText: 'Thử lại',
         allowOutsideClick: false,
       });
