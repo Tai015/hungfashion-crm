@@ -1,6 +1,7 @@
 import { createKafkaClient } from './kafka.js';
 import { pool } from './db.js';
 import { kafkaMetrics } from './kafka-metrics.js';
+import { publishOutboxMessages } from './outbox-publisher.js';
 
 const kafka = createKafkaClient('store-admin-outbox-relay');
 const producer = kafka.producer({ idempotent: true });
@@ -10,12 +11,6 @@ const retentionCleanupIntervalMs = 60 * 60 * 1000;
 const retryCeilingMs = 30_000;
 
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
-
-export async function publishOutboxMessages(producerClient, messagesByTopic) {
-  for (const [topic, messages] of Object.entries(messagesByTopic)) {
-    await producerClient.send({ topic, messages });
-  }
-}
 
 async function publishBatch() {
   const client = await pool.connect();
