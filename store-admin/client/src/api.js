@@ -12,7 +12,7 @@ export function saveAuthToken(token, rememberMe) {
 }
 
 export function clearAuthToken() {
-  clearAuthToken();
+  window.localStorage.removeItem(TOKEN_KEY);
   window.sessionStorage.removeItem(TOKEN_KEY);
 }
 
@@ -118,7 +118,7 @@ function startChatEventStream() {
         }, { signal: chatEventController.signal });
       } catch (error) {
         if (error.status === 401 || error.status === 403) {
-          window.localStorage.removeItem(TOKEN_KEY);
+          clearAuthToken();
           window.dispatchEvent(new CustomEvent('auth:expired', {
             detail: { code: error.code, message: error.message },
           }));
@@ -184,7 +184,7 @@ export async function apiFetch(url, options = {}) {
     : await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 401) {
-      window.localStorage.removeItem(TOKEN_KEY);
+      clearAuthToken();
       window.dispatchEvent(new CustomEvent('auth:expired', {
         detail: { code: result?.code, message: result?.message },
       }));
