@@ -7,6 +7,12 @@ on:
       - "store-admin/e2e/**"
       - "store-admin/playwright.config.js"
       - "store-admin/server/seed-e2e-auth.js"
+      - "store-admin/server/src/**"
+      - "store-admin/server/package.json"
+      - "store-admin/package.json"
+      - "store-admin/package-lock.json"
+      - "database/schema.sql"
+      - "database/migrations/**"
       - ".github/workflows/e2e-auth.yml"
   workflow_dispatch:
 
