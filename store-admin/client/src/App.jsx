@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { apiFetch, checkRuntimeServices, subscribeToChatEvents, TOKEN_KEY } from './api';
+import { apiFetch, checkRuntimeServices, subscribeToChatEvents, TOKEN_KEY, getAuthToken, clearAuthToken } from './api';
 import AuthScreen from './AuthScreen';
 const CustomerPortal = lazy(() => import('./CustomerPortal'));
 const GuestStorefront = lazy(() => import('./CustomerPortal').then(module => ({ default: module.GuestStorefront })));
@@ -144,7 +144,7 @@ function App() {
   }, [user?.account_id, user?.role]);
 
   useEffect(() => {
-    const token = window.localStorage.getItem(TOKEN_KEY);
+    const token = getAuthToken();
     let active = true;
     const expire = event => {
       pageViewTracked.current = null;
@@ -155,7 +155,7 @@ function App() {
       }
     };
     const handleStorage = event => {
-      if (event.key === TOKEN_KEY && !event.newValue) expire();
+      if (event.key === TOKEN_KEY && !event.newValue && !window.sessionStorage.getItem(TOKEN_KEY)) expire();
     };
     window.addEventListener('auth:expired', expire);
     window.addEventListener('storage', handleStorage);
@@ -227,7 +227,7 @@ function App() {
     pageViewTracked.current = null;
     const loginRoute = user?.role === 'KHACH_HANG' ? '' : '#/nhan-vien/login';
     apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {}).finally(() => {
-      window.localStorage.removeItem(TOKEN_KEY);
+      clearAuthToken();
       setUser(null);
       setView('dashboard');
       window.location.hash = loginRoute;
