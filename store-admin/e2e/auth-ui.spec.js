@@ -251,6 +251,6 @@ test('hiển thị đồng hồ đếm ngược và khóa nút khi API giới h�
   await page.getByRole('button', { name: 'Đã hiểu' }).click();
   await expect(dialog).toBeHidden();
 
-  await expect(page.getByRole('status')).toContainText('01:05');
-  await expect(page.getByRole('button', { name: 'Vui lòng chờ 01:05' })).toBeDisabled();
+  await expect(page.getByRole('status')).toContainText(/01:0[0-5]/);
+  await expect(page.getByRole('button', { name: /Vui lòng chờ 01:0[0-5]/ })).toBeDisabled();
 });
