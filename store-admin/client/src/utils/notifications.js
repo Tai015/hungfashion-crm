@@ -1,27 +1,36 @@
 import { useEffect } from 'react';
-const recentAlerts = new Map();
-const ALERT_COOLDOWN_MS = 8000;
 
-async function showAlert(icon, title, message, options = {}) {
+let alertQueue = Promise.resolve();
+
+function showAlert(icon, title, message, options = {}) {
   const text = String(message || '').trim();
   if (!text) return Promise.resolve({ isDismissed: true });
 
-  const key = `${icon}:${text}`;
-  const lastShownAt = recentAlerts.get(key) || 0;
-  if (Date.now() - lastShownAt < ALERT_COOLDOWN_MS) return Promise.resolve({ isDismissed: true });
-  recentAlerts.set(key, Date.now());
+  const displayAlert = async () => {
+    const { default: Swal } = await import('sweetalert2');
+    return Swal.fire({
+      icon,
+      title,
+      text,
+      confirmButtonText: 'Đã hiểu',
+      ...options,
+    });
+  };
 
-  const { default: Swal } = await import('sweetalert2');
-  return Swal.fire({
-    icon,
-    title,
-    text,
-    confirmButtonText: 'Đã hiểu',
-    ...options,
-  });
+  // SweetAlert2 chỉ có một popup tại một thời điểm. Xếp hàng để các lỗi
+  // đồng thời không ghi đè hoặc làm mất thông báo đang hiển thị.
+  const pendingAlert = alertQueue.then(displayAlert, displayAlert);
+  alertQueue = pendingAlert.then(() => undefined, () => undefined);
+  return pendingAlert;
 }
 
-export const showErrorAlert = message => showAlert('error', 'Đã xảy ra lỗi', message);
+export const showErrorAlert = (message, options = {}) => showAlert(
+  'error',
+  'Đã xảy ra lỗi',
+  message,
+  { allowOutsideClick: true, ...options },
+);
+
 export const showSuccessAlert = message => showAlert('success', 'Thành công', message, {
   toast: true,
   position: 'top-end',
