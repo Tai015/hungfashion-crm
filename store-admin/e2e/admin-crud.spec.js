@@ -39,10 +39,8 @@ async function loginAsAdmin(page) {
   expect(roles.status).toBe(200);
 }
 
-test.describe('Admin CRUD — Local only', () => {
+test.describe('Admin navigation — Local only', () => {
   test.beforeEach(async ({ page }) => {
-    test.skip(process.env.E2E_ALLOW_MUTATIONS !== '1',
-      'Đã bỏ qua thao tác CRUD: bật E2E_ALLOW_MUTATIONS=1 chỉ trên database Local dùng riêng cho kiểm thử.');
     await loginAsAdmin(page);
   });
 
@@ -58,6 +56,15 @@ test.describe('Admin CRUD — Local only', () => {
       await page.goto(`/#${route}`);
       await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
     }
+  });
+
+});
+
+test.describe('Admin CRUD — Local only', () => {
+  test.beforeEach(async ({ page }) => {
+    test.skip(process.env.E2E_ALLOW_MUTATIONS !== '1',
+      'Đã bỏ qua thao tác CRUD: bật E2E_ALLOW_MUTATIONS=1 chỉ trên database Local dùng riêng cho kiểm thử.');
+    await loginAsAdmin(page);
   });
 
   test('CRUD sản phẩm và xóa mềm không làm mất dữ liệu sản phẩm', async ({ page }) => {
