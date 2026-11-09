@@ -151,8 +151,11 @@ router.post('/pay/demo/:token/confirm', isEnabled, limitRequests, async (req, re
     const paidTransactionId = paidRows[0].transaction_ref;
     const transactionEvent = {
       eventId,
-      transactionId: paidTransactionId,
       eventType: 'payment_completed',
+      transactionId: paidTransactionId,
+      orderId: String(order.order_id),
+      paymentId: String(paidRows[0].payment_id),
+      customerId: order.customer_id == null ? null : String(order.customer_id),
       amount: Number(paidRows[0].amount),
       currency: 'VND',
       status: 'Paid',
