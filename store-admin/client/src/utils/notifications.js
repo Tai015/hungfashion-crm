@@ -34,7 +34,8 @@ export const showErrorAlert = (message, options = {}) => showAlert(
 export const showSuccessAlert = message => showAlert('success', 'Thành công', message, {
   toast: true,
   position: 'top-end',
-  showConfirmButton: false,
+  showConfirmButton: true,
+  confirmButtonText: 'Đã hiểu',
   timer: 2400,
   timerProgressBar: true,
 });
