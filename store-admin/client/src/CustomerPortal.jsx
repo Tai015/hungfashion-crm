@@ -120,6 +120,7 @@ function CustomerCatalog({ onGoCart, guest = false, onLogin }) {
   const [search, setSearch]     = useState('');
   const [sort, setSort]         = useState('created_at');
   const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [page, setPage]         = useState(1);
   const [total, setTotal]       = useState(0);
   const [loading, setLoading]   = useState(true);
@@ -132,9 +133,13 @@ function CustomerCatalog({ onGoCart, guest = false, onLogin }) {
   const limit = 24;
 
   useEffect(() => {
+    let active = true;
+    setCategoriesLoading(true);
     apiFetch('/api/products/categories')
-      .then(rows => setCategories(Array.isArray(rows) ? rows : []))
-      .catch(e => setError(e.message));
+      .then(rows => { if (active) setCategories(Array.isArray(rows) ? rows : []); })
+      .catch(e => { if (active) setError(e.message); })
+      .finally(() => { if (active) setCategoriesLoading(false); });
+    return () => { active = false; };
   }, [retryCount]);
 
   useEffect(() => {
@@ -175,7 +180,7 @@ function CustomerCatalog({ onGoCart, guest = false, onLogin }) {
       </div>
 
 
-      {loading ? <div className="customer-catalog-loading" role="status" aria-live="polite"><Spinner portalTheme label={guest ? 'Đang lấy dữ liệu, vui lòng chờ…' : 'Đang tải...'} /></div> : guest && error && !products.length ? (
+      {loading || (guest && categoriesLoading) ? <div className="customer-catalog-loading" role="status" aria-live="polite"><Spinner portalTheme label={guest ? 'Đang lấy dữ liệu, vui lòng chờ…' : 'Đang tải...'} /></div> : guest && error ? (
         <div className="portal-empty col-span-full flex flex-col items-center gap-3 py-16 text-center" role="alert">
           <ShoppingBag size={30} aria-hidden="true" />
           <p className="m-0 text-sm">Không thể tải dữ liệu cửa hàng. Vui lòng kiểm tra kết nối và thử lại.</p>
