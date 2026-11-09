@@ -113,6 +113,15 @@ jobs:
           cat /tmp/hungfashion-ui-api.log
           exit 1
 
+      - name: Configure loopback-only Vite host for CI
+        working-directory: store-admin
+        run: |
+          cat > server/.env <<'EOF'
+          LOCAL_URL=http://127.0.0.1:5173
+          LOCAL_HOST=127.0.0.1
+          PORT=5000
+          EOF
+
       - name: Start local Vite frontend
         working-directory: store-admin
         run: |
