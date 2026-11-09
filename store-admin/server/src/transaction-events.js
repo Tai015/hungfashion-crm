@@ -17,7 +17,7 @@ function nullableText(value) {
 
 export async function enqueueTransactionEvent(client, {
   eventType, orderId = null, amount, status, source, userId = null, customerId = null,
-  paymentId = null, transactionId = null, transactionRef = null, itemCount = null,
+  paymentId = null, paymentMethod = null, transactionId = null, transactionRef = null, itemCount = null,
   previousStatus = null, reason = null,
 }) {
   const eventId = randomUUID();
@@ -31,6 +31,7 @@ export async function enqueueTransactionEvent(client, {
     userId: nullableText(userId),
     customerId: nullableText(customerId),
     paymentId: nullableText(paymentId),
+    paymentMethod: nullableText(paymentMethod),
     occurredAt: new Date().toISOString(),
   };
 
