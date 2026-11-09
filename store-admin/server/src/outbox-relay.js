@@ -11,6 +11,12 @@ const retryCeilingMs = 30_000;
 
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
+export async function publishOutboxMessages(producerClient, messagesByTopic) {
+  for (const [topic, messages] of Object.entries(messagesByTopic)) {
+    await producerClient.send({ topic, messages });
+  }
+}
+
 async function publishBatch() {
   const client = await pool.connect();
   try {
@@ -45,9 +51,7 @@ async function publishBatch() {
     // Bước này thực hiện ngoài DB transaction để không block DB connection quá lâu
     // Tuy nhiên trong code hiện tại, ta vẫn để trong BEGIN/COMMIT để đảm bảo tính nguyên tử
     // nếu broker lỗi thì ROLLBACK toàn bộ batch.
-    for (const [topic, messages] of Object.entries(messagesByTopic)) {
-      await producer.send({ topic, messages });
-    }
+    await publishOutboxMessages(producer, messagesByTopic);
 
     // Cập nhật trạng thái hàng loạt
     const eventIds = rows.map(r => r.event_id);
