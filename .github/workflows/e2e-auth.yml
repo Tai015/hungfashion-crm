@@ -6,6 +6,8 @@ on:
     paths:
       - "store-admin/e2e/**"
       - "store-admin/playwright.config.js"
+      - "store-admin/server/src/db.js"
+      - "store-admin/server/scripts/seed-e2e-auth.js"
       - ".github/workflows/e2e-auth.yml"
   workflow_dispatch:
 
@@ -13,7 +15,8 @@ permissions:
   contents: read
 
 jobs:
-  auth-e2e:
+  auth-ui-e2e:
+    name: UI E2E (Vercel)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -28,19 +31,136 @@ jobs:
           cache-dependency-path: store-admin/package-lock.json
 
       - name: Install project dependencies
-        run: npm ci --prefix store-admin
+        working-directory: store-admin
+        run: npm ci
 
       - name: Install Playwright test runner
-        run: npm install --no-save --package-lock=false --prefix store-admin @playwright/test
+        working-directory: store-admin
+        run: npm install --no-save --package-lock=false @playwright/test
 
       - name: Install Chromium
-        run: npx --prefix store-admin playwright install --with-deps chromium
+        working-directory: store-admin
+        run: npx playwright install --with-deps chromium
 
-      - name: Run login E2E tests
-        run: npx --prefix store-admin playwright test
+      - name: Run login-screen UI E2E (headless)
+        working-directory: store-admin
+        run: npx playwright test e2e/auth.spec.js --grep "màn hình đăng nhập"
         env:
-          E2E_BASE_URL: https://hungfashion-crm.vercel.app
-          E2E_CUSTOMER_IDENTIFIER: ${{ secrets.E2E_CUSTOMER_IDENTIFIER }}
-          E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
-          E2E_STAFF_IDENTIFIER: ${{ secrets.E2E_STAFF_IDENTIFIER }}
-          E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
+          E2E_BASE_URL: https://hungfashion-crm-git-test-e2e-auth-playwright-tai-4212.vercel.app
+          E2E_VERCEL_BYPASS_TOKEN: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
+      - name: Upload UI Playwright report and failure artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-ui-playwright-report
+          path: |
+            store-admin/playwright-report/
+            store-admin/test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+  auth-api-e2e:
+    name: API E2E (isolated PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-not-production-password
+          POSTGRES_DB: hungfashion_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hungfashion_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://postgres:ci-only-not-production-password@127.0.0.1:5432/hungfashion_e2e
+      E2E_BASE_URL: http://127.0.0.1:5000
+      E2E_CUSTOMER_IDENTIFIER: ${{ secrets.E2E_CUSTOMER_IDENTIFIER }}
+      E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
+      E2E_STAFF_IDENTIFIER: ${{ secrets.E2E_STAFF_IDENTIFIER }}
+      E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
+      JWT_SECRET: ci-only-jwt-secret-not-used-outside-disposable-database-2026
+      AUTH_RATE_LIMIT_WINDOW_MS: 300000
+      AUTH_LOGIN_RATE_LIMIT_MAX: 10
+      AUTH_REGISTER_RATE_LIMIT_MAX: 10
+      KAFKA_BROKER: 127.0.0.1:9092
+      PORT: 5000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install project dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Install Playwright test runner
+        working-directory: store-admin
+        run: npm install --no-save --package-lock=false @playwright/test
+
+      - name: Install Chromium
+        working-directory: store-admin
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify dedicated test credentials
+        shell: bash
+        run: |
+          test -n "$E2E_CUSTOMER_IDENTIFIER" || { echo "::error::Missing E2E_CUSTOMER_IDENTIFIER GitHub Secret"; exit 1; }
+          test -n "$E2E_CUSTOMER_PASSWORD" || { echo "::error::Missing E2E_CUSTOMER_PASSWORD GitHub Secret"; exit 1; }
+          test -n "$E2E_STAFF_IDENTIFIER" || { echo "::error::Missing E2E_STAFF_IDENTIFIER GitHub Secret"; exit 1; }
+          test -n "$E2E_STAFF_PASSWORD" || { echo "::error::Missing E2E_STAFF_PASSWORD GitHub Secret"; exit 1; }
+
+      - name: Apply schema and migrations to disposable PostgreSQL
+        working-directory: store-admin
+        run: npm run db:migrate --workspace server
+
+      - name: Seed dedicated E2E customer and staff accounts
+        working-directory: store-admin
+        run: node server/scripts/seed-e2e-auth.js
+
+      - name: Start local API backend
+        working-directory: store-admin
+        run: |
+          nohup npm run start --workspace server > /tmp/hungfashion-api.log 2>&1 &
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:5000/api/health > /dev/null; then
+              echo "Local API is ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Local API did not become ready."
+          cat /tmp/hungfashion-api.log
+          exit 1
+
+      - name: Run authentication API E2E
+        working-directory: store-admin
+        run: npx playwright test e2e/auth-api.spec.js
+
+      - name: Print backend log on failure
+        if: failure()
+        run: cat /tmp/hungfashion-api.log || true
+
+      - name: Upload API Playwright report and failure artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-api-playwright-report
+          path: |
+            store-admin/playwright-report/
+            store-admin/test-results/
+            /tmp/hungfashion-api.log
+          if-no-files-found: warn
+          retention-days: 14
