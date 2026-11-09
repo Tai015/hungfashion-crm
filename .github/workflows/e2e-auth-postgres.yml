@@ -1,0 +1,111 @@
+name: Auth E2E with real API and PostgreSQL
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "store-admin/client/**"
+      - "store-admin/server/src/routes/auth.js"
+      - "store-admin/server/src/auth.js"
+      - "store-admin/server/src/db.js"
+      - "store-admin/server/src/migrations.js"
+      - "store-admin/server/sql/**"
+      - "store-admin/server/test-support/auth-e2e-server.js"
+      - "store-admin/e2e/auth-api.spec.js"
+      - "store-admin/playwright.auth-api.config.js"
+      - "store-admin/package-lock.json"
+      - ".github/workflows/e2e-auth-postgres.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auth-api-postgres-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hungfashion_auth_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hungfashion_auth_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: hungfashion_auth_e2e
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_SSL: "false"
+      JWT_SECRET: "ci-only-auth-e2e-secret-at-least-32-characters"
+      AUTH_RATE_LIMIT_WINDOW_MS: "60000"
+      AUTH_LOGIN_RATE_LIMIT_MAX: "30"
+      AUTH_REGISTER_RATE_LIMIT_MAX: "30"
+      E2E_API_PORT: "5000"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install project dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Install Playwright
+        working-directory: store-admin
+        run: npm install --no-save --package-lock=false @playwright/test
+
+      - name: Apply all database migrations to isolated PostgreSQL
+        working-directory: store-admin
+        run: npm run db:migrate --workspace server
+
+      - name: Start real authentication API
+        working-directory: store-admin
+        run: |
+          node server/test-support/auth-e2e-server.js > /tmp/auth-e2e-api.log 2>&1 &
+          echo $! > /tmp/auth-e2e-api.pid
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:5000/api/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/auth-e2e-api.log
+          exit 1
+
+      - name: Install Chromium
+        working-directory: store-admin
+        run: npx playwright install --with-deps chromium
+
+      - name: Run real API + PostgreSQL authentication E2E
+        working-directory: store-admin
+        run: npx playwright test --config=playwright.auth-api.config.js
+
+      - name: Show authentication API log
+        if: always()
+        run: cat /tmp/auth-e2e-api.log || true
+
+      - name: Upload Playwright failure artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-postgres-playwright-report
+          path: |
+            store-admin/test-results/
+            store-admin/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
