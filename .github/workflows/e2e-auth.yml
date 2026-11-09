@@ -21,9 +21,42 @@ permissions:
 
 jobs:
   auth-ui-e2e:
-    name: UI E2E (Vercel)
+    name: UI E2E (local frontend + API)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-not-production-password
+          POSTGRES_DB: hungfashion_ui_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hungfashion_ui_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://postgres:ci-only-not-production-password@127.0.0.1:5432/hungfashion_ui_e2e
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: hungfashion_ui_e2e
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ci-only-not-production-password
+      POSTGRES_SSL: "false"
+      JWT_SECRET: ci-only-jwt-secret-not-used-outside-disposable-database-2026
+      AUTH_RATE_LIMIT_WINDOW_MS: 300000
+      AUTH_LOGIN_RATE_LIMIT_MAX: 10
+      AUTH_REGISTER_RATE_LIMIT_MAX: 10
+      KAFKA_BROKER: 127.0.0.1:9092
+      PORT: 5000
+      E2E_BASE_URL: http://127.0.0.1:5173
+      E2E_CUSTOMER_IDENTIFIER: ${{ secrets.E2E_CUSTOMER_IDENTIFIER }}
+      E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
+      E2E_STAFF_IDENTIFIER: ${{ secrets.E2E_STAFF_IDENTIFIER }}
+      E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,27 +82,64 @@ jobs:
 
       - name: Verify dedicated UI test credentials
         shell: bash
-        env:
-          E2E_CUSTOMER_IDENTIFIER: ${{ secrets.E2E_CUSTOMER_IDENTIFIER }}
-          E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
-          E2E_STAFF_IDENTIFIER: ${{ secrets.E2E_STAFF_IDENTIFIER }}
-          E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
         run: |
           test -n "$E2E_CUSTOMER_IDENTIFIER" || { echo "::error::Missing E2E_CUSTOMER_IDENTIFIER GitHub Secret"; exit 1; }
           test -n "$E2E_CUSTOMER_PASSWORD" || { echo "::error::Missing E2E_CUSTOMER_PASSWORD GitHub Secret"; exit 1; }
           test -n "$E2E_STAFF_IDENTIFIER" || { echo "::error::Missing E2E_STAFF_IDENTIFIER GitHub Secret"; exit 1; }
           test -n "$E2E_STAFF_PASSWORD" || { echo "::error::Missing E2E_STAFF_PASSWORD GitHub Secret"; exit 1; }
 
+      - name: Apply schema and migrations to disposable UI PostgreSQL
+        working-directory: store-admin
+        run: npm run db:migrate --workspace server
+
+      - name: Seed dedicated E2E customer and staff accounts
+        working-directory: store-admin
+        run: node server/seed-e2e-auth.js
+
+      - name: Start local API backend
+        working-directory: store-admin
+        run: |
+          nohup npm run start --workspace server > /tmp/hungfashion-ui-api.log 2>&1 &
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:5000/api/health > /dev/null; then
+              echo "Local API is ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Local API did not become ready."
+          cat /tmp/hungfashion-ui-api.log
+          exit 1
+
+      - name: Start local Vite frontend
+        working-directory: store-admin
+        run: |
+          nohup npm run dev --workspace client -- --host 127.0.0.1 > /tmp/hungfashion-ui-vite.log 2>&1 &
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:5173/ > /dev/null; then
+              echo "Local Vite frontend is ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Local Vite frontend did not become ready."
+          cat /tmp/hungfashion-ui-vite.log
+          exit 1
+
+      - name: Verify frontend API proxy
+        run: curl --fail --silent http://127.0.0.1:5173/api/health
+
       - name: Run customer and staff login UI E2E (headless)
         working-directory: store-admin
         run: npx playwright test e2e/auth.spec.js
-        env:
-          E2E_BASE_URL: https://hungfashion-crm-git-test-e2e-auth-playwright-tai-4212.vercel.app
-          E2E_VERCEL_BYPASS_TOKEN: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-          E2E_CUSTOMER_IDENTIFIER: ${{ secrets.E2E_CUSTOMER_IDENTIFIER }}
-          E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
-          E2E_STAFF_IDENTIFIER: ${{ secrets.E2E_STAFF_IDENTIFIER }}
-          E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
+
+      - name: Print local service logs on failure
+        if: failure()
+        run: |
+          echo "===== API ====="
+          cat /tmp/hungfashion-ui-api.log || true
+          echo "===== Vite ====="
+          cat /tmp/hungfashion-ui-vite.log || true
 
       - name: Upload UI Playwright report and failure artifacts
         if: always()
@@ -79,6 +149,8 @@ jobs:
           path: |
             store-admin/playwright-report/
             store-admin/test-results/
+            /tmp/hungfashion-ui-api.log
+            /tmp/hungfashion-ui-vite.log
           if-no-files-found: warn
           retention-days: 14
 
