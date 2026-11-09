@@ -45,7 +45,16 @@ export default function AuthScreen({ onAuthenticated }) {
           : 'Tài khoản của bạn đã được tạo. Chào mừng bạn đến với Hung Fashion!',
       );
 
-      // Chỉ lưu phiên và chuyển trang sau khi toast thành công tự tắt.
+      if (!isLogin) {
+        // Đăng ký chỉ tạo tài khoản; người dùng cần đăng nhập riêng để tạo phiên.
+        setIdentifier(username);
+        setPassword('');
+        setMode('login');
+        window.location.hash = '#/khach-hang/login';
+        return;
+      }
+
+      // Chỉ lưu phiên và chuyển trang sau khi toast đăng nhập tự tắt.
       window.localStorage.setItem(TOKEN_KEY, result.token);
       onAuthenticated(result.user);
     } catch (err) {
