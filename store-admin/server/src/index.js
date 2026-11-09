@@ -149,8 +149,8 @@ app.get('/api/database/tables', requireDatabaseBrowser, async (_req, res) => {
     `);
     res.json({ tables: rows });
   } catch (err) {
-    logger.error({ err, requestId: req.requestId }, 'Database table listing failed');
-    res.status(500).json({ message: 'Không thể tải danh sách bảng.', requestId: req.requestId });
+    logger.error({ err, requestId: _req.requestId }, 'Database table listing failed');
+    res.status(500).json({ message: 'Không thể tải danh sách bảng.', requestId: _req.requestId });
   }
 });
 
