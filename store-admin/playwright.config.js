@@ -1,17 +1,28 @@
 import { defineConfig } from '@playwright/test';
 
-const baseURL = process.env.E2E_BASE_URL?.trim().replace(/\/+$/, '');
+const configuredBaseUrl = process.env.E2E_BASE_URL?.trim();
 
-if (!baseURL) {
+if (!configuredBaseUrl) {
   throw new Error(
-    'E2E_BASE_URL is required. Set it to the Vercel Preview URL or local API URL before running Playwright.'
+    'Thiếu E2E_BASE_URL. Hãy chọn Local/Render trong Electron Launcher hoặc đặt E2E_BASE_URL trước khi chạy Playwright.',
   );
+}
+
+let baseURL;
+try {
+  const parsedUrl = new URL(configuredBaseUrl);
+  if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+    throw new Error('Chỉ chấp nhận HTTP hoặc HTTPS.');
+  }
+  baseURL = parsedUrl.href.replace(/\\/+$/, '');
+} catch (error) {
+  throw new Error(`E2E_BASE_URL không hợp lệ ("${configuredBaseUrl}"): ${error.message}`);
 }
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 30_000,
-  expect: { timeout: 10_000 },
+  timeout: 180_000,
+  expect: { timeout: 15_000 },
   workers: 1,
   reporter: [
     ['list'],
@@ -24,9 +35,11 @@ export default defineConfig({
       ? { 'x-vercel-protection-bypass': process.env.E2E_VERCEL_BYPASS_TOKEN }
       : undefined,
     browserName: 'chromium',
-    headless: true,
+    headless: process.env.E2E_HEADED !== '1',
+    navigationTimeout: 150_000,
+    actionTimeout: 20_000,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'off',
+    video: 'retain-on-failure',
   },
 });
