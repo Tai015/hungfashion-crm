@@ -283,6 +283,21 @@ router.post('/receipts', async (req, res) => {
       }
     }
 
+    // A committed import is an effective supply event. Record each supplier/product
+    // relationship in the same transaction as the receipt, details and stock changes.
+    // The composite primary key makes concurrent imports idempotent.
+    if (receipt_type === 'Import' && supplier_id != null) {
+      const variantIds = [...new Set(details.map((detail) => Number(detail.variant_id)))];
+      await client.query(
+        `INSERT INTO product_supplier (product_id, supplier_id)
+         SELECT DISTINCT pv.product_id, $2
+         FROM product_variant pv
+         WHERE pv.variant_id = ANY($1::int[])
+         ON CONFLICT (product_id, supplier_id) DO NOTHING`,
+        [variantIds, Number(supplier_id)]
+      );
+    }
+
     await client.query('COMMIT');
     res.status(201).json(receipt);
   } catch (err) {
