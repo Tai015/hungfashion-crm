@@ -134,10 +134,12 @@ router.get('/:id', async (req, res) => {
 // POST /api/customers – thêm khách hàng mới
 router.post('/', async (req, res) => {
   const { full_name, gender, date_of_birth, phone, email, address, interests = [] } = req.body || {};
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   if (typeof full_name !== 'string' || !full_name.trim() || full_name.trim().length > 150
+    || !normalizedEmail || normalizedEmail.length > 150 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)
     || !Array.isArray(interests) || interests.length > 20
     || interests.some((name) => typeof name !== 'string' || name.length > 100)) {
-    return res.status(400).json({ message: 'Thông tin khách hàng hoặc danh sách sở thích không hợp lệ.' });
+    return res.status(400).json({ message: 'Họ tên, email hoặc danh sách sở thích không hợp lệ.' });
   }
   const client = await pool.connect();
   try {
@@ -145,7 +147,7 @@ router.post('/', async (req, res) => {
     const { rows } = await client.query(
       `INSERT INTO customer (full_name, gender, date_of_birth, phone, email, address)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [full_name, gender, date_of_birth, phone, email, address]
+      [full_name.trim(), gender, date_of_birth, phone, normalizedEmail, address]
     );
     const customer = rows[0];
 
@@ -164,6 +166,7 @@ router.post('/', async (req, res) => {
     res.status(201).json(customer);
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23505') return res.status(409).json({ message: 'Email đã được sử dụng cho hồ sơ khách hàng khác.' });
     if (err.code === '22P02' || err.code === '22007' || err.code === '23514') {
       return res.status(400).json({ message: 'Ngày sinh, giới tính hoặc thông tin khách hàng không hợp lệ.' });
     }
@@ -176,10 +179,12 @@ router.post('/', async (req, res) => {
 // PUT /api/customers/:id – cập nhật thông tin
 router.put('/:id', async (req, res) => {
   const { full_name, gender, date_of_birth, phone, email, address, interests = [] } = req.body || {};
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   if (typeof full_name !== 'string' || !full_name.trim() || full_name.trim().length > 150
+    || !normalizedEmail || normalizedEmail.length > 150 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)
     || !Array.isArray(interests) || interests.length > 20
     || interests.some((name) => typeof name !== 'string' || name.length > 100)) {
-    return res.status(400).json({ message: 'Thông tin khách hàng hoặc danh sách sở thích không hợp lệ.' });
+    return res.status(400).json({ message: 'Họ tên, email hoặc danh sách sở thích không hợp lệ.' });
   }
   const client = await pool.connect();
   try {
@@ -189,7 +194,7 @@ router.put('/:id', async (req, res) => {
        SET full_name=$1, gender=$2, date_of_birth=$3, phone=$4,
            email=$5, address=$6, updated_at=NOW()
        WHERE customer_id=$7 RETURNING *`,
-      [full_name, gender, date_of_birth, phone, email, address, req.params.id]
+      [full_name.trim(), gender, date_of_birth, phone, normalizedEmail, address, req.params.id]
     );
     if (!rows.length) {
       await client.query('ROLLBACK');
@@ -213,6 +218,7 @@ router.put('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23505') return res.status(409).json({ message: 'Email đã được sử dụng cho hồ sơ khách hàng khác.' });
     if (err.code === '22P02' || err.code === '22007' || err.code === '23514') {
       return res.status(400).json({ message: 'Ngày sinh, giới tính hoặc thông tin khách hàng không hợp lệ.' });
     }
