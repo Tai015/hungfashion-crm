@@ -14,9 +14,9 @@ try {
   if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
     throw new Error('Chỉ chấp nhận HTTP hoặc HTTPS.');
   }
-  baseURL = parsedUrl.href.replace(/\\/+$/, '');
+  baseURL = parsedUrl.href.replace(/\/+$/, '');
 } catch (error) {
-  throw new Error(`E2E_BASE_URL không hợp lệ ("${configuredBaseUrl}"): ${error.message}`);
+  throw new Error(\`E2E_BASE_URL không hợp lệ ("\${configuredBaseUrl}"): \${error.message}\`);
 }
 
 export default defineConfig({
