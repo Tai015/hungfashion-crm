@@ -1,5 +1,8 @@
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const { Pool } = pg;
 
@@ -24,7 +27,39 @@ function accountInput(role, identifier, password) {
   };
 }
 
-const pool = new Pool({ connectionString: required('DATABASE_URL') });
+const serverDir = path.dirname(fileURLToPath(import.meta.url));
+const projectDir = path.resolve(serverDir, '..');
+
+function postgresConfig() {
+  const host = required('POSTGRES_HOST');
+  const portValue = required('POSTGRES_PORT');
+  const port = Number(portValue);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error('POSTGRES_PORT must be an integer between 1 and 65535.');
+  }
+
+  const database = required('POSTGRES_DB');
+  const user = required('POSTGRES_USER');
+  const password = required('POSTGRES_PASSWORD');
+  const sslValue = required('POSTGRES_SSL').toLowerCase();
+  if (!['true', 'false'].includes(sslValue)) {
+    throw new Error('POSTGRES_SSL must be either "true" or "false".');
+  }
+
+  let ssl = false;
+  if (sslValue === 'true') {
+    const caPath = process.env.POSTGRES_CA_PATH;
+    if (!caPath) {
+      throw new Error('POSTGRES_SSL=true requires POSTGRES_CA_PATH for certificate verification.');
+    }
+    const resolvedCaPath = path.isAbsolute(caPath) ? caPath : path.resolve(projectDir, caPath);
+    ssl = { ca: fs.readFileSync(resolvedCaPath, 'utf8'), rejectUnauthorized: true };
+  }
+
+  return { host, port, database, user, password, ssl };
+}
+
+const pool = new Pool(postgresConfig());
 
 async function seedAccount(input) {
   const passwordHash = await bcrypt.hash(input.password, 12);
