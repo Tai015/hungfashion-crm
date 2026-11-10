@@ -80,6 +80,49 @@ test('uses tuple cursor pagination and can continue into older history', async (
   assert.deepEqual(app.queries[0].params, [12, '2026-11-10T10:00:00.000Z', 'feedback:42', 21]);
 });
 
+test('rejects a next-page cursor reused with a different history range', async () => {
+  const app = await startApp();
+  const cursor = Buffer.from(JSON.stringify({
+    occurredAt: '2026-11-10T10:00:00.000Z',
+    interactionId: 'feedback:42',
+    includeOlder: false,
+    purpose: 'next',
+  })).toString('base64url');
+
+  const result = await app.request(`/api/customers/12/interactions?all=1&cursor=${encodeURIComponent(cursor)}`);
+  assert.equal(result.status, 400);
+  assert.equal(app.queries.length, 0);
+});
+
+test('accepts the explicit older-history cursor only in all-history mode', async () => {
+  const app = await startApp();
+  const cursor = Buffer.from(JSON.stringify({
+    occurredAt: '2026-11-10T10:00:00.000Z',
+    interactionId: 'feedback:42',
+    includeOlder: false,
+    purpose: 'older',
+  })).toString('base64url');
+
+  const result = await app.request(`/api/customers/12/interactions?all=1&cursor=${encodeURIComponent(cursor)}`);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.range, 'all');
+  assert.equal(app.queries.length, 1);
+});
+
+test('rejects an older-history cursor when all-history mode is not enabled', async () => {
+  const app = await startApp();
+  const cursor = Buffer.from(JSON.stringify({
+    occurredAt: '2026-11-10T10:00:00.000Z',
+    interactionId: 'feedback:42',
+    includeOlder: false,
+    purpose: 'older',
+  })).toString('base64url');
+
+  const result = await app.request(`/api/customers/12/interactions?cursor=${encodeURIComponent(cursor)}`);
+  assert.equal(result.status, 400);
+  assert.equal(app.queries.length, 0);
+});
+
 
 test('rejects a next-page cursor when the history range changes', async () => {
   const app = await startApp();
