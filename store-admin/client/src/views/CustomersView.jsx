@@ -61,7 +61,8 @@ function CustomerModal({ customer, onClose, onSaved }) {
       if (Number.isNaN(birthDate.getTime()) || birthDate > new Date(today.getFullYear(), today.getMonth(), today.getDate()) || age < 0 || age > 120) {
         throw new Error('Ngày sinh không hợp lệ. Tuổi khách hàng phải từ 0 đến 120.');
       }
-      const payload = { ...form, gender:form.gender || 'Other', interests:customer?.interests || [] };
+      const existingDetails = isEdit ? await apiFetch(`/api/customers/${customer.customer_id}`) : null;
+      const payload = { ...form, gender:form.gender || 'Other', interests:existingDetails?.interests || [] };
       if (isEdit) await apiFetch(`/api/customers/${customer.customer_id}`, { method:'PUT', body:payload });
       else await apiFetch('/api/customers', { method:'POST', body:payload });
       onSaved();
@@ -171,7 +172,7 @@ function CustomerInteractionHistory({ customerId }) {
                 <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-violet-300/80" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                    <p className="m-0 text-sm font-medium text-white/85">{{'login':'Đăng nhập','logout':'Đăng xuất','order_created':'Tạo đơn hàng','order_cancelled':'Hủy đơn hàng','payment_completed':'Thanh toán thành công','payment_refunded':'Hoàn tiền','feedback_submitted':'Gửi phản hồi','feedback_replied':'Nhân viên phản hồi','survey_invited':'Được mời khảo sát','survey_completed':'Hoàn thành khảo sát','promotion_assigned':'Nhận ưu đãi','promotion_used':'Sử dụng ưu đãi','loyalty_points_earned':'Tích điểm','loyalty_points_redeemed':'Đổi điểm','loyalty_points_adjusted':'Điều chỉnh điểm'}[item.event_type] || item.title}</p>
+                    <p className="m-0 text-sm font-medium text-white/85">{{'login':'Đăng nhập','logout':'Đăng xuất','order_created':'Tạo đơn hàng','order_cancelled':'Hủy đơn hàng','payment_completed':'Thanh toán thành công','payment_refunded':'Hoàn tiền','feedback_submitted':'Gửi phản hồi','feedback_replied':'Nhân viên phản hồi','survey_invited':'Được mời khảo sát','survey_completed':'Hoàn thành khảo sát','promotion_assigned':'Nhận ưu đãi','promotion_used':'Sử dụng ưu đãi','loyalty_points_earned':'Tích điểm','loyalty_points_redeemed':'Đổi điểm','loyalty_points_adjusted':'Điều chỉnh điểm'}[item.interaction_type] || item.title}</p>
                     <time className="text-[11px] text-white/35">{dateFormatter.format(new Date(item.occurred_at))}</time>
                   </div>
                   <p className="mt-1 mb-0 text-xs leading-relaxed text-white/48">{item.summary}</p>
