@@ -179,6 +179,8 @@ test('tự ghi nhận đăng nhập và đăng xuất qua outbox vào lịch s�
 
 test('đăng nhập và đăng xuất vẫn thành công khi ghi auth outbox bị lỗi', async ({ request }) => {
   test.setTimeout(60_000);
+  await db.query('DROP TRIGGER IF EXISTS e2e_reject_auth_outbox_trigger ON outbox_events');
+  await db.query('DROP FUNCTION IF EXISTS e2e_reject_auth_outbox()');
   await db.query(`
     CREATE OR REPLACE FUNCTION e2e_reject_auth_outbox() RETURNS trigger AS $$
     BEGIN
