@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { useModalEffects } from '../hooks/useModalEffects';
-import { ChevronLeft, ChevronRight, ImagePlus, Package, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, ChevronRight, ImagePlus, Package, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { apiFetch } from '../api';
 import Spinner from '../components/Spinner';
 import FilterPopover from '../components/FilterPopover';
@@ -32,6 +32,8 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
     supplier_ids: product.supplier_ids||[], import_price: product.import_price||'',
     selling_price: product.selling_price||'', description: product.description||'',
   } : { product_name:'', category_id:'', supplier_ids:[], import_price:'', selling_price:'', description:'' });
+  const [supplierPickerOpen, setSupplierPickerOpen] = useState(false);
+  const [supplierSearch, setSupplierSearch] = useState('');
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
   const [variants, setVariants] = useState([]);
@@ -136,12 +138,85 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
                 {categories.map(c => <option key={c.category_id} value={c.category_id}>{c.category_name}</option>)}
               </select>
             </Field>
-            <Field label="Nhà cung cấp">
-              <select multiple className={SELECT + ' min-h-[88px] py-2'} value={form.supplier_ids.map(String)} onChange={e => setForm({...form, supplier_ids:Array.from(e.target.selectedOptions, option => Number(option.value))})}>
-                {suppliers.map(s => <option key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</option>)}
-              </select>
-              <span className="text-[11px] text-white/40">Có thể chọn nhiều nhà cung cấp; nhà cung cấp thực tế được ghi riêng trên từng phiếu nhập kho.</span>
-            </Field>
+            <div className="col-span-2">
+              <Field label="Nhà cung cấp">
+                <div className="relative">
+                  <button
+                    type="button"
+                    className={`${SELECT} flex items-center justify-between gap-3 text-left h-auto min-h-11 py-2.5`}
+                    aria-expanded={supplierPickerOpen}
+                    aria-haspopup="listbox"
+                    onClick={() => setSupplierPickerOpen(open => !open)}
+                  >
+                    <span className={form.supplier_ids.length ? 'text-[#f5f0eb]' : 'text-white/35'}>
+                      {form.supplier_ids.length ? `Đã chọn ${form.supplier_ids.length} nhà cung cấp` : 'Chọn nhà cung cấp'}
+                    </span>
+                    <ChevronDown size={16} className={`shrink-0 text-white/45 transition-transform ${supplierPickerOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {supplierPickerOpen && (
+                    <div className="absolute z-30 top-full left-0 right-0 mt-2 overflow-hidden rounded-xl border border-white/15 bg-[#211b30] shadow-[0_18px_45px_rgba(0,0,0,0.55)]">
+                      <div className="p-2.5 border-b border-white/[0.08]">
+                        <div className="relative">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35 pointer-events-none" />
+                          <input
+                            type="search"
+                            className={INPUT + ' pl-9'}
+                            placeholder="Tìm nhà cung cấp..."
+                            value={supplierSearch}
+                            onChange={event => setSupplierSearch(event.target.value)}
+                            onClick={event => event.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-52 overflow-y-auto p-1.5" role="listbox" aria-multiselectable="true">
+                        {suppliers.filter(s => s.supplier_name.toLocaleLowerCase('vi').includes(supplierSearch.trim().toLocaleLowerCase('vi'))).map(s => {
+                          const selected = form.supplier_ids.includes(Number(s.supplier_id));
+                          return (
+                            <button
+                              key={s.supplier_id}
+                              type="button"
+                              role="option"
+                              aria-selected={selected}
+                              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm text-white/80 hover:bg-white/[0.08] transition-colors"
+                              onClick={() => setForm(current => ({
+                                ...current,
+                                supplier_ids: selected
+                                  ? current.supplier_ids.filter(id => Number(id) !== Number(s.supplier_id))
+                                  : [...current.supplier_ids, Number(s.supplier_id)],
+                              }))}
+                            >
+                              <span className={`grid h-4 w-4 shrink-0 place-items-center rounded border ${selected ? 'border-orange-400 bg-orange-500 text-white' : 'border-white/25 bg-white/[0.04]'}`}>
+                                {selected && <Check size={11} />}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate">{s.supplier_name}</span>
+                              {selected && <span className="text-[10px] text-orange-300">Đã chọn</span>}
+                            </button>
+                          );
+                        })}
+                        {!suppliers.some(s => s.supplier_name.toLocaleLowerCase('vi').includes(supplierSearch.trim().toLocaleLowerCase('vi'))) && (
+                          <p className="m-0 px-3 py-4 text-center text-xs text-white/40">Không tìm thấy nhà cung cấp.</p>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between gap-3 border-t border-white/[0.08] px-3 py-2">
+                        <span className="text-[11px] text-white/40">{form.supplier_ids.length} đã chọn</span>
+                        <button type="button" className="text-xs font-semibold text-orange-300 hover:text-orange-200" onClick={() => setSupplierPickerOpen(false)}>Xong</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {form.supplier_ids.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {suppliers.filter(s => form.supplier_ids.includes(Number(s.supplier_id))).map(s => (
+                      <span key={s.supplier_id} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-orange-400/20 bg-orange-500/10 py-1 pl-2.5 pr-1.5 text-xs text-orange-100">
+                        <span className="max-w-[220px] truncate">{s.supplier_name}</span>
+                        <button type="button" aria-label={`Bỏ ${s.supplier_name}`} className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-orange-100/70 hover:bg-white/10 hover:text-white" onClick={() => setForm(current => ({ ...current, supplier_ids: current.supplier_ids.filter(id => Number(id) !== Number(s.supplier_id)) }))}><X size={11} /></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <span className="text-[11px] text-white/40">Có thể chọn nhiều nhà cung cấp. Nhà cung cấp thực tế vẫn được ghi nhận riêng trên từng phiếu nhập kho.</span>
+              </Field>
+            </div>
             <Field label="Giá nhập (đ)"><input type="number" min="0" placeholder="0" className={INPUT} value={form.import_price} onChange={e => setForm({...form, import_price:e.target.value})} /></Field>
             <Field label="Giá bán (đ)"><input type="number" min="0" placeholder="0" className={INPUT} value={form.selling_price} onChange={e => setForm({...form, selling_price:e.target.value})} /></Field>
             <div className="col-span-2">
