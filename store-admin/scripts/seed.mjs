@@ -294,19 +294,20 @@ async function seed(client) {
     );
     const supplierId = supplierRows[index % supplierRows.length].supplier_id;
     const { rows: [product] } = await client.query(
-      `INSERT INTO product (category_id, brand_id, supplier_id, product_name, description, import_price, selling_price, image_url)
-       SELECT c.category_id, b.brand_id, $3, $4, $5, $6, $7, $8
+      `INSERT INTO product (category_id, brand_id, product_name, description, import_price, selling_price, image_url)
+       SELECT c.category_id, b.brand_id, $3, $4, $5, $6, $7
        FROM category c, brand b
        WHERE c.category_name = $1::varchar(100) AND b.brand_name = $2::varchar(150)
          AND NOT EXISTS (SELECT 1 FROM product p WHERE p.product_name = $4::varchar(200))
        RETURNING product_id`,
-      [item.categoryName, item.brandName, supplierId, item.productName, item.description, item.importPrice, item.sellingPrice, item.imageUrl],
+      [item.categoryName, item.brandName, item.productName, item.description, item.importPrice, item.sellingPrice, item.imageUrl],
     );
     let productId = product?.product_id;
     if (!productId) {
       const { rows: [found] } = await client.query('SELECT product_id FROM product WHERE product_name = $1', [item.productName]);
       productId = found.product_id;
     }
+    await client.query('INSERT INTO product_supplier (product_id, supplier_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [productId, supplierId]);
     // Refresh prices for products owned by this imported catalog; keep order history unchanged.
     await client.query(
       `UPDATE product p
