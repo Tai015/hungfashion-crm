@@ -313,7 +313,7 @@ CREATE INDEX IF NOT EXISTS product_image_product_idx ON product_image(product_id
 CREATE TABLE IF NOT EXISTS import_receipt (
   receipt_id    SERIAL        PRIMARY KEY,
   supplier_id   INT           REFERENCES supplier(supplier_id),
-  employee_id   INT           REFERENCES employee(employee_id),
+  employee_id   INT           REFERENCES employee(employee_id) ON DELETE SET NULL,
   receipt_type  receipt_type  NOT NULL DEFAULT 'Import',
   note          TEXT,
   total_amount  NUMERIC(15,2) NOT NULL DEFAULT 0,
@@ -352,7 +352,7 @@ CREATE TABLE IF NOT EXISTS promotion (
   start_date     DATE            NOT NULL,
   end_date       DATE            NOT NULL,
   is_active      BOOLEAN         NOT NULL DEFAULT TRUE,
-  created_by     INT             REFERENCES employee(employee_id),
+  created_by     INT             REFERENCES employee(employee_id) ON DELETE SET NULL,
   created_at     TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
   CHECK (end_date >= start_date)
 );
