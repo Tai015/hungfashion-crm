@@ -7,6 +7,7 @@ import Pagination from '../components/Pagination';
 import { showErrorAlert, showSuccessAlert } from '../utils/notifications';
 import { useModalEffects } from '../hooks/useModalEffects';
 import DatePicker from '../components/DatePicker';
+import { confirmDestructiveAction } from '../utils/confirmAction';
 
 const FIELD = 'w-full h-10 px-3 bg-white/[0.07] border border-white/[0.12] rounded-xl text-[#f5f0eb] text-sm placeholder-white/30 outline-none focus:border-orange-500/50 dark-input';
 const BTN = 'inline-flex items-center justify-center gap-2 h-9 px-4 bg-orange-500/20 border border-orange-500/30 text-orange-300 text-sm font-semibold rounded-xl cursor-pointer disabled:opacity-50';
@@ -61,6 +62,23 @@ export default function EmployeesView() {
   const [form, setForm] = useState(undefined);
   useModalEffects(form !== undefined, () => setForm(undefined));
   const load = () => { setLoading(true); apiFetch(`/api/employees?page=${page}&limit=${LIMIT}&search=${encodeURIComponent(search)}`).then(result => { setRows(result.data || []); setTotal(result.total || 0); }).catch(error => showErrorAlert(error.message)).finally(() => setLoading(false)); };
+  const deleteEmployee = async employee => {
+    if (employee.is_active) return;
+    const confirmed = await confirmDestructiveAction({
+      title: 'Xóa nhân viên đã ngừng hoạt động?',
+      text: `Bạn có chắc muốn xóa hồ sơ của ${employee.full_name}? Thao tác này không thể hoàn tác.`,
+      confirmText: 'Xóa nhân viên',
+    });
+    if (!confirmed) return;
+    try {
+      await apiFetch(`/api/employees/${employee.employee_id}`, { method: 'DELETE' });
+      showSuccessAlert('Đã xóa nhân viên.');
+      if (rows.length === 1 && page > 1) setPage(current => current - 1);
+      else load();
+    } catch (error) {
+      showErrorAlert(error.message);
+    }
+  };
   useEffect(() => { load(); }, [search, page]);
   return <div className="flex flex-col gap-5 text-[#f5f0eb]">
     <header className="flex justify-between items-center gap-3"><div><p className="m-0 text-white/40 text-xs uppercase tracking-widest">Quản lý nhân sự</p><h1 className="m-0 mt-1 text-2xl font-bold">Nhân viên</h1></div><button className={`${BTN} admin-primary-action`} onClick={() => setForm(null)}>+ Thêm nhân viên</button></header>
@@ -70,7 +88,7 @@ export default function EmployeesView() {
           <EmployeeForm employee={form} onCancel={() => setForm(undefined)} onSaved={() => { setForm(undefined); load(); }} />
         </motion.div>
       </motion.div>), document.body)}
-    <section className={PANEL}>{loading ? <Spinner /> : !rows.length ? <p className="m-0 text-center text-white/40">Chưa có nhân viên.</p> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>{['Họ tên', 'Chức vụ', 'Điện thoại', 'Email', 'Trạng thái', ''].map(title => <th key={title} className="p-3 text-left text-white/45">{title}</th>)}</tr></thead><tbody>{rows.map(employee => <tr className="border-t border-white/10" key={employee.employee_id}><td className="p-3">{employee.full_name}</td><td className="p-3">{employee.position || '—'}</td><td className="p-3">{employee.phone || '—'}</td><td className="p-3">{employee.email || '—'}</td><td className="p-3">{employee.is_active ? 'Đang làm việc' : 'Ngừng hoạt động'}</td><td className="p-3"><button className={BTN} onClick={() => setForm(employee)}>Sửa</button></td></tr>)}</tbody></table></div>}
+    <section className={PANEL}>{loading ? <Spinner /> : !rows.length ? <p className="m-0 text-center text-white/40">Chưa có nhân viên.</p> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr>{['Họ tên', 'Chức vụ', 'Điện thoại', 'Email', 'Trạng thái', 'Thao tác'].map(title => <th key={title} className="p-3 text-left text-white/45">{title}</th>)}</tr></thead><tbody>{rows.map(employee => <tr className="border-t border-white/10" key={employee.employee_id}><td className="p-3">{employee.full_name}</td><td className="p-3">{employee.position || '—'}</td><td className="p-3">{employee.phone || '—'}</td><td className="p-3">{employee.email || '—'}</td><td className="p-3">{employee.is_active ? 'Đang làm việc' : 'Ngừng hoạt động'}</td><td className="p-3"><div className="flex items-center gap-2"><button className={BTN} onClick={() => setForm(employee)}>Sửa</button><button className={BTN} disabled={employee.is_active} title={employee.is_active ? 'Chỉ xóa được nhân viên đã ngừng hoạt động' : 'Xóa nhân viên'} onClick={() => deleteEmployee(employee)}>Xóa</button></div></td></tr>)}</tbody></table></div>}
       <Pagination page={page} total={total} limit={LIMIT} loading={loading} onChange={setPage} />
     </section>
   </div>;

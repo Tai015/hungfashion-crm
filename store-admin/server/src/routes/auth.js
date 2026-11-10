@@ -152,7 +152,8 @@ router.post('/register', registerIpLimiter, async (req, res) => {
   } catch (error) {
     return res.status(503).json({ message: error.message });
   }
-  const { username, email, password, full_name, gender = null, date_of_birth = null, interests = [] } = req.body || {};
+  const { username, email, password, full_name, date_of_birth = null, interests = [] } = req.body || {};
+  const gender = req.body?.gender ?? 'Other';
   if (typeof username !== 'string' || !/^[a-zA-Z0-9_.-]{3,100}$/.test(username.trim())) {
     return res.status(400).json({ message: 'Tên đăng nhập cần từ 3–100 ký tự chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.' });
   }
@@ -457,7 +458,8 @@ router.put('/me', requireAuth, async (req, res) => {
   if (req.user.role_name !== 'KHACH_HANG' || !req.user.customer_id) {
     return res.status(403).json({ message: 'Chức năng hồ sơ này chỉ dành cho khách hàng.' });
   }
-  const { full_name, gender = null, date_of_birth = null, phone = null, address = null, interests = [] } = req.body || {};
+  const { full_name, date_of_birth = null, phone = null, address = null, interests = [] } = req.body || {};
+  const gender = req.body?.gender ?? 'Other';
   if (typeof full_name !== 'string' || !full_name.trim() || full_name.trim().length > 150) {
     return res.status(400).json({ message: 'Họ tên là bắt buộc và tối đa 150 ký tự.' });
   }

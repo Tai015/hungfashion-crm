@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS customer (
   customer_id   SERIAL        PRIMARY KEY,
   account_id    INT           UNIQUE REFERENCES account(account_id) ON DELETE SET NULL,
   full_name     VARCHAR(150)  NOT NULL,
-  gender        gender_type  DEFAULT 'Other',
+  gender        gender_type  NOT NULL DEFAULT 'Other',
   date_of_birth DATE,
   phone         VARCHAR(20),
   email         VARCHAR(150)  NOT NULL,
@@ -313,7 +313,8 @@ CREATE INDEX IF NOT EXISTS product_image_product_idx ON product_image(product_id
 CREATE TABLE IF NOT EXISTS import_receipt (
   receipt_id    SERIAL        PRIMARY KEY,
   supplier_id   INT           REFERENCES supplier(supplier_id),
-  employee_id   INT           REFERENCES employee(employee_id),
+  employee_id   INT           REFERENCES employee(employee_id) ON DELETE SET NULL,
+  employee_name_snapshot VARCHAR(200),
   receipt_type  receipt_type  NOT NULL DEFAULT 'Import',
   note          TEXT,
   total_amount  NUMERIC(15,2) NOT NULL DEFAULT 0,
@@ -352,7 +353,8 @@ CREATE TABLE IF NOT EXISTS promotion (
   start_date     DATE            NOT NULL,
   end_date       DATE            NOT NULL,
   is_active      BOOLEAN         NOT NULL DEFAULT TRUE,
-  created_by     INT             REFERENCES employee(employee_id),
+  created_by     INT             REFERENCES employee(employee_id) ON DELETE SET NULL,
+  created_by_name_snapshot VARCHAR(200),
   created_at     TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
   CHECK (end_date >= start_date)
 );
@@ -434,6 +436,7 @@ CREATE TABLE IF NOT EXISTS feedback (
   product_id    INT             REFERENCES product(product_id)   ON DELETE SET NULL,
   order_id      INT             REFERENCES "order"(order_id)     ON DELETE SET NULL,
   employee_id   INT             REFERENCES employee(employee_id) ON DELETE SET NULL,  -- nhân viên phản hồi
+  employee_name_snapshot VARCHAR(200),
   feedback_type feedback_type   NOT NULL DEFAULT 'Product',
   rating        SMALLINT        CHECK (rating BETWEEN 1 AND 5),
   content       TEXT            NOT NULL,
@@ -466,6 +469,7 @@ CREATE INDEX IF NOT EXISTS feedback_attachment_feedback_idx ON feedback_attachme
 CREATE TABLE IF NOT EXISTS survey (
   survey_id     SERIAL          PRIMARY KEY,
   created_by    INT             REFERENCES employee(employee_id) ON DELETE SET NULL,
+  created_by_name_snapshot VARCHAR(200),
   title         VARCHAR(300)    NOT NULL,
   description   TEXT,
   target_gender gender_type,                     -- NULL = tất cả
