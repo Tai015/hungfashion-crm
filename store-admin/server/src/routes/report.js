@@ -266,7 +266,7 @@ router.get('/dashboard', async (req, res) => {
           FROM feedback f
           LEFT JOIN customer c ON c.customer_id = f.customer_id
           LEFT JOIN product p  ON p.product_id = f.product_id
-          WHERE ($1::date IS NULL OR (f.created_at >= $1::date AND f.created_at < $2::date + INTERVAL '1 day'))
+          WHERE ($1::date IS NULL OR (${localTimestampRangeSql('f.created_at', 1, 2)}))
           ORDER BY f.created_at DESC LIMIT 5
         `, [dateRange.from, dateRange.to]),
 
