@@ -182,13 +182,13 @@ router.get('/', async (req, res) => {
     }
     if (search) {
       params.push(`%${search}%`);
-      conditions.push(`s.title ILIKE ${params.length}`);
+      conditions.push(`s.title ILIKE $${params.length}`);
     }
     if (from !== undefined) {
       params.push(to);
-      conditions.push(`(s.start_date IS NULL OR s.start_date <= ${params.length}::date)`);
+      conditions.push(`(s.start_date IS NULL OR s.start_date <= $${params.length}::date)`);
       params.push(from);
-      conditions.push(`(s.end_date IS NULL OR s.end_date >= ${params.length}::date)`);
+      conditions.push(`(s.end_date IS NULL OR s.end_date >= $${params.length}::date)`);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
