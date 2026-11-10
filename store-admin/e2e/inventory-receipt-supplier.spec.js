@@ -18,25 +18,9 @@ let categoryId;
 let productId;
 let variantId;
 let supplierId;
-let employeeId;
 let token;
 
-test.beforeAll(async ({ request }) => {
-  const login = await request.post('/api/auth/login', {
-    data: { identifier: staffIdentifier, password: staffPassword, audience: 'staff' },
-  });
-  expect(login.status(), 'E2E staff login').toBe(200);
-  token = (await login.json()).token;
-
-  const employee = await db.query(
-    `SELECT e.employee_id
-     FROM employee e JOIN account a ON a.account_id=e.account_id
-     WHERE LOWER(a.username)=LOWER($1) OR LOWER(a.email)=LOWER($1)
-     LIMIT 1`,
-    [staffIdentifier],
-  );
-  expect(employee.rowCount, 'E2E staff employee record').toBe(1);
-  employeeId = employee.rows[0].employee_id;
+test.beforeAll(async () => {
 
   const category = await db.query(
     'INSERT INTO category (category_name) VALUES ($1) RETURNING category_id',
@@ -63,6 +47,14 @@ test.beforeAll(async ({ request }) => {
     [`E2E supplier ${suffix}`],
   );
   supplierId = supplier.rows[0].supplier_id;
+});
+
+test.beforeEach(async ({ request }) => {
+  const login = await request.post('/api/auth/login', {
+    data: { identifier: staffIdentifier, password: staffPassword, audience: 'staff' },
+  });
+  expect(login.status(), 'E2E staff login').toBe(200);
+  token = (await login.json()).token;
 });
 
 test.afterAll(async () => {
@@ -95,8 +87,9 @@ test('nhập kho sản phẩm chưa có nhà cung cấp bằng biến thể mặ
     },
   });
 
-  expect(response.status(), await response.text()).toBe(201);
-  const receipt = await response.json();
+  const responseBody = await response.text();
+  expect(response.status(), responseBody).toBe(201);
+  const receipt = JSON.parse(responseBody);
 
   const [stock, link, receiptRow, detail] = await Promise.all([
     db.query('SELECT quantity FROM product_variant WHERE variant_id=$1', [variantId]),
@@ -122,7 +115,8 @@ test('nhập kho sản phẩm chưa có nhà cung cấp bằng biến thể mặ
       details: [{ variant_id: variantId, quantity: 2, unit_price: 200000 }],
     },
   });
-  expect(second.status(), await second.text()).toBe(201);
+  const secondBody = await second.text();
+  expect(second.status(), secondBody).toBe(201);
 
   const duplicateLink = await db.query(
     'SELECT COUNT(*)::int AS count FROM product_supplier WHERE product_id=$1 AND supplier_id=$2',
