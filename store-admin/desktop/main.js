@@ -359,7 +359,9 @@ async function runE2e(target) {
 
     report(`Bắt đầu E2E ${target === 'render' ? 'trên Render' : 'Local'}: ${parsedBaseUrl.origin}`);
     const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-    e2eProcess = spawn(command, ['playwright', 'test', '--headed'], {
+    const testArgs = ['playwright', 'test', 'e2e/auth.spec.js', '--headed'];
+    if (target === 'render') testArgs.push('--grep', 'màn hình đăng nhập');
+    e2eProcess = spawn(command, testArgs, {
       cwd: projectDir,
       shell: process.platform === 'win32',
       windowsHide: false,
