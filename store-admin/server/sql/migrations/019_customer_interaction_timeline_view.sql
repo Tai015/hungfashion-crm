@@ -214,3 +214,17 @@ SELECT
 FROM conversation c
 LEFT JOIN chat_message m ON m.conversation_id = c.conversation_id
 GROUP BY c.conversation_id, c.customer_id, c.status, c.updated_at;
+
+
+-- Manual rollback reference (do not execute during normal migration):
+-- DROP VIEW IF EXISTS customer_interaction_timeline;
+-- DROP INDEX IF EXISTS chat_message_conversation_sent_at_idx;
+-- DROP INDEX IF EXISTS conversation_customer_updated_at_idx;
+-- DROP INDEX IF EXISTS user_promotion_customer_used_at_idx;
+-- DROP INDEX IF EXISTS user_promotion_customer_assigned_at_idx;
+-- DROP INDEX IF EXISTS survey_invitation_customer_invited_at_idx;
+-- DROP INDEX IF EXISTS survey_response_customer_submitted_at_idx;
+-- DROP INDEX IF EXISTS feedback_customer_created_at_idx;
+-- DROP INDEX IF EXISTS transactions_customer_occurred_at_idx;
+-- DROP INDEX IF EXISTS user_events_user_occurred_idx;
+-- DROP INDEX IF EXISTS order_customer_ordered_at_idx;
