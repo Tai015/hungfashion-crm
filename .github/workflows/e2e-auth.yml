@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      E2E_BASE_URL: https://hungfashion-crm-git-test-e2e-auth-playwright-tai-4212.vercel.app
+      E2E_BASE_URL: ${{ vars.E2E_PREVIEW_BASE_URL }}
       E2E_VERCEL_BYPASS_TOKEN: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
       - name: Checkout
