@@ -27,13 +27,52 @@ export const ORDER_CHANNEL_LABELS = {
   InStore: 'Tại cửa hàng',
 };
 
+export const EMPLOYEE_STATUS_LABELS = {
+  Active: 'Đang làm việc',
+  Inactive: 'Đã nghỉ việc',
+  Terminated: 'Đã nghỉ việc',
+  'Đang làm việc': 'Đang làm việc',
+  'Ngừng hoạt động': 'Đã nghỉ việc',
+  'Đã nghỉ việc': 'Đã nghỉ việc',
+};
+
+export const FEEDBACK_STATUS_LABELS = {
+  New: 'Mới tiếp nhận',
+  Processing: 'Đang xử lý',
+  Pending: 'Chờ xử lý',
+  Resolved: 'Đã giải quyết',
+  Rejected: 'Đã từ chối',
+};
+
+export const FEEDBACK_TYPE_LABELS = {
+  Product: 'Sản phẩm',
+  Service: 'Dịch vụ',
+  Suggestion: 'Góp ý',
+};
+
 export const RECEIPT_TYPE_LABELS = {
   Import: 'Nhập kho',
   Export: 'Xuất kho',
 };
 
-export const EMPLOYEE_STATUS_LABELS = {
-  Active: 'Đang làm việc',
-  Inactive: 'Đã nghỉ việc',
-  Terminated: 'Đã nghỉ việc',
+
+export const CUSTOMER_TIER_LABELS = {
+  New: 'Mới',
+  Regular: 'Thân thiết',
+  Silver: 'Bạc',
+  Gold: 'Vàng',
+  VIP: 'VIP',
+};
+
+export const CUSTOMER_GENDER_LABELS = {
+  Female: 'Nữ',
+  Male: 'Nam',
+  Other: 'Khác',
+};
+
+export const CUSTOMER_SPENDING_SEGMENT_LABELS = {
+  'VIP (≥5M)': 'VIP (từ 5 triệu đồng)',
+  'Gold (2M–5M)': 'Vàng (từ 2 đến dưới 5 triệu đồng)',
+  'Silver (500K–2M)': 'Bạc (từ 500 nghìn đến dưới 2 triệu đồng)',
+  'New (<500K)': 'Mới (dưới 500 nghìn đồng)',
 };
