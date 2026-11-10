@@ -23,7 +23,7 @@ function accountInput(role, identifier, password) {
     username: isEmail ? `e2e_${role.toLowerCase()}` : identifier,
     email: isEmail ? identifier.toLowerCase() : (role === 'KHACH_HANG' ? 'e2e.customer@hungfashion.test' : null),
     password,
-    fullName: role === 'KHACH_HANG' ? 'E2E Customer (disposable DB)' : 'E2E Staff (disposable DB)',
+    fullName: role === 'KHACH_HANG' ? 'E2E Customer (disposable DB)' : 'E2E Inventory Staff (disposable DB)',
   };
 }
 
@@ -95,7 +95,7 @@ try {
     required('E2E_CUSTOMER_PASSWORD'),
   );
   const staff = accountInput(
-    'QL_NHAN_SU',
+    'QL_KHO',
     required('E2E_STAFF_IDENTIFIER'),
     required('E2E_STAFF_PASSWORD'),
   );
