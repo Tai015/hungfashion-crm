@@ -181,11 +181,11 @@ test('đăng nhập và đăng xuất vẫn thành công khi ghi auth outbox b�
   test.setTimeout(60_000);
   try {
     await db.query('DROP TRIGGER IF EXISTS e2e_reject_auth_outbox_trigger ON outbox_events');
-  await db.query('DROP FUNCTION IF EXISTS e2e_reject_auth_outbox()');
-  await db.query('DROP SEQUENCE IF EXISTS e2e_auth_outbox_failures');
-  await db.query('CREATE SEQUENCE e2e_auth_outbox_failures START 1');
-  await db.query(`
-    CREATE OR REPLACE FUNCTION e2e_reject_auth_outbox() RETURNS trigger AS $
+    await db.query('DROP FUNCTION IF EXISTS e2e_reject_auth_outbox()');
+    await db.query('DROP SEQUENCE IF EXISTS e2e_auth_outbox_failures');
+    await db.query('CREATE SEQUENCE e2e_auth_outbox_failures START 1');
+    await db.query(`
+      CREATE OR REPLACE FUNCTION e2e_reject_auth_outbox() RETURNS trigger AS $function$
     BEGIN
       IF NEW.topic = 'user-events' AND NEW.payload->>'section' = 'authentication' THEN
         PERFORM nextval('e2e_auth_outbox_failures');
@@ -193,10 +193,10 @@ test('đăng nhập và đăng xuất vẫn thành công khi ghi auth outbox b�
       END IF;
       RETURN NEW;
     END;
-    $$ LANGUAGE plpgsql
+    $function$ LANGUAGE plpgsql
   `);
-  await db.query(`
-    CREATE TRIGGER e2e_reject_auth_outbox_trigger
+    await db.query(`
+      CREATE TRIGGER e2e_reject_auth_outbox_trigger
     BEFORE INSERT ON outbox_events
     FOR EACH ROW EXECUTE FUNCTION e2e_reject_auth_outbox()
   `);
