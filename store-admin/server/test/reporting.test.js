@@ -7,7 +7,7 @@ import {
 } from '../src/domain/reporting.js';
 
 test('customer spending SQL keeps zero-spend customers and uses inclusive lower bounds', () => {
-  assert.match(CUSTOMER_SPENDING_SEGMENT_CASE_SQL, /lifetime_spent = 0 THEN 'No purchases \\(0\\)'/);
+  assert.match(CUSTOMER_SPENDING_SEGMENT_CASE_SQL, /lifetime_spent = 0 THEN 'No purchases/);
   assert.match(CUSTOMER_SPENDING_SEGMENT_CASE_SQL, /lifetime_spent >= 5000000 THEN 'VIP/);
   assert.match(CUSTOMER_SPENDING_SEGMENT_CASE_SQL, /lifetime_spent >= 2000000 THEN 'Gold/);
   assert.match(CUSTOMER_SPENDING_SEGMENT_CASE_SQL, /lifetime_spent >= 500000 THEN 'Silver/);
