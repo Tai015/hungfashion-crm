@@ -327,10 +327,12 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
     });
   });
 
+  // Use the mobile layout so the test follows the real menu interaction:
+  // open the navigation drawer, then select the Khách hàng item.
+  await page.setViewportSize({ width: 390, height: 844 });
   await login(page, '/#/nhan-vien/login', EXISTING_STAFF, 'staff');
-  // Drive the app through its supported hash route; the sidebar is responsive
-  // and may be collapsed/hidden at the CI viewport.
-  await page.evaluate(() => { window.location.hash = '#/admin/customers'; });
+  await page.getByRole('button', { name: 'Mở menu' }).click();
+  await page.getByRole('button', { name: 'Khách hàng', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Quản lý khách hàng' })).toBeVisible();
   await page.getByRole('button', { name: 'Xem lịch sử tương tác của E2E Timeline Customer' }).click();
   await expect(page.getByText('Lịch sử tương tác')).toBeVisible();
