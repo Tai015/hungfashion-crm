@@ -45,11 +45,10 @@ export const generateInvoicePDF = async (orderData) => {
   doc.setTextColor(0, 0, 0);
 
   // Table header
-  const tableHeaders = ['Sản phẩm', 'Size', 'Màu', 'SL', 'Đơn giá (VND)'];
+  const tableHeaders = ['Sản phẩm', 'Biến thể', 'SL', 'Đơn giá (VND)'];
   const tableRows = orderData.details.map((d) => [
     d.product_name,
-    d.size_name,
-    d.color_name,
+    d.variant_label || [d.size_name, d.color_name].filter(Boolean).join(' / ') || 'Mặc định',
     d.quantity,
     Number(d.unit_price).toLocaleString(),
   ]);
