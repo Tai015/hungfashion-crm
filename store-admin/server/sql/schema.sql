@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS customer (
   gender        gender_type,
   date_of_birth DATE,
   phone         VARCHAR(20),
-  email         VARCHAR(150),
+  email         VARCHAR(150)  NOT NULL,
   address       TEXT,
   loyalty_point INT           NOT NULL DEFAULT 0,
   customer_tier VARCHAR(20)   NOT NULL DEFAULT 'New',  -- New | Regular | Silver | Gold | VIP
@@ -177,7 +177,7 @@ CREATE INDEX IF NOT EXISTS customer_tier_idx   ON customer(customer_tier);
 CREATE INDEX IF NOT EXISTS customer_phone_idx  ON customer(phone);
 CREATE INDEX IF NOT EXISTS customer_gender_idx ON customer(gender);
 CREATE INDEX IF NOT EXISTS customer_dob_idx    ON customer(date_of_birth);
-CREATE INDEX IF NOT EXISTS customer_email_idx  ON customer(email);
+CREATE UNIQUE INDEX IF NOT EXISTS customer_email_unique_idx ON customer(email);
 CREATE INDEX IF NOT EXISTS customer_name_idx   ON customer(full_name);
 
 -- ─────────────────────────────────────────────
