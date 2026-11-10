@@ -78,18 +78,17 @@ function Table({ headers, rows, emptyText = 'Chưa có dữ liệu trong khoản
   return rows.length ? <div className="reports-table-wrap"><table className="reports-table"><thead><tr>{headers.map(header => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={row.key ?? index}>{row.cells.map((cell, cellIndex) => <td key={cellIndex}>{cell ?? '—'}</td>)}</tr>)}</tbody></table></div> : <p className="reports-empty">{emptyText}</p>;
 }
 
-function SurveyOptionsChart({ options = [] }) {
-  const values = options.map(option => Math.max(0, Number(option.vote_count) || 0));
-  const total = values.reduce((sum, value) => sum + value, 0);
-  if (!total) return <p className="reports-empty">Chưa có lượt trả lời.</p>;
+function SurveyOptionsChart({ options = [], answeredCount = 0 }) {
+  const denominator = Math.max(0, Number(answeredCount) || 0);
+  if (!options.length || !denominator) return <p className="reports-empty">Chưa có lượt trả lời cho câu hỏi này.</p>;
   return <div className="reports-survey-chart" role="list">
     {options.map((option, index) => {
-      const count = values[index];
-      const percent = count / total * 100;
+      const count = Math.max(0, Number(option.vote_count) || 0);
+      const percent = count / denominator * 100;
       return <div className="reports-survey-chart-row" role="listitem" key={option.option_id ?? `${option.option_text}-${index}`}>
-        <div className="reports-survey-chart-label"><span>{option.option_text}</span><strong>{formatCount(count)} <small>({percent.toFixed(1)}%)</small></strong></div>
-        <div className="reports-survey-chart-track" role="img" aria-label={`${option.option_text}: ${formatCount(count)} lượt, ${percent.toFixed(1)} phần trăm`}>
-          <i style={{ width: `${percent}%` }} />
+        <div className="reports-survey-chart-label"><span>{option.option_text}</span><strong>{formatCount(count)} người <small>({percent.toFixed(1)}%)</small></strong></div>
+        <div className="reports-survey-chart-track" role="img" aria-label={`${option.option_text}: ${formatCount(count)} người, ${percent.toFixed(1)} phần trăm`}>
+          <i style={{ width: `${Math.min(100, percent)}%` }} />
         </div>
       </div>;
     })}
@@ -277,7 +276,15 @@ function FeedbackSurveyTab({ from, to }) {
       </StatePanel>
       {surveyId && <StatePanel state={results} empty={!results.data?.questions?.length} emptyText="Khảo sát chưa có câu hỏi hoặc kết quả.">
         <p className="reports-subtle">{results.data?.title} · {formatCount(Number(results.data?.total_responses) || 0)} lượt trả lời</p>
-        {(results.data?.questions || []).map(question => <div className="reports-survey-question" key={question.question_id}><strong>{question.question_text}</strong><SurveyOptionsChart options={question.options || []} /></div>)}
+        {(results.data?.questions || []).map(question => <div className="reports-survey-question" key={question.question_id}>
+          <strong>{question.question_text}</strong>
+          <p className="reports-subtle">Có {formatCount(Number(question.answered_count) || 0)} người đã trả lời câu hỏi này.</p>
+          {question.question_type === 'Text'
+            ? question.text_answers?.length
+              ? <ul className="reports-survey-text-answers">{question.text_answers.map((answer, index) => <li key={index}>{answer}</li>)}</ul>
+              : <p className="reports-empty">Chưa có câu trả lời tự luận.</p>
+            : <SurveyOptionsChart options={question.options || []} answeredCount={question.answered_count} />}
+        </div>)}
       </StatePanel>}
     </ReportBlock>
     <div className="reports-export-row"><button type="button" className="dashboard-quick-action" onClick={() => exportCsv('phan-hoi-khao-sat', `${from}-${to}`, ['Nhóm dữ liệu', 'Nội dung', 'Số lượng / đánh giá', 'Trạng thái', 'Ngày'], csvRows)} disabled={!csvRows.length}><Download size={15} /> Xuất CSV</button></div>
