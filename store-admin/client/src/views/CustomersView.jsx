@@ -183,7 +183,7 @@ function CustomerInteractionHistory({ customerId }) {
       {error && items.length > 0 && <p className="mt-2 text-xs text-rose-300">{error}</p>}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {nextCursor && <button type="button" className={BTN_GHOST} disabled={loadingMore} onClick={() => loadMore()}>
-          {loadingMore ? 'Đang tải...' : 'Tải thêm'}
+          {loadingMore ? 'Đang tải...' : 'Xem thêm hoạt động'}
         </button>}
         {!includeOlder && olderCursor && <button type="button" className={BTN_GHOST} disabled={loadingMore} onClick={() => loadMore(true)}>
           {loadingMore ? 'Đang tải...' : 'Xem toàn bộ lịch sử'}
@@ -286,12 +286,12 @@ export default function CustomersView({ userRole }) {
       <div className="flex items-center flex-wrap gap-2.5 px-4 py-3 bg-white/[0.06] border border-white/10 rounded-2xl backdrop-blur-xl">
         <div className="relative flex items-center flex-1">
           <Search size={14} className="absolute left-3 text-white/30 pointer-events-none"/>
-          <input className={`${INPUT} pl-9 flex-1`} placeholder="Tên, SĐT hoặc email..."
+          <input className={`${INPUT} pl-9 flex-1`} placeholder="Tìm theo tên, số điện thoại hoặc email..."
             value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
-        <FilterPopover title="Lọc khách hàng" activeCount={[search, tier, gender].filter(Boolean).length}
+        <FilterPopover title="Bộ lọc khách hàng" activeCount={[search, tier, gender].filter(Boolean).length}
           onClear={() => { setSearch(''); setTier(''); setGender(''); setPage(1); }}>
-          <label className="flex flex-col gap-1.5 text-xs text-white/65">Hạng khách hàng<select className={SELECT} value={tier} onChange={e => { setTier(e.target.value); setPage(1); }}><option value="">Tất cả hạng</option>{TIERS.map(t => <option key={t}>{t}</option>)}</select></label>
+          <label className="flex flex-col gap-1.5 text-xs text-white/65">Hạng khách hàng<select className={SELECT} value={tier} onChange={e => { setTier(e.target.value); setPage(1); }}><option value="">Tất cả hạng</option>{TIERS.map(t => <option key={t} value={t}>{TIER_LABEL[t]}</option>)}</select></label>
           <label className="flex flex-col gap-1.5 text-xs text-white/65">Giới tính<select className={SELECT} value={gender} onChange={e => { setGender(e.target.value); setPage(1); }}>{GENDERS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
         </FilterPopover>
       </div>
@@ -301,7 +301,7 @@ export default function CustomersView({ userRole }) {
       <div className={PANEL}>
         <div className="flex items-center justify-between gap-4">
           <h2 className="flex items-center gap-2.5 m-0 text-[1.05rem] font-semibold">
-            Danh sách
+            Danh sách khách hàng
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-violet-400/15 border border-violet-300/25 text-violet-200 text-xs font-semibold">
               {total.toLocaleString('vi-VN')} khách
             </span>
@@ -356,7 +356,7 @@ export default function CustomersView({ userRole }) {
                       {canWrite && (
                         <td className="px-3.5 py-3 border-b border-white/[0.05]">
                           <div className="flex items-center gap-1.5">
-                            <button className={ICON_BTN} title="Chỉnh sửa" onClick={() => setEditing(c)}><Pencil size={14}/></button>
+                            <button className={ICON_BTN} title="Sửa thông tin khách hàng" onClick={() => setEditing(c)}><Pencil size={14}/></button>
                             <button
                               className={`${ICON_BTN} ${c.account_id ? (c.account_status === 'Blocked' ? 'border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/10' : 'border-amber-500/20 text-amber-300 hover:bg-amber-500/10') : 'opacity-35 cursor-not-allowed'}`}
                               title={!c.account_id ? 'Khách chưa có tài khoản đăng nhập' : c.account_status === 'Blocked' ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
