@@ -36,6 +36,28 @@ export const EMPLOYEE_STATUS_LABELS = {
   Active: 'Đang làm việc',
   Inactive: 'Đã nghỉ việc',
   Terminated: 'Đã nghỉ việc',
+  'Đang làm việc': 'Đang làm việc',
+  'Ngừng hoạt động': 'Đã nghỉ việc',
+  'Đã nghỉ việc': 'Đã nghỉ việc',
+};
+
+export const FEEDBACK_STATUS_LABELS = {
+  New: 'Mới tiếp nhận',
+  Processing: 'Đang xử lý',
+  Pending: 'Chờ xử lý',
+  Resolved: 'Đã giải quyết',
+  Rejected: 'Đã từ chối',
+};
+
+export const FEEDBACK_TYPE_LABELS = {
+  Product: 'Sản phẩm',
+  Service: 'Dịch vụ',
+  Suggestion: 'Góp ý',
+};
+
+export const RECEIPT_TYPE_LABELS = {
+  Import: 'Nhập kho',
+  Export: 'Xuất kho',
 };
 
 
