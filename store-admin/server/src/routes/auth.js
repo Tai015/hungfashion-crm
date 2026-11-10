@@ -130,6 +130,21 @@ async function enqueueAuthEvent(client, { accountId, sessionId, eventType, actio
   });
 }
 
+async function enqueueAuthEventBestEffort(client, event) {
+  await client.query('SAVEPOINT auth_event');
+  try {
+    await enqueueAuthEvent(client, event);
+    await client.query('RELEASE SAVEPOINT auth_event');
+  } catch (error) {
+    await client.query('ROLLBACK TO SAVEPOINT auth_event');
+    await client.query('RELEASE SAVEPOINT auth_event');
+    console.error('[auth] Could not enqueue authentication event; auth flow will continue.', {
+      eventType: event.eventType,
+      errorCode: error.code || 'UNKNOWN',
+    });
+  }
+}
+
 router.post('/register', registerIpLimiter, async (req, res) => {
   try {
     validateJwtSecret();
@@ -300,7 +315,7 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
          VALUES ($1, $2, NOW() + INTERVAL '8 hours', $3::inet)`,
         [sessionId, account.account_id, clientIp],
       );
-      await enqueueAuthEvent(client, {
+      await enqueueAuthEventBestEffort(client, {
         accountId: account.account_id,
         sessionId,
         eventType: 'login',
@@ -331,7 +346,7 @@ router.post('/logout', requireAuth, async (req, res) => {
       [req.sessionId, req.user.account_id],
     );
     if (rowCount > 0) {
-      await enqueueAuthEvent(client, {
+      await enqueueAuthEventBestEffort(client, {
         accountId: req.user.account_id,
         sessionId: req.sessionId,
         eventType: 'logout',
