@@ -6,10 +6,17 @@ const QUESTION_TYPES = new Set(['SingleChoice', 'MultiChoice', 'Text', 'Rating']
 const GENDERS = new Set(['Male', 'Female', 'Other']);
 const CUSTOMER_TIERS = new Set(['New', 'Regular', 'Silver', 'Gold', 'VIP']);
 
+function isValidDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 function validateSurveyPayload(body) {
   const {
     title, description, questions, target_gender, target_tier,
     min_age, max_age, target_interest_id, reward_promotion_id,
+    start_date, end_date,
   } = body || {};
   const minAge = min_age == null || min_age === '' ? null : Number(min_age);
   const maxAge = max_age == null || max_age === '' ? null : Number(max_age);
@@ -24,6 +31,7 @@ function validateSurveyPayload(body) {
     || (minAge !== null && maxAge !== null && minAge > maxAge)
     || (interestId !== null && (!Number.isInteger(interestId) || interestId < 1))
     || (rewardPromotionId !== null && (!Number.isInteger(rewardPromotionId) || rewardPromotionId < 1))
+    || !isValidDate(start_date) || !isValidDate(end_date) || end_date < start_date
     || !Array.isArray(questions) || questions.length < 1 || questions.length > 50) {
     return 'Thông tin khảo sát, bộ lọc khách hàng hoặc phần thưởng không hợp lệ.';
   }
@@ -390,7 +398,7 @@ router.patch('/:id', async (req, res) => {
 
     const {
       title, description, target_gender, target_tier, min_age, max_age,
-      target_interest_id, reward_promotion_id,
+      target_interest_id, reward_promotion_id, start_date, end_date,
     } = req.body;
     const rewardError = await ensureRewardPromotion(client, reward_promotion_id);
     if (rewardError) {
@@ -401,12 +409,12 @@ router.patch('/:id', async (req, res) => {
       `UPDATE survey
        SET title=$2, description=$3, target_gender=$4, target_tier=$5,
            min_age=$6, max_age=$7, target_interest_id=$8, reward_promotion_id=$9,
-           updated_at=NOW()
+           start_date=$10, end_date=$11, updated_at=NOW()
        WHERE survey_id = $1`,
       [survey.survey_id, title.trim(), description?.trim() || null,
        target_gender || null, target_tier || null,
        min_age === '' ? null : min_age, max_age === '' ? null : max_age,
-       target_interest_id || null, reward_promotion_id || null],
+       target_interest_id || null, reward_promotion_id || null, start_date, end_date],
     );
     await client.query('DELETE FROM survey_question WHERE survey_id = $1', [survey.survey_id]);
     await insertSurveyQuestions(client, survey.survey_id, req.body.questions);
@@ -416,6 +424,7 @@ router.patch('/:id', async (req, res) => {
       target_gender: target_gender || null, target_tier: target_tier || null,
       min_age: min_age === '' ? null : min_age, max_age: max_age === '' ? null : max_age,
       target_interest_id: target_interest_id || null, reward_promotion_id: reward_promotion_id || null,
+      start_date, end_date,
       status: survey.status,
     });
   } catch (err) {
