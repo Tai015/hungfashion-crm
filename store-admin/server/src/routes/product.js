@@ -344,10 +344,16 @@ router.delete('/:id', async (req, res) => {
 router.post('/:id/variants', async (req, res) => {
   try {
     const { size_id, color_id, sku, quantity } = req.body;
+    if (!Number.isInteger(Number(size_id)) || Number(size_id) < 1
+      || !Number.isInteger(Number(color_id)) || Number(color_id) < 1
+      || typeof sku !== 'string' || !sku.trim() || sku.trim().length > 100
+      || !Number.isInteger(Number(quantity ?? 0)) || Number(quantity ?? 0) < 0) {
+      return res.status(400).json({ message: 'Thông tin biến thể không hợp lệ.' });
+    }
     const { rows } = await pool.query(
-      `INSERT INTO product_variant (product_id, size_id, color_id, sku, quantity)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [req.params.id, size_id, color_id, sku, quantity ?? 0]
+      `INSERT INTO product_variant (product_id, size_id, color_id, sku, quantity, is_default)
+       VALUES ($1,$2,$3,$4,$5,FALSE) RETURNING *`,
+      [req.params.id, Number(size_id), Number(color_id), sku.trim(), Number(quantity ?? 0)]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
