@@ -181,10 +181,13 @@ test('đăng nhập và đăng xuất vẫn thành công khi ghi auth outbox b�
   test.setTimeout(60_000);
   await db.query('DROP TRIGGER IF EXISTS e2e_reject_auth_outbox_trigger ON outbox_events');
   await db.query('DROP FUNCTION IF EXISTS e2e_reject_auth_outbox()');
+  await db.query('DROP SEQUENCE IF EXISTS e2e_auth_outbox_failures');
+  await db.query('CREATE SEQUENCE e2e_auth_outbox_failures START 1');
   await db.query(`
-    CREATE OR REPLACE FUNCTION e2e_reject_auth_outbox() RETURNS trigger AS $$
+    CREATE OR REPLACE FUNCTION e2e_reject_auth_outbox() RETURNS trigger AS $
     BEGIN
       IF NEW.topic = 'user-events' AND NEW.payload->>'section' = 'authentication' THEN
+        PERFORM nextval('e2e_auth_outbox_failures');
         RAISE EXCEPTION 'forced auth outbox failure for E2E';
       END IF;
       RETURN NEW;
@@ -233,8 +236,12 @@ test('đăng nhập và đăng xuất vẫn thành công khi ghi auth outbox b�
       [claims.jti],
     );
     expect(authEvents.rowCount).toBe(0);
+    const failureAttempts = await db.query("SELECT last_value, is_called FROM e2e_auth_outbox_failures");
+    expect(Number(failureAttempts.rows[0].last_value)).toBe(2);
+    expect(failureAttempts.rows[0].is_called).toBe(true);
   } finally {
     await db.query('DROP TRIGGER IF EXISTS e2e_reject_auth_outbox_trigger ON outbox_events');
     await db.query('DROP FUNCTION IF EXISTS e2e_reject_auth_outbox()');
+    await db.query('DROP SEQUENCE IF EXISTS e2e_auth_outbox_failures');
   }
 });
