@@ -175,3 +175,64 @@ test('tự ghi nhận đăng nhập và đăng xuất qua outbox vào lịch s�
   expect(logoutEvent.session_id).toBe(loginEvent.session_id);
   expect(logoutEvent.session_id).not.toBeNull();
 });
+
+
+test('đăng nhập và đăng xuất vẫn thành công khi ghi auth outbox bị lỗi', async ({ request }) => {
+  test.setTimeout(60_000);
+  await db.query(`
+    CREATE OR REPLACE FUNCTION e2e_reject_auth_outbox() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.topic = 'user-events' AND NEW.payload->>'section' = 'authentication' THEN
+        RAISE EXCEPTION 'forced auth outbox failure for E2E';
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await db.query(`
+    CREATE TRIGGER e2e_reject_auth_outbox_trigger
+    BEFORE INSERT ON outbox_events
+    FOR EACH ROW EXECUTE FUNCTION e2e_reject_auth_outbox()
+  `);
+
+  try {
+    const login = await request.post('/api/auth/login', {
+      data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+    });
+    expect(login.status()).toBe(200);
+    const { token, user } = await login.json();
+    const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+    expect(claims.jti).toEqual(expect.any(String));
+
+    const activeSession = await db.query(
+      `SELECT session_id FROM account_sessions
+       WHERE session_id = $1 AND account_id = $2
+         AND revoked_at IS NULL AND expires_at > NOW()`,
+      [claims.jti, user.account_id],
+    );
+    expect(activeSession.rowCount).toBe(1);
+
+    const logout = await request.post('/api/auth/logout', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(logout.status()).toBe(200);
+
+    const revokedSession = await db.query(
+      `SELECT session_id FROM account_sessions
+       WHERE session_id = $1 AND account_id = $2 AND revoked_at IS NOT NULL`,
+      [claims.jti, user.account_id],
+    );
+    expect(revokedSession.rowCount).toBe(1);
+
+    const authEvents = await db.query(
+      `SELECT event_id FROM outbox_events
+       WHERE topic = 'user-events' AND payload->>'section' = 'authentication'
+         AND payload->>'sessionId' = $1`,
+      [claims.jti],
+    );
+    expect(authEvents.rowCount).toBe(0);
+  } finally {
+    await db.query('DROP TRIGGER IF EXISTS e2e_reject_auth_outbox_trigger ON outbox_events');
+    await db.query('DROP FUNCTION IF EXISTS e2e_reject_auth_outbox()');
+  }
+});
