@@ -158,7 +158,7 @@ router.get('/', async (req, res) => {
   try {
     const { status, from, to } = req.query;
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
-    const isValidRangeDate = value => typeof value === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(value)
+    const isValidRangeDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
       && !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`))
       && new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value;
     const page = Number(req.query.page ?? 1);
