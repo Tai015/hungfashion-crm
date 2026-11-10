@@ -35,9 +35,35 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
   const [variants, setVariants] = useState([]);
+  const [variantsLoading, setVariantsLoading] = useState(Boolean(product));
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(product?.image_url || '');
   useSweetAlertMessages({ error });
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isEdit) {
+      setVariants([]);
+      setVariantsLoading(false);
+      return undefined;
+    }
+    setVariantsLoading(true);
+    apiFetch(`/api/products/${product.product_id}`)
+      .then(detail => {
+        if (cancelled) return;
+        setVariants((detail.variants || []).map(variant => ({
+          variant_id: variant.variant_id,
+          is_default: Boolean(variant.is_default),
+          size_id: variant.size_id == null ? '' : String(variant.size_id),
+          color_id: variant.color_id == null ? '' : String(variant.color_id),
+          sku: variant.sku || '',
+          quantity: String(variant.quantity ?? 0),
+        })));
+      })
+      .catch(err => { if (!cancelled) setError(err.message); })
+      .finally(() => { if (!cancelled) setVariantsLoading(false); });
+    return () => { cancelled = true; };
+  }, [isEdit, product?.product_id]);
 
   useEffect(() => {
     if (!imageFile) {
@@ -57,10 +83,13 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
     e.preventDefault(); setBusy(true); setError('');
     try {
       const incompleteVariant = variants.some(variant =>
-        !variant.size_id || !variant.color_id || !variant.sku.trim()
-        || !Number.isInteger(Number(variant.quantity)) || Number(variant.quantity) < 0
+        (!variant.is_default && (!variant.size_id || !variant.color_id))
+        || !variant.sku.trim()
+        || (!isEdit && (!Number.isInteger(Number(variant.quantity)) || Number(variant.quantity) < 0))
       );
       if (incompleteVariant) throw new Error('Hoàn tất kích cỡ, màu, mã SKU và số lượng cho từng biến thể.');
+      const activeDefaultCount = variants.filter(variant => variant.is_default).length;
+      if (activeDefaultCount > 1) throw new Error('Mỗi sản phẩm chỉ được có một biến thể mặc định.');
       const body = {
         ...form,
         import_price:Number(form.import_price),
@@ -68,8 +97,11 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
         category_id:Number(form.category_id)||null,
         supplier_id:Number(form.supplier_id)||null,
         variants: variants.map(variant => ({
-          size_id: Number(variant.size_id), color_id: Number(variant.color_id),
-          sku: variant.sku.trim(), quantity: Number(variant.quantity),
+          ...(variant.variant_id ? { variant_id: variant.variant_id } : {}),
+          is_default: Boolean(variant.is_default),
+          size_id: variant.is_default ? null : Number(variant.size_id),
+          color_id: variant.is_default ? null : Number(variant.color_id),
+          sku: variant.sku.trim(), ...(isEdit ? {} : { quantity: Number(variant.quantity) }),
         })),
       };
       const data = new FormData();
@@ -133,27 +165,33 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
               </Field>
             </div>
           </div>
-          {!isEdit && <section className="flex flex-col gap-3 border-t border-white/[0.08] pt-4">
+          <section className="flex flex-col gap-3 border-t border-white/[0.08] pt-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="m-0 text-sm font-semibold">Biến thể sản phẩm</h3>
-                <p className="m-0 mt-1 text-xs text-white/45">Thêm tổ hợp kích cỡ, màu, mã SKU và tồn kho ban đầu.</p>
+                <p className="m-0 mt-1 text-xs text-white/45">{isEdit ? 'Thêm, chỉnh sửa hoặc ngừng sử dụng biến thể. Biến thể đã phát sinh đơn hàng/phiếu kho sẽ được lưu lịch sử.' : 'Nếu không thêm biến thể, hệ thống tự tạo một biến thể “Mặc định” với tồn kho ban đầu bằng 0.'}</p>
               </div>
-              <button type="button" className={BTN_GHOST} onClick={() => setVariants(current => [...current, { size_id:'', color_id:'', sku:'', quantity:'0' }])}>
+              <button type="button" className={BTN_GHOST} disabled={variantsLoading} onClick={() => setVariants(current => [...current, { size_id:'', color_id:'', sku:'', quantity:'0', is_default:false }])}>
                 <Plus size={14}/> Thêm biến thể
               </button>
             </div>
-            {variants.map((variant, index) => <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1.3fr_0.8fr_auto] gap-2 items-end rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <Field label="Kích cỡ *"><select required className={SELECT} value={variant.size_id} onChange={event => updateVariant(index, 'size_id', event.target.value)}><option value="">Chọn kích cỡ</option>{sizes.map(size => <option key={size.size_id} value={size.size_id}>{size.size_name}</option>)}</select></Field>
-              <Field label="Màu *"><select required className={SELECT} value={variant.color_id} onChange={event => updateVariant(index, 'color_id', event.target.value)}><option value="">Chọn màu</option>{colors.map(color => <option key={color.color_id} value={color.color_id}>{color.color_name}</option>)}</select></Field>
+            {variantsLoading ? <p className="m-0 text-sm text-white/45">Đang tải biến thể...</p> : variants.map((variant, index) => <div key={variant.variant_id || `new-${index}`} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1.3fr_0.8fr_auto] gap-2 items-end rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              {variant.is_default
+                ? <div className="md:col-span-2 flex items-center h-10 px-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm text-white/65">Biến thể mặc định</div>
+                : <><Field label="Kích cỡ *"><select required className={SELECT} value={variant.size_id} onChange={event => updateVariant(index, 'size_id', event.target.value)}><option value="">Chọn kích cỡ</option>{sizes.map(size => <option key={size.size_id} value={size.size_id}>{size.size_name}</option>)}</select></Field>
+                  <Field label="Màu *"><select required className={SELECT} value={variant.color_id} onChange={event => updateVariant(index, 'color_id', event.target.value)}><option value="">Chọn màu</option>{colors.map(color => <option key={color.color_id} value={color.color_id}>{color.color_name}</option>)}</select></Field></>}
               <Field label="Mã SKU *"><input required maxLength={100} className={INPUT} placeholder="VD: AO-TRANG-M" value={variant.sku} onChange={event => updateVariant(index, 'sku', event.target.value)} /></Field>
-              <Field label="Số lượng"><input required type="number" min="0" step="1" className={INPUT} value={variant.quantity} onChange={event => updateVariant(index, 'quantity', event.target.value)} /></Field>
-              <button type="button" className={`${ICON_BTN} mb-0.5`} title="Xóa biến thể" aria-label="Xóa biến thể" onClick={() => setVariants(current => current.filter((_, row) => row !== index))}><Trash2 size={14}/></button>
+              <Field label="Tồn kho">
+                {isEdit
+                  ? <input readOnly className={`${INPUT} opacity-60 cursor-not-allowed`} value={variant.quantity} title="Điều chỉnh tồn kho tại mục Nhập/Xuất kho" />
+                  : <input required type="number" min="0" step="1" className={INPUT} value={variant.quantity} onChange={event => updateVariant(index, 'quantity', event.target.value)} />}
+              </Field>
+              <button type="button" className={`${ICON_BTN} mb-0.5`} title="Ngừng sử dụng biến thể" aria-label="Ngừng sử dụng biến thể" onClick={() => setVariants(current => current.filter((_, row) => row !== index))}><Trash2 size={14}/></button>
             </div>)}
-          </section>}
+          </section>
           <div className="flex justify-end gap-2.5 pt-3 border-t border-white/[0.08]">
             <button type="button" className={BTN_GHOST} onClick={onClose}>Hủy</button>
-            <button type="submit" className={`${BTN_PRIMARY} admin-primary-action`} disabled={busy}>{busy ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : 'Thêm sản phẩm'}</button>
+            <button type="submit" className={`${BTN_PRIMARY} admin-primary-action`} disabled={busy || variantsLoading}>{busy ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : 'Thêm sản phẩm'}</button>
           </div>
         </form>
       </motion.div>

@@ -34,6 +34,7 @@ export function CartProvider({ accountId, children }) {
         image_url:    product.image_url || null,
         size_name:    variant.size_name,
         color_name:   variant.color_name,
+        variant_label: variant.variant_label || (variant.is_default ? 'Mặc định' : [variant.size_name, variant.color_name].filter(Boolean).join(' / ')),
         sku:          variant.sku,
         selling_price: Number(product.selling_price),
         max_stock:    Number(variant.quantity),

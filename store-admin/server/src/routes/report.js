@@ -74,7 +74,10 @@ router.get('/warehouse/summary', async (req, res) => {
       pool.query(`SELECT COALESCE(SUM(pv.quantity * p.import_price), 0)::numeric AS inventory_value
                   FROM product_variant pv JOIN product p ON p.product_id = pv.product_id
                   WHERE pv.is_active = TRUE AND p.is_active = TRUE`),
-      pool.query(`SELECT pv.variant_id, p.product_name, pv.sku, s.size_name, c.color_name,
+      pool.query(`SELECT pv.variant_id, p.product_name, pv.sku,
+                         CASE WHEN pv.is_default THEN 'Mặc định' ELSE s.size_name END AS size_name,
+                         CASE WHEN pv.is_default THEN 'Mặc định' ELSE c.color_name END AS color_name,
+                         CASE WHEN pv.is_default THEN 'Mặc định' ELSE CONCAT_WS(' / ', s.size_name, c.color_name) END AS variant_label,
                          pv.quantity, $1::int AS threshold
                   FROM product_variant pv JOIN product p ON p.product_id = pv.product_id
                   LEFT JOIN size s ON s.size_id = pv.size_id

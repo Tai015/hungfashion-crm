@@ -211,7 +211,7 @@ function OrderDetail({ orderId, onBack, onReviewProduct }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <strong className="text-sm font-semibold truncate block">{d.product_name}</strong>
-                    <p className="m-0 text-white/40 text-xs">{d.size_name} · {d.color_name} · SKU: {d.sku}</p>
+                    <p className="m-0 text-white/40 text-xs">{d.variant_label || [d.size_name, d.color_name].filter(Boolean).join(' · ') || 'Mặc định'} · SKU: {d.sku || '—'}</p>
                     <p className="m-0 text-white/50 text-sm">{fmtVND(d.unit_price)} × {d.quantity}</p>
                   </div>
                   <strong className="text-[#f5f0eb] tabular-nums shrink-0">{fmtVND(d.subtotal||d.unit_price*d.quantity)}</strong>
