@@ -37,7 +37,7 @@ test('không cho tài khoản khách đăng nhập ở cổng nhân viên', asyn
 
 test('từ chối mật khẩu sai', async ({ request }) => {
   const response = await request.post('/api/auth/login', {
-    data: { identifier: customerIdentifier, password: `${customerPassword}-wrong`, audience: 'customer' },
+    data: { identifier: customerIdentifier, password: customerPassword === 'wrong-password-for-e2e'\n      ? 'different-wrong-password'\n      : 'wrong-password-for-e2e', audience: 'customer' },
   });
 
   expect(response.status()).toBe(401);
