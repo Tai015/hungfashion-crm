@@ -11,8 +11,11 @@ import { confirmDestructiveAction } from '../utils/confirmAction';
 import { useSweetAlertMessages } from '../utils/notifications';
 
 const TIERS   = ['New','Regular','Silver','Gold','VIP'];
+const TIER_LABEL = { New:'Mới', Regular:'Thường', Silver:'Bạc', Gold:'Vàng', VIP:'VIP' };
+const GENDER_LABEL = { Female:'Nữ', Male:'Nam', Other:'Khác' };
+const formatAge = age => Number.isInteger(age) && age >= 0 ? `${age} tuổi` : 'Chưa cập nhật';
 const GENDERS = [['','Tất cả'],['Female','Nữ'],['Male','Nam'],['Other','Khác']];
-const EMPTY   = { full_name:'', phone:'', email:'', gender:'' };
+const EMPTY   = { full_name:'', phone:'', email:'', gender:'Other', date_of_birth:'' };
 const LIMIT   = 20;
 
 const INPUT  = 'w-full h-10 px-3 bg-white/[0.07] border border-white/[0.12] rounded-xl text-[#f5f0eb] text-sm placeholder-white/22 outline-none focus:border-violet-400/60 focus:bg-white/10 focus:ring-2 focus:ring-violet-400/[0.15] transition-all dark-input';
@@ -42,7 +45,7 @@ function CustomerModal({ customer, onClose, onSaved }) {
   useModalEffects(true, onClose);
   const isEdit = Boolean(customer);
   const [form, setForm] = useState(customer
-    ? { full_name:customer.full_name||'', phone:customer.phone||'', email:customer.email||'', gender:customer.gender||'' }
+    ? { full_name:customer.full_name||'', phone:customer.phone||'', email:customer.email||'', gender:customer.gender||'Other', date_of_birth:customer.date_of_birth ? String(customer.date_of_birth).slice(0,10) : '' }
     : EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -50,8 +53,17 @@ function CustomerModal({ customer, onClose, onSaved }) {
   const save = async e => {
     e.preventDefault(); setBusy(true); setError('');
     try {
-      if (isEdit) await apiFetch(`/api/customers/${customer.customer_id}`, { method:'PATCH', body:form });
-      else await apiFetch('/api/customers', { method:'POST', body:{ ...form, gender:form.gender||null, interests:[] } });
+      if (!form.date_of_birth) throw new Error('Vui lòng nhập ngày sinh.');
+      const birthDate = new Date(`${form.date_of_birth}T00:00:00`);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) age -= 1;
+      if (Number.isNaN(birthDate.getTime()) || birthDate > new Date(today.getFullYear(), today.getMonth(), today.getDate()) || age < 0 || age > 120) {
+        throw new Error('Ngày sinh không hợp lệ. Tuổi khách hàng phải từ 0 đến 120.');
+      }
+      const payload = { ...form, gender:form.gender || 'Other', interests:customer?.interests || [] };
+      if (isEdit) await apiFetch(`/api/customers/${customer.customer_id}`, { method:'PUT', body:payload });
+      else await apiFetch('/api/customers', { method:'POST', body:payload });
       onSaved();
     }
     catch(err) { setError(err.message); } finally { setBusy(false); }
@@ -71,10 +83,11 @@ function CustomerModal({ customer, onClose, onSaved }) {
             <Field label="Họ tên *"><input required maxLength={150} placeholder="Nguyễn Văn A" className={INPUT} value={form.full_name} onChange={e => setForm({...form, full_name:e.target.value})} /></Field>
             <Field label="Số điện thoại"><input type="tel" maxLength={30} placeholder="09xxxxxxxx" className={INPUT} value={form.phone} onChange={e => setForm({...form, phone:e.target.value})} /></Field>
             <Field label="Email"><input type="email" maxLength={150} placeholder="email@example.com" className={INPUT} value={form.email} onChange={e => setForm({...form, email:e.target.value})} /></Field>
+            <Field label="Ngày sinh *"><input type="date" required max={new Date().toISOString().slice(0,10)} className={INPUT} value={form.date_of_birth} onChange={e => setForm({...form, date_of_birth:e.target.value})} /></Field>
             <Field label="Giới tính">
               <select className={SELECT} value={form.gender} onChange={e => setForm({...form, gender:e.target.value})}>
-                <option value="">Chưa cung cấp</option>
-                <option value="Female">Nữ</option><option value="Male">Nam</option><option value="Other">Khác</option>
+                <option value="Other">Khác</option>
+                <option value="Female">Nữ</option><option value="Male">Nam</option>
               </select>
             </Field>
           </div>
@@ -158,7 +171,7 @@ function CustomerInteractionHistory({ customerId }) {
                 <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-violet-300/80" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                    <p className="m-0 text-sm font-medium text-white/85">{item.title}</p>
+                    <p className="m-0 text-sm font-medium text-white/85">{{'login':'Đăng nhập','logout':'Đăng xuất','order_created':'Tạo đơn hàng','order_cancelled':'Hủy đơn hàng','payment_completed':'Thanh toán thành công','payment_refunded':'Hoàn tiền','feedback_submitted':'Gửi phản hồi','feedback_replied':'Nhân viên phản hồi','survey_invited':'Được mời khảo sát','survey_completed':'Hoàn thành khảo sát','promotion_assigned':'Nhận ưu đãi','promotion_used':'Sử dụng ưu đãi','loyalty_points_earned':'Tích điểm','loyalty_points_redeemed':'Đổi điểm','loyalty_points_adjusted':'Điều chỉnh điểm'}[item.event_type] || item.title}</p>
                     <time className="text-[11px] text-white/35">{dateFormatter.format(new Date(item.occurred_at))}</time>
                   </div>
                   <p className="mt-1 mb-0 text-xs leading-relaxed text-white/48">{item.summary}</p>
@@ -233,7 +246,7 @@ export default function CustomersView({ userRole }) {
     setError(''); setNotice(''); setBusyCustomerId(customer.customer_id);
     try {
       const result = await apiFetch(`/api/customers/${customer.customer_id}/tier`, { method:'PATCH', body:{ tier:nextTier } });
-      setNotice(`Đã đổi hạng ${customer.full_name} thành ${result.customer_tier}.`);
+      setNotice(`Đã đổi hạng ${customer.full_name} thành ${TIER_LABEL[result.customer_tier] || result.customer_tier}.`);
       setRefresh(value => value + 1);
     } catch(err) { setError(err.message); }
     finally { setBusyCustomerId(null); }
@@ -299,7 +312,7 @@ export default function CustomersView({ userRole }) {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  {['#','Họ tên','SĐT','Email','Giới tính','Hạng','Điểm', ...(canWrite?['Thao tác']:[])].map(h => (
+                  {['Mã','Họ tên','Số điện thoại','Email','Tuổi','Giới tính','Hạng khách hàng','Điểm tích lũy', ...(canWrite?['Thao tác']:[])].map(h => (
                     <th key={h} className="px-3.5 py-2.5 text-left text-[0.72rem] font-semibold tracking-[0.05em] uppercase text-white/38 border-b border-white/[0.08] whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -324,7 +337,8 @@ export default function CustomersView({ userRole }) {
                       </td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{c.phone||'—'}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{c.email||'—'}</td>
-                      <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{c.gender||'—'}</td>
+                      <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/70">{formatAge(c.age)}</td>
+                      <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{GENDER_LABEL[c.gender] || 'Khác'}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05]">
                         {canWrite ? (
                           <select
@@ -334,9 +348,9 @@ export default function CustomersView({ userRole }) {
                             value={c.customer_tier||'New'}
                             disabled={busyCustomerId === c.customer_id}
                             onChange={event => changeCustomerTier(c, event.target.value)}>
-                            {TIERS.map(value => <option key={value} value={value}>{value}</option>)}
+                            {TIERS.map(value => <option key={value} value={value}>{TIER_LABEL[value]}</option>)}
                           </select>
-                        ) : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ color:tc, background:`${tc}18` }}>{c.customer_tier||'New'}</span>}
+                        ) : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ color:tc, background:`${tc}18` }}>{TIER_LABEL[c.customer_tier] || 'Mới'}</span>}
                       </td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/70 tabular-nums font-medium">{(c.loyalty_point||0).toLocaleString()}</td>
                       {canWrite && (
@@ -364,7 +378,7 @@ export default function CustomersView({ userRole }) {
                     </tr>
                     {expandedCustomerId === c.customer_id && (
                       <tr key={"history-" + c.customer_id}>
-                        <td colSpan={canWrite ? 8 : 7} className="p-0 border-b border-white/[0.06]">
+                        <td colSpan={canWrite ? 9 : 8} className="p-0 border-b border-white/[0.06]">
                           <CustomerInteractionHistory customerId={c.customer_id} />
                         </td>
                       </tr>
@@ -372,7 +386,7 @@ export default function CustomersView({ userRole }) {
                     </Fragment>
                   );
                 }) : (
-                  <tr><td colSpan={canWrite?8:7} className="px-3.5 py-10 text-center text-white/25 text-sm">Không có khách hàng</td></tr>
+                  <tr><td colSpan={canWrite?9:8} className="px-3.5 py-10 text-center text-white/25 text-sm">Không có khách hàng</td></tr>
                 )}
               </tbody>
             </table>
