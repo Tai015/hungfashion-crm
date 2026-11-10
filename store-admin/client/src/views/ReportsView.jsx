@@ -7,7 +7,7 @@ import GlassCard from '../components/dashboard/GlassCard';
 import SectionState from '../components/dashboard/SectionState';
 import DatePicker from '../components/DatePicker';
 import { formatCount, formatVnd } from '../utils/dashboardFormatters';
-import { EMPLOYEE_STATUS_LABELS } from '../utils/viLabels';
+import { CUSTOMER_GENDER_LABELS, CUSTOMER_SPENDING_SEGMENT_LABELS, CUSTOMER_TIER_LABELS, EMPLOYEE_STATUS_LABELS } from '../utils/viLabels';
 import '../dashboard.css';
 
 const TAB_ROLES = {
@@ -220,24 +220,24 @@ function CustomersTab({ from, to }) {
   const interestRows = Array.isArray(interests.data) ? interests.data : [];
   const segmentRows = Array.isArray(segments.data) ? segments.data : [];
   const ageChart = ageRows.map(row => ({ label: row.ageBand, value: Number(row.customerCount) || 0 }));
-  const tierChart = tier.map(row => ({ label: row.customer_tier || 'Chưa phân hạng', value: Number(row.count) || 0 }));
+  const tierChart = tier.map(row => ({ label: CUSTOMER_TIER_LABELS[row.customer_tier] || 'Chưa phân hạng', value: Number(row.count) || 0 }));
   const interestChart = interestRows.map(row => ({ label: row.interest, value: Number(row.count) || 0 }));
-  const segmentChart = segmentRows.map(row => ({ label: row.segment, value: Number(row.avg_spent) || 0 }));
-  const genderChart = gender.map(row => ({ label: row.gender || 'Chưa có thông tin', value: Number(row.count) || 0 }));
+  const segmentChart = segmentRows.map(row => ({ label: CUSTOMER_SPENDING_SEGMENT_LABELS[row.segment] || row.segment, value: Number(row.avg_spent) || 0 }));
+  const genderChart = gender.map(row => ({ label: CUSTOMER_GENDER_LABELS[row.gender] || 'Chưa có thông tin', value: Number(row.count) || 0 }));
   const rows = [
     ...ageRows.map(row => ['Độ tuổi', row.ageBand, Number(row.customerCount) || 0, Number(row.percent) || 0]),
-    ...tier.map(row => ['Hạng khách hàng', row.customer_tier || 'Chưa phân hạng', Number(row.count) || 0, null]),
-    ...gender.map(row => ['Giới tính', row.gender || 'Chưa có thông tin', Number(row.count) || 0, null]),
-    ...segmentRows.map(row => ['Phân khúc chi tiêu', row.segment, Number(row.customer_count) || 0, null]),
+    ...tier.map(row => ['Hạng khách hàng', CUSTOMER_TIER_LABELS[row.customer_tier] || 'Chưa phân hạng', Number(row.count) || 0, null]),
+    ...gender.map(row => ['Giới tính', CUSTOMER_GENDER_LABELS[row.gender] || 'Chưa có thông tin', Number(row.count) || 0, null]),
+    ...segmentRows.map(row => ['Phân khúc chi tiêu', CUSTOMER_SPENDING_SEGMENT_LABELS[row.segment] || row.segment, Number(row.customer_count) || 0, null]),
     ...interestRows.map(row => ['Sở thích', row.interest, Number(row.count) || 0, Number(row.percent) || 0]),
   ];
   return <>
     <div className="reports-grid-two">
       <ReportBlock eyebrow="NHÂN KHẨU HỌC" title="Tỷ lệ độ tuổi"><StatePanel state={ages} empty={!ageRows.length}><DistributionChart items={ageChart} /><Table headers={['Nhóm tuổi', 'Số khách hàng', 'Tỷ lệ']} rows={ageRows.map(row => ({ key: row.ageBand, cells: [row.ageBand, formatCount(Number(row.customerCount) || 0), `${Number(row.percent) || 0}%`] }))} /></StatePanel></ReportBlock>
-      <ReportBlock eyebrow="HẠNG THÀNH VIÊN" title="Khách hàng theo hạng"><StatePanel state={dashboard} empty={!tier.length}><DistributionChart items={tierChart} /><Table headers={['Hạng', 'Số khách hàng']} rows={tier.map(row => ({ key: row.customer_tier, cells: [row.customer_tier || 'Chưa phân hạng', formatCount(Number(row.count) || 0)] }))} /></StatePanel></ReportBlock>
+      <ReportBlock eyebrow="HẠNG THÀNH VIÊN" title="Khách hàng theo hạng"><StatePanel state={dashboard} empty={!tier.length}><DistributionChart items={tierChart} /><Table headers={['Hạng', 'Số khách hàng']} rows={tier.map(row => ({ key: row.customer_tier, cells: [CUSTOMER_TIER_LABELS[row.customer_tier] || 'Chưa phân hạng', formatCount(Number(row.count) || 0)] }))} /></StatePanel></ReportBlock>
       <ReportBlock eyebrow="SỞ THÍCH" title="Sở thích khách hàng"><StatePanel state={interests} empty={!interestRows.length}><DistributionChart items={interestChart} /><Table headers={['Sở thích', 'Số khách', 'Tỷ lệ']} rows={interestRows.map(row => ({ key: row.interest_id, cells: [row.interest, formatCount(Number(row.count) || 0), `${Number(row.percent) || 0}%`] }))} /></StatePanel></ReportBlock>
-      <ReportBlock eyebrow="CHI TIÊU" title="Phân khúc khách hàng"><StatePanel state={segments} empty={!segmentRows.length}><p className="reports-subtle">So sánh chi tiêu trung bình theo phân khúc.</p><DistributionChart items={segmentChart} formatValue={formatVnd} /><Table headers={['Phân khúc', 'Số khách', 'Chi tiêu trung bình']} rows={segmentRows.map(row => ({ key: row.segment, cells: [row.segment, formatCount(Number(row.customer_count) || 0), formatVnd(Number(row.avg_spent) || 0)] }))} /></StatePanel></ReportBlock>
-      <ReportBlock eyebrow="GIỚI TÍNH" title="Khách hàng theo giới tính"><StatePanel state={dashboard} empty={!gender.length}><DistributionChart items={genderChart} /><Table headers={['Giới tính', 'Số khách hàng']} rows={gender.map(row => ({ key: row.gender || 'unknown', cells: [row.gender || 'Chưa có thông tin', formatCount(Number(row.count) || 0)] }))} /></StatePanel></ReportBlock>
+      <ReportBlock eyebrow="CHI TIÊU" title="Phân khúc khách hàng"><StatePanel state={segments} empty={!segmentRows.length}><p className="reports-subtle">So sánh chi tiêu trung bình theo phân khúc.</p><DistributionChart items={segmentChart} formatValue={formatVnd} /><Table headers={['Phân khúc', 'Số khách', 'Chi tiêu trung bình']} rows={segmentRows.map(row => ({ key: row.segment, cells: [CUSTOMER_SPENDING_SEGMENT_LABELS[row.segment] || row.segment, formatCount(Number(row.customer_count) || 0), formatVnd(Number(row.avg_spent) || 0)] }))} /></StatePanel></ReportBlock>
+      <ReportBlock eyebrow="GIỚI TÍNH" title="Khách hàng theo giới tính"><StatePanel state={dashboard} empty={!gender.length}><DistributionChart items={genderChart} /><Table headers={['Giới tính', 'Số khách hàng']} rows={gender.map(row => ({ key: row.gender || 'unknown', cells: [CUSTOMER_GENDER_LABELS[row.gender] || 'Chưa có thông tin', formatCount(Number(row.count) || 0)] }))} /></StatePanel></ReportBlock>
     </div>
     <div className="reports-export-row"><button type="button" className="dashboard-quick-action" onClick={() => exportCsv('khach-hang', `${from}-${to}`, ['Loại thống kê', 'Nhóm', 'Số khách hàng', 'Tỷ lệ (%)'], rows)} disabled={!rows.length}><Download size={15} /> Xuất CSV</button></div>
   </>;
