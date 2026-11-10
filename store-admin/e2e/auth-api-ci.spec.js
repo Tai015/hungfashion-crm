@@ -112,3 +112,50 @@ test('ghi nhận login user event qua outbox, Kafka và consumer vào PostgreSQL
   expect(persisted.event_type).toBe('login');
   expect(persisted.action).toBe('login_success');
 });
+
+test('tự ghi nhận đăng nhập và đăng xuất qua outbox vào lịch sử khách hàng', async ({ request }) => {
+  const login = await request.post('/api/auth/login', {
+    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+  });
+  expect(login.status()).toBe(200);
+  const { token, user } = await login.json();
+  const authorization = { Authorization: `Bearer ${token}` };
+
+  let loginEvent = null;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const result = await db.query(
+      `SELECT event_id, user_id, session_id, event_type, action
+       FROM user_events
+       WHERE user_id = $1 AND action = 'login_success'
+         AND occurred_at >= NOW() - INTERVAL '2 minutes'
+       ORDER BY occurred_at DESC LIMIT 1`,
+      [String(user.account_id)],
+    );
+    loginEvent = result.rows[0] || null;
+    if (loginEvent) break;
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  expect(loginEvent, 'Đăng nhập phải tự phát sinh user event').toBeTruthy();
+  expect(loginEvent.event_type).toBe('login');
+  expect(loginEvent.user_id).toBe(String(user.account_id));
+
+  const logout = await request.post('/api/auth/logout', { headers: authorization });
+  expect(logout.status()).toBe(200);
+
+  let logoutEvent = null;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const result = await db.query(
+      `SELECT event_id, user_id, session_id, event_type, action
+       FROM user_events
+       WHERE user_id = $1 AND session_id = $2 AND action = 'logout_success'
+       ORDER BY occurred_at DESC LIMIT 1`,
+      [String(user.account_id), loginEvent.session_id],
+    );
+    logoutEvent = result.rows[0] || null;
+    if (logoutEvent) break;
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  expect(logoutEvent, 'Đăng xuất phải tự phát sinh user event').toBeTruthy();
+  expect(logoutEvent.event_type).toBe('logout');
+  expect(logoutEvent.session_id).toBe(loginEvent.session_id);
+});

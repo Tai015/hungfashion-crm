@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { pool } from '../db.js';
 import { createAccessToken, requireAuth, validateJwtSecret } from '../auth.js';
+import { writeOutboxEvent } from '../outbox-writer.js';
 
 const router = Router();
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -278,6 +279,12 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
          VALUES ($1, $2, NOW() + INTERVAL '8 hours', $3::inet)`,
         [sessionId, account.account_id, clientIp],
       );
+      await enqueueAuthEvent(client, {
+        accountId: account.account_id,
+        sessionId,
+        eventType: 'login',
+        action: 'login_success',
+      });
       await client.query('COMMIT');
     } catch (error) {
       await client.query('ROLLBACK').catch(() => {});
@@ -295,14 +302,28 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
 });
 
 router.post('/logout', requireAuth, async (req, res) => {
+  const client = await pool.connect();
   try {
-    await pool.query(
-      'UPDATE account_sessions SET revoked_at = NOW() WHERE session_id = $1 AND revoked_at IS NULL',
-      [req.sessionId],
+    await client.query('BEGIN');
+    const { rowCount } = await client.query(
+      'UPDATE account_sessions SET revoked_at = NOW() WHERE session_id = $1 AND account_id = $2 AND revoked_at IS NULL',
+      [req.sessionId, req.user.account_id],
     );
+    if (rowCount > 0) {
+      await enqueueAuthEvent(client, {
+        accountId: req.user.account_id,
+        sessionId: req.sessionId,
+        eventType: 'logout',
+        action: 'logout_success',
+      });
+    }
+    await client.query('COMMIT');
     return res.json({ message: 'Đã đăng xuất.' });
   } catch {
+    await client.query('ROLLBACK').catch(() => {});
     return res.status(500).json({ message: 'Không thể kết thúc phiên đăng nhập lúc này.' });
+  } finally {
+    client.release();
   }
 });
 

@@ -142,7 +142,7 @@ SELECT
   si.invited_at AS occurred_at
 FROM survey_invitation si
 JOIN survey s ON s.survey_id = si.survey_id
-WHERE si.status <> 'Completed'
+-- Keep completed invitations too; the response is recorded as a separate timeline event.
 
 UNION ALL
 
