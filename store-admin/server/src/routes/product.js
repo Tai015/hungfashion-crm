@@ -148,15 +148,14 @@ router.get('/', async (req, res) => {
     for (const [value, column, label] of [
       [category_id, 'p.category_id', 'Danh mục'],
       [brand_id, 'p.brand_id', 'Thương hiệu'],
-      [supplier_id, 'p.supplier_id', 'Nhà cung cấp'],
     ]) {
-      if (value !== undefined && (!/^\d+$/.test(String(value)) || Number(value) < 1)) {
-        return res.status(400).json({ message: `${label} không hợp lệ.` });
-      }
-      if (value !== undefined) {
-        params.push(Number(value));
-        conditions.push(`${column} = $${params.length}`);
-      }
+      if (value !== undefined && (!/^\\d+$/.test(String(value)) || Number(value) < 1)) return res.status(400).json({ message: `${label} không hợp lệ.` });
+      if (value !== undefined) { params.push(Number(value)); conditions.push(`${column} = ${params.length}`); }
+    }
+    if (supplier_id !== undefined) {
+      if (!/^\\d+$/.test(String(supplier_id)) || Number(supplier_id) < 1) return res.status(400).json({ message: 'Nhà cung cấp không hợp lệ.' });
+      params.push(Number(supplier_id));
+      conditions.push(`EXISTS (SELECT 1 FROM product_supplier ps WHERE ps.product_id=p.product_id AND ps.supplier_id=${params.length})`);
     }
     for (const [value, operator, label] of [
       [min_price, '>=', 'Giá tối thiểu'],
@@ -175,15 +174,15 @@ router.get('/', async (req, res) => {
     params.push(pageSize, offset);
 
     const { rows } = await pool.query(
-      `SELECT p.*, c.category_name, b.brand_name, s.supplier_name,
+      `SELECT p.*, c.category_name, b.brand_name, supplier_list.supplier_name,
               COALESCE(SUM(pv.quantity), 0)::int AS total_stock
        FROM product p
        JOIN category c ON c.category_id = p.category_id
        LEFT JOIN brand b ON b.brand_id = p.brand_id
-       LEFT JOIN supplier s ON s.supplier_id = p.supplier_id
+       LEFT JOIN LATERAL (SELECT STRING_AGG(sp.supplier_name, ', ' ORDER BY sp.supplier_name) AS supplier_name FROM product_supplier ps JOIN supplier sp ON sp.supplier_id=ps.supplier_id WHERE ps.product_id=p.product_id) supplier_list ON TRUE
        LEFT JOIN product_variant pv ON pv.product_id = p.product_id AND pv.is_active = TRUE
        ${where}
-       GROUP BY p.product_id, c.category_name, b.brand_name, s.supplier_name
+       GROUP BY p.product_id, c.category_name, b.brand_name, supplier_list.supplier_name
        ORDER BY ${sortColumns[sort]} ${String(order).toUpperCase()}
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
@@ -225,7 +224,8 @@ router.get('/:id', async (req, res) => {
       [req.params.id]
     );
 
-    res.json({ ...rows[0], variants });
+    const { rows: supplierRows } = await pool.query('SELECT supplier_id FROM product_supplier WHERE product_id=$1 ORDER BY supplier_id', [req.params.id]);
+    res.json({ ...rows[0], supplier_ids: supplierRows.map(row => row.supplier_id), variants });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -237,7 +237,8 @@ router.post('/', receiveProductImage, parseProductImage, async (req, res) => {
   let transactionStarted = false;
   let uploadedImage;
   try {
-    const { category_id, product_name, description, import_price, selling_price, image_url, variants = [] } = productRequestData(req);
+    const { category_id, supplier_ids = [], product_name, description, import_price, selling_price, image_url, variants = [] } = productRequestData(req);
+    if (!Array.isArray(supplier_ids) || supplier_ids.some(id => !Number.isInteger(Number(id)) || Number(id) < 1)) return res.status(400).json({ message: 'Danh sách nhà cung cấp không hợp lệ.' });
     if (!Array.isArray(variants)) return res.status(400).json({ message: 'Danh sách biến thể không hợp lệ.' });
     if (req.file) uploadedImage = await storeProductImage(req.file.buffer, req.file.mimetype);
 
@@ -251,6 +252,12 @@ router.post('/', receiveProductImage, parseProductImage, async (req, res) => {
       [category_id, product_name, description, import_price, selling_price, uploadedImage?.url || image_url || null]
     );
     const product = rows[0];
+    const uniqueSupplierIds = [...new Set(supplier_ids.map(Number))];
+    if (uniqueSupplierIds.length) {
+      const { rows: validSuppliers } = await client.query('SELECT supplier_id FROM supplier WHERE supplier_id=ANY($1::int[]) AND is_active=TRUE', [uniqueSupplierIds]);
+      if (validSuppliers.length !== uniqueSupplierIds.length) { const error = new Error('Nhà cung cấp không tồn tại hoặc đã ngừng hoạt động.'); error.status=400; throw error; }
+      await client.query('INSERT INTO product_supplier (product_id,supplier_id) SELECT $1, unnest($2::int[])', [product.product_id, uniqueSupplierIds]);
+    }
 
     if (variants.length === 0) {
       await client.query(
@@ -300,7 +307,8 @@ async function updateProduct(req, res) {
   let transactionStarted = false;
   try {
     const data = productRequestData(req);
-    const { category_id, supplier_id, product_name, description, import_price, selling_price, image_url, variants } = data;
+    const { category_id, supplier_ids = [], product_name, description, import_price, selling_price, image_url, variants } = data;
+    if (!Array.isArray(supplier_ids) || supplier_ids.some(id => !Number.isInteger(Number(id)) || Number(id) < 1)) return res.status(400).json({ message: 'Danh sách nhà cung cấp không hợp lệ.' });
     if (variants !== undefined && !Array.isArray(variants)) {
       return res.status(400).json({ message: 'Danh sách biến thể không hợp lệ.' });
     }
@@ -340,10 +348,10 @@ async function updateProduct(req, res) {
     transactionStarted = true;
     const { rows } = await client.query(
       `UPDATE product
-       SET category_id=$1, supplier_id=$2, product_name=$3, description=$4,
-           import_price=$5, selling_price=$6, image_url=COALESCE($7, image_url), updated_at=NOW()
-       WHERE product_id=$8 RETURNING *`,
-      [category_id||null, supplier_id||null, product_name, description, import_price, selling_price, uploadedImage?.url || image_url || null, req.params.id]
+       SET category_id=$1, product_name=$2, description=$3,
+           import_price=$4, selling_price=$5, image_url=COALESCE($6, image_url), updated_at=NOW()
+       WHERE product_id=$7 RETURNING *`,
+      [category_id||null, product_name, description, import_price, selling_price, uploadedImage?.url || image_url || null, req.params.id]
     );
     if (!rows.length) {
       await client.query('ROLLBACK');
@@ -351,6 +359,13 @@ async function updateProduct(req, res) {
       await cleanupProductImage(uploadedImage);
       return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
     }
+    const uniqueSupplierIds = [...new Set(supplier_ids.map(Number))];
+    if (uniqueSupplierIds.length) {
+      const { rows: validSuppliers } = await client.query('SELECT supplier_id FROM supplier WHERE supplier_id=ANY($1::int[]) AND is_active=TRUE', [uniqueSupplierIds]);
+      if (validSuppliers.length !== uniqueSupplierIds.length) { const error = new Error('Nhà cung cấp không tồn tại hoặc đã ngừng hoạt động.'); error.status=400; throw error; }
+    }
+    await client.query('DELETE FROM product_supplier WHERE product_id=$1', [req.params.id]);
+    if (uniqueSupplierIds.length) await client.query('INSERT INTO product_supplier (product_id,supplier_id) SELECT $1, unnest($2::int[])', [req.params.id, uniqueSupplierIds]);
     if (Array.isArray(variants)) {
       const { rows: existingRows } = await client.query(
         'SELECT variant_id, is_default, quantity FROM product_variant WHERE product_id=$1 AND is_active=TRUE FOR UPDATE',
