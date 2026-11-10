@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, ShoppingBag, ShoppingCart, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShoppingBag, ShoppingCart, UserRound, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useModalEffects } from './hooks/useModalEffects';
 import Pagination from './components/Pagination';
@@ -531,7 +531,7 @@ function CustomerFeedback({ initialDraft, onDraftConsumed, onViewOrders }) {
 }
 
 /* ── Khảo sát ── */
-function CustomerSurveys() {
+function CustomerSurveys({ user, onGoProfile }) {
   const [surveys, setSurveys]   = useState([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -539,7 +539,19 @@ function CustomerSurveys() {
   const [answers, setAnswers]   = useState({});
   const [error, setError]       = useState('');
   const [message, setMessage]   = useState('');
-  useSweetAlertMessages({ error, success: message });
+  const [warning, setWarning]   = useState('');
+  const profileIncomplete = !user?.date_of_birth
+    || !Array.isArray(user?.interests)
+    || user.interests.length === 0;
+  useSweetAlertMessages({ error, success: message, warning });
+  useEffect(() => {
+    if (!profileIncomplete) return;
+    const missing = [
+      ...(!user?.date_of_birth ? ['ngày sinh'] : []),
+      ...(!Array.isArray(user?.interests) || user.interests.length === 0 ? ['ít nhất một sở thích'] : []),
+    ];
+    setWarning(`Bạn chưa thể tham gia khảo sát. Vui lòng cập nhật ${missing.join(' và ')} trong hồ sơ cá nhân.`);
+  }, [profileIncomplete, user?.date_of_birth, user?.interests]);
   const [busy, setBusy]         = useState(false);
   const [loading, setLoading]   = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -577,7 +589,27 @@ function CustomerSurveys() {
         <p className="m-0 text-white/40 text-xs font-semibold tracking-[0.08em] uppercase">Khảo sát</p>
         <h1 className="m-0 mt-1 text-[clamp(1.5rem,2.5vw,2rem)] font-bold tracking-tight">Khảo sát của tôi</h1>
       </div>
-      {selected ? (
+      {profileIncomplete ? (
+        <section className={`${PANEL} mx-auto w-full max-w-2xl`} role="alert">
+          <div className="flex items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-orange-500/15 text-orange-300">
+              <UserRound size={20} aria-hidden="true" />
+            </div>
+            <div className="flex-1">
+              <h2 className="m-0 text-base font-semibold text-[#f5f0eb]">Bạn cần hoàn thiện hồ sơ</h2>
+              <p className="mt-1 mb-0 text-sm leading-relaxed text-white/55">
+                Để tham gia khảo sát, vui lòng bổ sung
+                {!user?.date_of_birth && ' ngày sinh'}
+                {!user?.date_of_birth && (!Array.isArray(user?.interests) || user.interests.length === 0) && ' và'}
+                {(!Array.isArray(user?.interests) || user.interests.length === 0) && ' ít nhất một sở thích'}.
+              </p>
+              <button type="button" className={`${BTN_PRIMARY} mt-4`} onClick={onGoProfile}>
+                Cập nhật hồ sơ
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : selected ? (
         <form className={`${PANEL} max-w-2xl`} onSubmit={submit}>
           <div>
             <button type="button" className={BTN_GHOST} onClick={() => setSelected(null)}>← Danh sách khảo sát</button>
@@ -774,7 +806,7 @@ function PortalInner({ user, onUserUpdated, onLogout }) {
           {view==='loyalty' && <CustomerLoyaltyView />}
           {view==='profile' && <CustomerProfile user={user} onUserUpdated={onUserUpdated} />}
           {view==='feedback'&& <CustomerFeedback initialDraft={feedbackDraft} onDraftConsumed={() => setFeedbackDraft(null)} onViewOrders={() => goView('orders')} />}
-          {view==='surveys' && <CustomerSurveys />}
+          {view==='surveys' && <CustomerSurveys user={user} onGoProfile={() => goView('profile')} />}
           {view==='chat'    && <CskhChatView user={user} />}
         </Suspense>
       </div>

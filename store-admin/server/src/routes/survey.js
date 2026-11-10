@@ -533,6 +533,27 @@ router.post('/:id/respond', async (req, res) => {
   try {
     if (!req.user.customer_id) return res.status(403).json({ message: 'Tài khoản chưa liên kết hồ sơ khách hàng.' });
     await client.query('BEGIN');
+    const { rows: [profile] } = await client.query(
+      `SELECT c.date_of_birth,
+              EXISTS (
+                SELECT 1 FROM customer_interest ci WHERE ci.customer_id = c.customer_id
+              ) AS has_interests
+       FROM customer c
+       WHERE c.customer_id = $1
+       FOR UPDATE`,
+      [req.user.customer_id],
+    );
+    if (!profile || !profile.date_of_birth || !profile.has_interests) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({
+        code: 'SURVEY_PROFILE_INCOMPLETE',
+        message: 'Vui lòng cập nhật ngày sinh và chọn ít nhất một sở thích trong hồ sơ trước khi tham gia khảo sát.',
+        missing_fields: [
+          ...(!profile?.date_of_birth ? ['date_of_birth'] : []),
+          ...(!profile?.has_interests ? ['interests'] : []),
+        ],
+      });
+    }
     const { answers = [] } = req.body || {};
     if (!Array.isArray(answers) || answers.length > 50) {
       await client.query('ROLLBACK');
