@@ -158,6 +158,47 @@ router.get('/', async (req, res) => {
   }
 });
 
+
+// GET /api/feedbacks/report – dữ liệu đầy đủ phục vụ xuất báo cáo CSV.
+router.get('/report', async (req, res) => {
+  if (!['ADMIN', 'QL_KHACH_HANG'].includes(req.user.role_name)) {
+    return res.status(403).json({ message: 'Bạn không có quyền xem mục này.' });
+  }
+  const range = feedbackDateRange(req, res);
+  if (!range) return;
+  try {
+    const { rows: countRows } = await pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM feedback f
+       WHERE ($1::date IS NULL OR (
+         f.created_at >= ($1::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')
+         AND f.created_at < (($2::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')
+       ))`,
+      [range.from, range.to],
+    );
+    const total = countRows[0].total;
+    if (total > 10000) {
+      return res.status(413).json({ message: 'Khoảng thời gian có hơn 10.000 phản hồi. Vui lòng thu hẹp khoảng ngày để xuất CSV.' });
+    }
+    const { rows } = await pool.query(
+      `SELECT f.feedback_id, f.feedback_type, f.rating, f.content, f.status, f.created_at,
+              c.full_name AS customer_name, p.product_name
+       FROM feedback f
+       LEFT JOIN customer c ON c.customer_id = f.customer_id
+       LEFT JOIN product p ON p.product_id = f.product_id
+       WHERE ($1::date IS NULL OR (
+         f.created_at >= ($1::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')
+         AND f.created_at < (($2::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')
+       ))
+       ORDER BY f.created_at DESC, f.feedback_id DESC`,
+      [range.from, range.to],
+    );
+    return res.json({ data: rows, total, limit: 10000 });
+  } catch (err) {
+    return res.status(500).json({ message: 'Không thể tải toàn bộ dữ liệu phản hồi.' });
+  }
+});
+
 // GET /api/feedbacks/stats – thống kê theo trạng thái đang dùng trên giao diện
 router.get('/stats', async (req, res) => {
   const range = feedbackDateRange(req, res);
@@ -169,7 +210,7 @@ router.get('/stats', async (req, res) => {
               COUNT(*) FILTER (WHERE status = 'Resolved')::int AS resolved,
               COUNT(*) FILTER (WHERE status = 'Rejected')::int AS rejected
        FROM feedback
-       WHERE ($1::date IS NULL OR (created_at >= $1::date AND created_at < $2::date + INTERVAL '1 day'))`,
+       WHERE ($1::date IS NULL OR (created_at >= ($1::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') AND created_at < (($2::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')))`,
       [range.from, range.to],
     );
     return res.json(rows[0]);
@@ -186,7 +227,7 @@ router.get('/stats/rating', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT rating, COUNT(*)::int AS count
        FROM feedback WHERE rating IS NOT NULL
-         AND ($1::date IS NULL OR (created_at >= $1::date AND created_at < $2::date + INTERVAL '1 day'))
+         AND ($1::date IS NULL OR (created_at >= ($1::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') AND created_at < (($2::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')))
        GROUP BY rating ORDER BY rating DESC`,
       [range.from, range.to],
     );

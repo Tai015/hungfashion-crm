@@ -53,6 +53,7 @@ export const FEEDBACK_TYPE_LABELS = {
 export const RECEIPT_TYPE_LABELS = {
   Import: 'Nhập kho',
   Export: 'Xuất kho',
+  Adjustment: 'Điều chỉnh tồn kho',
 };
 
 
@@ -74,5 +75,6 @@ export const CUSTOMER_SPENDING_SEGMENT_LABELS = {
   'VIP (≥5M)': 'VIP (từ 5 triệu đồng)',
   'Gold (2M–5M)': 'Vàng (từ 2 đến dưới 5 triệu đồng)',
   'Silver (500K–2M)': 'Bạc (từ 500 nghìn đến dưới 2 triệu đồng)',
-  'New (<500K)': 'Mới (dưới 500 nghìn đồng)',
+  'No purchases (0)': 'Chưa mua hàng (0 đồng)',
+  'Under 500K': 'Dưới 500 nghìn đồng',
 };
