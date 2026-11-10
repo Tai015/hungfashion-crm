@@ -367,26 +367,15 @@ async function updateProduct(req, res) {
             throw error;
           }
           submittedIds.add(id);
-          const { rows: updated } = await client.query(
-            `UPDATE product_variant
-             SET size_id=$1, color_id=$2, sku=$3, quantity=$4, is_default=$5
-             WHERE variant_id=$6 AND product_id=$7 AND is_active=TRUE
-             RETURNING variant_id`,
-            [variant.is_default ? null : Number(variant.size_id), variant.is_default ? null : Number(variant.color_id),
-             variant.sku.trim(), Number(variant.quantity), Boolean(variant.is_default), id, req.params.id]
-          );
-          if (!updated.length) throw new Error('Không thể cập nhật biến thể.');
-        } else {
-          await client.query(
-            `INSERT INTO product_variant (product_id, size_id, color_id, sku, quantity, is_default, is_active)
-             VALUES ($1,$2,$3,$4,$5,$6,TRUE)`,
-            [req.params.id, variant.is_default ? null : Number(variant.size_id), variant.is_default ? null : Number(variant.color_id),
-             variant.sku.trim(), Number(variant.quantity), Boolean(variant.is_default)]
-          );
+        } else if (Number(variant.quantity ?? 0) !== 0) {
+          const error = new Error('Biến thể mới bắt đầu với tồn kho 0. Hãy tạo phiếu nhập kho để cộng tồn.');
+          error.status = 400;
+          throw error;
         }
       }
+      // Retire omitted rows first, so a replacement default variant can be inserted
+      // without violating the one-default-per-product unique index.
       const removed = existingRows.filter(row => !submittedIds.has(Number(row.variant_id)));
-      // New rows have no ID in the submitted payload; only omitted existing IDs are retired.
       for (const variant of removed) {
         if (Number(variant.quantity) > 0) {
           const error = new Error('Không thể ngừng biến thể còn tồn kho. Hãy xử lý tồn kho về 0 trước.');
@@ -397,6 +386,27 @@ async function updateProduct(req, res) {
           'UPDATE product_variant SET is_active=FALSE WHERE variant_id=$1 AND product_id=$2',
           [variant.variant_id, req.params.id]
         );
+      }
+      for (const variant of variants) {
+        if (variant.variant_id != null) {
+          const id = Number(variant.variant_id);
+          const { rows: updated } = await client.query(
+            `UPDATE product_variant
+             SET size_id=$1, color_id=$2, sku=$3, is_default=$4
+             WHERE variant_id=$5 AND product_id=$6 AND is_active=TRUE
+             RETURNING variant_id`,
+            [variant.is_default ? null : Number(variant.size_id), variant.is_default ? null : Number(variant.color_id),
+             variant.sku.trim(), Boolean(variant.is_default), id, req.params.id]
+          );
+          if (!updated.length) throw new Error('Không thể cập nhật biến thể.');
+        } else {
+          await client.query(
+            `INSERT INTO product_variant (product_id, size_id, color_id, sku, quantity, is_default, is_active)
+             VALUES ($1,$2,$3,$4,0,$5,TRUE)`,
+            [req.params.id, variant.is_default ? null : Number(variant.size_id), variant.is_default ? null : Number(variant.color_id),
+             variant.sku.trim(), Boolean(variant.is_default)]
+          );
+        }
       }
       const { rows: activeRows } = await client.query(
         'SELECT variant_id FROM product_variant WHERE product_id=$1 AND is_active=TRUE',
