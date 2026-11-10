@@ -797,7 +797,7 @@ router.get('/:id/results', async (req, res) => {
           vote_count: row.vote_count,
         });
       } else if (row.text_answer !== null) {
-        questionsMap[row.question_id].text_answers.push(row.text_answer);
+        questionsMap[row.question_id].text_answers.push({ answer_text: row.text_answer, count: row.vote_count });
       }
     }
 
