@@ -539,7 +539,19 @@ function CustomerSurveys({ user, onGoProfile }) {
   const [answers, setAnswers]   = useState({});
   const [error, setError]       = useState('');
   const [message, setMessage]   = useState('');
-  useSweetAlertMessages({ error, success: message });
+  const [warning, setWarning]   = useState('');
+  const profileIncomplete = !user?.date_of_birth
+    || !Array.isArray(user?.interests)
+    || user.interests.length === 0;
+  useSweetAlertMessages({ error, success: message, warning });
+  useEffect(() => {
+    if (!profileIncomplete) return;
+    const missing = [
+      ...(!user?.date_of_birth ? ['ngày sinh'] : []),
+      ...(!Array.isArray(user?.interests) || user.interests.length === 0 ? ['ít nhất một sở thích'] : []),
+    ];
+    setWarning(`Bạn chưa thể tham gia khảo sát. Vui lòng cập nhật ${missing.join(' và ')} trong hồ sơ cá nhân.`);
+  }, [profileIncomplete, user?.date_of_birth, user?.interests]);
   const [busy, setBusy]         = useState(false);
   const [loading, setLoading]   = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -577,7 +589,7 @@ function CustomerSurveys({ user, onGoProfile }) {
         <p className="m-0 text-white/40 text-xs font-semibold tracking-[0.08em] uppercase">Khảo sát</p>
         <h1 className="m-0 mt-1 text-[clamp(1.5rem,2.5vw,2rem)] font-bold tracking-tight">Khảo sát của tôi</h1>
       </div>
-      {(!user?.date_of_birth || !Array.isArray(user?.interests) || user.interests.length === 0) ? (
+      {profileIncomplete ? (
         <section className={`${PANEL} mx-auto w-full max-w-2xl`} role="alert">
           <div className="flex items-start gap-3">
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-orange-500/15 text-orange-300">
