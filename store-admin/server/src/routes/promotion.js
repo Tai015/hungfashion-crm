@@ -309,7 +309,7 @@ router.post('/assign', async (req, res) => {
     if (customers.rows.length !== ids.length) return res.status(400).json({ message: 'Danh sách có khách hàng không tồn tại.' });
     await pool.query(
       `INSERT INTO user_promotion (customer_id, promotion_id)
-       SELECT customer_id, $2 FROM unnest($1::int[]) AS customer_id
+       SELECT customer_id, $2 FROM unnest($1::int[]) AS selected(customer_id)
        ON CONFLICT (customer_id, promotion_id) DO NOTHING`,
       [ids, promoId],
     );
