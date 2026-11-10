@@ -273,7 +273,6 @@ CREATE TABLE IF NOT EXISTS product_variant (
   selling_price NUMERIC(15,2) CHECK (selling_price IS NULL OR selling_price >= 0),
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   is_default BOOLEAN NOT NULL DEFAULT FALSE,
-  CONSTRAINT product_variant_default_attributes_check CHECK (NOT is_default OR (size_id IS NULL AND color_id IS NULL)),
   UNIQUE (product_id, size_id, color_id)
 );
 CREATE INDEX IF NOT EXISTS variant_product_idx ON product_variant(product_id);
