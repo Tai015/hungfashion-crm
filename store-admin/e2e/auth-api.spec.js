@@ -6,7 +6,14 @@ const customerIdentifier = process.env.E2E_CUSTOMER_IDENTIFIER;
 const customerPassword = process.env.E2E_CUSTOMER_PASSWORD;
 const staffIdentifier = process.env.E2E_STAFF_IDENTIFIER;
 const staffPassword = process.env.E2E_STAFF_PASSWORD;
-const db = new Pool({ connectionString: process.env.DATABASE_URL, ssl: false });
+const db = new Pool({
+  host: process.env.POSTGRES_HOST,
+  port: Number(process.env.POSTGRES_PORT),
+  database: process.env.POSTGRES_DB,
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  ssl: process.env.POSTGRES_SSL === 'true',
+});
 
 test.afterAll(async () => {
   await db.end();
