@@ -69,6 +69,7 @@ test('uses tuple cursor pagination and can continue into older history', async (
     occurredAt: '2026-11-10T10:00:00.000Z',
     interactionId: 'feedback:42',
     includeOlder: false,
+    purpose: 'older',
   })).toString('base64url');
 
   const result = await app.request(`/api/customers/12/interactions?all=1&cursor=${encodeURIComponent(cursor)}`);
@@ -77,6 +78,35 @@ test('uses tuple cursor pagination and can continue into older history', async (
   assert.match(app.queries[0].sql, /\(occurred_at, interaction_id\) < \(\$2::timestamptz, \$3::text\)/);
   assert.doesNotMatch(app.queries[0].sql, /12 months/);
   assert.deepEqual(app.queries[0].params, [12, '2026-11-10T10:00:00.000Z', 'feedback:42', 21]);
+});
+
+
+test('rejects a next-page cursor when the history range changes', async () => {
+  const app = await startApp();
+  const cursor = Buffer.from(JSON.stringify({
+    occurredAt: '2026-11-10T10:00:00.000Z',
+    interactionId: 'feedback:42',
+    includeOlder: false,
+    purpose: 'next',
+  })).toString('base64url');
+
+  const result = await app.request(`/api/customers/12/interactions?all=1&cursor=${encodeURIComponent(cursor)}`);
+  assert.equal(result.status, 400);
+  assert.equal(app.queries.length, 0);
+});
+
+test('rejects an older-history cursor unless switching to all history', async () => {
+  const app = await startApp();
+  const cursor = Buffer.from(JSON.stringify({
+    occurredAt: '2026-11-10T10:00:00.000Z',
+    interactionId: 'feedback:42',
+    includeOlder: false,
+    purpose: 'older',
+  })).toString('base64url');
+
+  const result = await app.request(`/api/customers/12/interactions?cursor=${encodeURIComponent(cursor)}`);
+  assert.equal(result.status, 400);
+  assert.equal(app.queries.length, 0);
 });
 
 test('rejects malformed or tampered cursors', async () => {
