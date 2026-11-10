@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { LOW_STOCK_THRESHOLD } from '../domain/types.js';
+import { VALID_PAID_ORDER_SQL, localTimestampRangeSql } from '../domain/reporting.js';
 
 const router = Router();
 
@@ -48,14 +49,14 @@ router.get('/warehouse/movements', async (req, res) => {
   if (!dateRange) return;
   try {
     const { rows } = await pool.query(
-      `SELECT DATE_TRUNC('day', r.receipt_date)::date AS period,
+      `SELECT DATE_TRUNC('day', r.receipt_date AT TIME ZONE 'Asia/Ho_Chi_Minh')::date AS period,
               r.receipt_type,
               COALESCE(SUM(d.quantity), 0)::int AS quantity,
               COALESCE(SUM(d.quantity * d.unit_price), 0)::numeric AS value
        FROM import_receipt r
        LEFT JOIN import_detail d ON d.receipt_id = r.receipt_id
-       WHERE r.receipt_type IN ('Import', 'Export')
-         AND ($1::date IS NULL OR (r.receipt_date >= $1::date AND r.receipt_date < $2::date + INTERVAL '1 day'))
+       WHERE r.receipt_type IN ('Import', 'Export', 'Adjustment')
+         AND ($1::date IS NULL OR (${localTimestampRangeSql('r.receipt_date', 1, 2)}))
        GROUP BY period, r.receipt_type
        ORDER BY period, r.receipt_type`,
       [dateRange.from, dateRange.to],
@@ -139,43 +140,45 @@ router.get('/summary', async (req, res) => {
   }
   try {
     const { rows: [row] } = await pool.query(
-      `WITH win AS (
-         SELECT NOW() - make_interval(days => $1::int) AS current_start,
-                NOW() - make_interval(days => $1::int * 2) AS previous_start
+      `WITH local_today AS (
+         SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh')::date AS today
+       ), win AS (
+         SELECT ((today - ($1::int - 1))::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') AS current_start,
+                ((today + 1)::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') AS current_end,
+                ((today - ($1::int * 2 - 1))::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') AS previous_start,
+                ((today - ($1::int - 1))::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') AS previous_end
+         FROM local_today
        ), order_totals AS (
          SELECT
-           COALESCE(SUM(o.total_amount) FILTER (WHERE o.ordered_at >= w.current_start), 0)::float AS revenue,
-           COUNT(*) FILTER (WHERE o.ordered_at >= w.current_start)::int AS orders,
+           COALESCE(SUM(o.total_amount) FILTER (WHERE o.ordered_at >= w.current_start AND o.ordered_at < w.current_end), 0)::float AS revenue,
+           COUNT(*) FILTER (WHERE o.ordered_at >= w.current_start AND o.ordered_at < w.current_end)::int AS orders,
            COALESCE(SUM(o.total_amount) FILTER (
-             WHERE o.ordered_at >= w.previous_start AND o.ordered_at < w.current_start
+             WHERE o.ordered_at >= w.previous_start AND o.ordered_at < w.previous_end
            ), 0)::float AS previous_revenue
          FROM "order" o
-         JOIN payment p ON p.order_id = o.order_id AND p.status = 'Paid'
          CROSS JOIN win w
-         WHERE o.order_status NOT IN ('Cancelled', 'Refunded')
-           AND o.ordered_at >= w.previous_start
+         WHERE ${VALID_PAID_ORDER_SQL}
+           AND o.ordered_at >= w.previous_start AND o.ordered_at < w.current_end
        ), active_current AS (
          SELECT DISTINCT ue.user_id
          FROM user_events ue CROSS JOIN win w
-         WHERE ue.user_id IS NOT NULL AND ue.occurred_at >= w.current_start
+         WHERE ue.user_id IS NOT NULL AND ue.occurred_at >= w.current_start AND ue.occurred_at < w.current_end
        ), active_previous AS (
          SELECT DISTINCT ue.user_id
          FROM user_events ue CROSS JOIN win w
          WHERE ue.user_id IS NOT NULL
-           AND ue.occurred_at >= w.previous_start AND ue.occurred_at < w.current_start
+           AND ue.occurred_at >= w.previous_start AND ue.occurred_at < w.previous_end
        ), buyers_current AS (
          SELECT DISTINCT c.account_id::text AS user_id
          FROM "order" o
-         JOIN payment p ON p.order_id = o.order_id AND p.status = 'Paid'
          JOIN customer c ON c.customer_id = o.customer_id CROSS JOIN win w
-         WHERE o.order_status NOT IN ('Cancelled', 'Refunded') AND o.ordered_at >= w.current_start
+         WHERE ${VALID_PAID_ORDER_SQL} AND o.ordered_at >= w.current_start AND o.ordered_at < w.current_end
        ), buyers_previous AS (
          SELECT DISTINCT c.account_id::text AS user_id
          FROM "order" o
-         JOIN payment p ON p.order_id = o.order_id AND p.status = 'Paid'
          JOIN customer c ON c.customer_id = o.customer_id CROSS JOIN win w
-         WHERE o.order_status NOT IN ('Cancelled', 'Refunded')
-           AND o.ordered_at >= w.previous_start AND o.ordered_at < w.current_start
+         WHERE ${VALID_PAID_ORDER_SQL}
+           AND o.ordered_at >= w.previous_start AND o.ordered_at < w.previous_end
        )
        SELECT ot.revenue, ot.orders, ot.previous_revenue,
               (SELECT COUNT(*)::int FROM active_current) AS active_users,
@@ -315,14 +318,13 @@ router.get('/revenue', async (req, res) => {
   }
   try {
     const { rows } = await pool.query(
-      `SELECT TO_CHAR(DATE_TRUNC($1, o.ordered_at), 'YYYY-MM-DD') AS period,
+      `SELECT TO_CHAR(DATE_TRUNC($1, o.ordered_at AT TIME ZONE 'Asia/Ho_Chi_Minh'), 'YYYY-MM-DD') AS period,
               COUNT(*)::int                        AS order_count,
               SUM(o.total_amount)::numeric         AS revenue
        FROM "order" o
-       JOIN payment p ON p.order_id = o.order_id AND p.status = 'Paid'
-       WHERE o.ordered_at >= $2::date
-         AND o.ordered_at < ($3::date + INTERVAL '1 day')
-         AND o.order_status NOT IN ('Cancelled', 'Refunded')
+       WHERE ${VALID_PAID_ORDER_SQL}
+         AND o.ordered_at >= ($2::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')
+         AND o.ordered_at < (($3::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')
        GROUP BY period
        ORDER BY period`,
       [groupBy, fromDate, toDate]
@@ -358,9 +360,8 @@ router.get('/top-products', async (req, res) => {
        JOIN product p          ON p.product_id = pv.product_id
        JOIN category c         ON c.category_id = p.category_id
        JOIN "order" o          ON o.order_id = od.order_id
-       JOIN payment pay       ON pay.order_id = o.order_id AND pay.status = 'Paid'
-       WHERE o.order_status NOT IN ('Cancelled', 'Refunded')
-         AND ($2::date IS NULL OR (o.ordered_at >= $2::date AND o.ordered_at < ($3::date + INTERVAL '1 day')))
+       WHERE ${VALID_PAID_ORDER_SQL}
+         AND ($2::date IS NULL OR (${localTimestampRangeSql('o.ordered_at', 2, 3)}))
        GROUP BY p.product_id, p.product_name, c.category_name
        ORDER BY total_sold DESC
        LIMIT $1`,
@@ -438,25 +439,37 @@ router.get('/customer-segments', async (req, res) => {
   if (!dateRange) return;
   try {
     const { rows } = await pool.query(`
-      SELECT
-        CASE
-          WHEN total_spent >= 5000000  THEN 'VIP (≥5M)'
-          WHEN total_spent >= 2000000  THEN 'Gold (2M–5M)'
-          WHEN total_spent >= 500000   THEN 'Silver (500K–2M)'
-          ELSE 'New (<500K)'
-        END AS segment,
-        COUNT(*)::int AS customer_count,
-        ROUND(AVG(total_spent)::numeric, 0) AS avg_spent
-      FROM (
-        SELECT o.customer_id, SUM(o.total_amount) AS total_spent
-        FROM "order" o
-        JOIN payment p ON p.order_id = o.order_id AND p.status = 'Paid'
-        WHERE o.order_status NOT IN ('Cancelled','Refunded')
-          AND ($1::date IS NULL OR (o.ordered_at >= $1::date AND o.ordered_at < $2::date + INTERVAL '1 day'))
-        GROUP BY o.customer_id
-      ) spending
+      WITH lifetime_spending AS (
+        SELECT c.customer_id, COALESCE(SUM(o.total_amount), 0)::numeric AS lifetime_spent
+        FROM customer c
+        LEFT JOIN "order" o ON o.customer_id = c.customer_id AND ${VALID_PAID_ORDER_SQL}
+        GROUP BY c.customer_id
+      ), period_spending AS (
+        SELECT c.customer_id, COALESCE(SUM(o.total_amount), 0)::numeric AS period_spent
+        FROM customer c
+        LEFT JOIN "order" o ON o.customer_id = c.customer_id
+          AND ${VALID_PAID_ORDER_SQL}
+          AND ($1::date IS NULL OR (${localTimestampRangeSql('o.ordered_at', 1, 2)}))
+        GROUP BY c.customer_id
+      ), customer_spending AS (
+        SELECT c.customer_id, lifetime_spending.lifetime_spent, period_spending.period_spent,
+          CASE
+            WHEN lifetime_spending.lifetime_spent = 0 THEN 'No purchases (0)'
+            WHEN lifetime_spending.lifetime_spent >= 5000000 THEN 'VIP (≥5M)'
+            WHEN lifetime_spending.lifetime_spent >= 2000000 THEN 'Gold (2M–5M)'
+            WHEN lifetime_spending.lifetime_spent >= 500000 THEN 'Silver (500K–2M)'
+            ELSE 'Under 500K'
+          END AS segment
+        FROM customer c
+        JOIN lifetime_spending USING (customer_id)
+        JOIN period_spending USING (customer_id)
+      )
+      SELECT segment, COUNT(*)::int AS customer_count,
+             ROUND(AVG(lifetime_spent), 0) AS lifetime_avg_spent,
+             ROUND(AVG(period_spent), 0) AS period_avg_spent
+      FROM customer_spending
       GROUP BY segment
-      ORDER BY avg_spent DESC
+      ORDER BY MIN(lifetime_spent) DESC
     `, [dateRange.from, dateRange.to]);
     res.json(rows);
   } catch (err) {
