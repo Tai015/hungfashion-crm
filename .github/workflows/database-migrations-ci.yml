@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   fresh-database-migrations:
-    name: Fresh PostgreSQL migration (000-024)
+    name: Fresh PostgreSQL migration (000-025)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -83,10 +83,10 @@ jobs:
           set -euo pipefail
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "24"
+          test "$applied_count" = "25"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "024"
+          test "$latest_version" = "025"
 
           view_exists="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT to_regclass('public.customer_interaction_timeline') IS NOT NULL")"
           test "$view_exists" = "t"
@@ -127,7 +127,10 @@ jobs:
           points_columns="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='customer' AND column_name IN ('points_balance','lifetime_points')")"
           test "$points_columns" = "2"
 
-          echo "Verified: 24 migrations, latest 024, customer gender defaults to Other, timeline view returns seeded profile/order/survey rows, UUID event_id and legacy_event_id."
+          nullable_variant_attrs="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='product_variant' AND column_name IN ('size_id','color_id') AND is_nullable='YES'")"
+          test "$nullable_variant_attrs" = "2"
+
+          echo "Verified: 25 migrations, latest 025, customer gender defaults to Other, timeline view, UUID event_id, loyalty tiers and nullable default-variant attributes."
 
       - name: Verify migration runner is safe to rerun
         working-directory: store-admin
@@ -139,7 +142,7 @@ jobs:
         run: |
           set -euo pipefail
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "24"
+          test "$applied_count" = "25"
           echo "Verified: rerunning migrations does not create duplicate migration records."
 
   legacy-database-upgrade:
@@ -237,10 +240,10 @@ jobs:
           test "$null_event_count" = "1"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "024"
+          test "$latest_version" = "025"
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "24"
+          test "$applied_count" = "25"
 
           legacy_gender="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT gender::text FROM customer WHERE email = 'legacy-gender@hungfashion.test'")"
           test "$legacy_gender" = "Other"
@@ -251,4 +254,9 @@ jobs:
 
           psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -c "SELECT * FROM customer_interaction_timeline LIMIT 0"
 
-          echo "Verified: all 3 legacy transaction rows survived; valid UUID retained; invalid text preserved in legacy_event_id; NULL retained; migrations 018-024 completed."
+          default_variant_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM product_variant pv JOIN product p USING (product_id) WHERE p.product_name='Legacy no-variant product' AND pv.is_default AND pv.size_id IS NULL AND pv.color_id IS NULL AND pv.quantity=0")"
+          test "$default_variant_count" = "1"
+          nullable_variant_attrs="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='product_variant' AND column_name IN ('size_id','color_id') AND is_nullable='YES'")"
+          test "$nullable_variant_attrs" = "2"
+
+          echo "Verified: legacy transaction rows preserved, migrations 018-025 completed and a legacy product with no variants received exactly one default variant."
