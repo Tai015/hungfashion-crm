@@ -85,7 +85,7 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
       const incompleteVariant = variants.some(variant =>
         (!variant.is_default && (!variant.size_id || !variant.color_id))
         || !variant.sku.trim()
-        || !Number.isInteger(Number(variant.quantity)) || Number(variant.quantity) < 0
+        || (!isEdit && (!Number.isInteger(Number(variant.quantity)) || Number(variant.quantity) < 0))
       );
       if (incompleteVariant) throw new Error('Hoàn tất kích cỡ, màu, mã SKU và số lượng cho từng biến thể.');
       const activeDefaultCount = variants.filter(variant => variant.is_default).length;
@@ -101,7 +101,7 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
           is_default: Boolean(variant.is_default),
           size_id: variant.is_default ? null : Number(variant.size_id),
           color_id: variant.is_default ? null : Number(variant.color_id),
-          sku: variant.sku.trim(), quantity: Number(variant.quantity),
+          sku: variant.sku.trim(), ...(isEdit ? {} : { quantity: Number(variant.quantity) }),
         })),
       };
       const data = new FormData();
@@ -181,10 +181,14 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
                 : <><Field label="Kích cỡ *"><select required className={SELECT} value={variant.size_id} onChange={event => updateVariant(index, 'size_id', event.target.value)}><option value="">Chọn kích cỡ</option>{sizes.map(size => <option key={size.size_id} value={size.size_id}>{size.size_name}</option>)}</select></Field>
                   <Field label="Màu *"><select required className={SELECT} value={variant.color_id} onChange={event => updateVariant(index, 'color_id', event.target.value)}><option value="">Chọn màu</option>{colors.map(color => <option key={color.color_id} value={color.color_id}>{color.color_name}</option>)}</select></Field></>}
               <Field label="Mã SKU *"><input required maxLength={100} className={INPUT} placeholder="VD: AO-TRANG-M" value={variant.sku} onChange={event => updateVariant(index, 'sku', event.target.value)} /></Field>
-              <Field label="Số lượng"><input required type="number" min="0" step="1" className={INPUT} value={variant.quantity} onChange={event => updateVariant(index, 'quantity', event.target.value)} /></Field>
+              <Field label="Tồn kho">
+                {isEdit
+                  ? <input readOnly className={`${INPUT} opacity-60 cursor-not-allowed`} value={variant.quantity} title="Điều chỉnh tồn kho tại mục Nhập/Xuất kho" />
+                  : <input required type="number" min="0" step="1" className={INPUT} value={variant.quantity} onChange={event => updateVariant(index, 'quantity', event.target.value)} />}
+              </Field>
               <button type="button" className={`${ICON_BTN} mb-0.5`} title="Ngừng sử dụng biến thể" aria-label="Ngừng sử dụng biến thể" onClick={() => setVariants(current => current.filter((_, row) => row !== index))}><Trash2 size={14}/></button>
             </div>)}
-          </section>}
+          </section>
           <div className="flex justify-end gap-2.5 pt-3 border-t border-white/[0.08]">
             <button type="button" className={BTN_GHOST} onClick={onClose}>Hủy</button>
             <button type="submit" className={`${BTN_PRIMARY} admin-primary-action`} disabled={busy || variantsLoading}>{busy ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : 'Thêm sản phẩm'}</button>
