@@ -262,6 +262,8 @@ test('hiển thị đồng hồ đếm ngược và khóa nút khi API giới h�
 test('nhân viên mở được lịch sử tương tác của khách hàng trong màn hình quản lý khách hàng', async ({ page }) => {
   await page.route('**/api/**', async route => {
     const { pathname } = new URL(route.request().url());
+    // The broad matcher also matches Vite modules under /src/api/; let those load normally.
+    if (!pathname.startsWith('/api/')) return route.continue();
     if (pathname === '/api/auth/login') {
       return route.fulfill({
         status: 200,
