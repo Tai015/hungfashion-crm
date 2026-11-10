@@ -249,7 +249,8 @@ function FeedbackSurveyTab({ from, to }) {
   const dashboard = useReportData(`/api/reports/dashboard?${rangeQuery}`, true);
   const stats = useReportData(`/api/feedbacks/stats?${rangeQuery}`, true);
   const ratings = useReportData(`/api/feedbacks/stats/rating?${rangeQuery}`, true);
-  const surveyList = useReportData('/api/surveys?paged=true&limit=100', true);
+  const surveyListQuery = new URLSearchParams({ paged: 'true', limit: '100', from, to });
+  const surveyList = useReportData(`/api/surveys?${surveyListQuery}`, true);
   const surveys = surveyList.data?.data || [];
   const [surveyId, setSurveyId] = useState('');
   useEffect(() => {
@@ -271,7 +272,7 @@ function FeedbackSurveyTab({ from, to }) {
     </div>
     <ReportBlock eyebrow="MỚI NHẤT" title="Phản hồi gần đây"><StatePanel state={dashboard} empty={!feedbackRows.length}><Table headers={['Khách hàng', 'Sản phẩm / loại', 'Đánh giá', 'Trạng thái', 'Ngày gửi']} rows={feedbackRows.map(row => ({ key: row.feedback_id, cells: [row.customer_name, row.product_name || row.feedback_type, row.rating == null ? '—' : `${row.rating}/5`, row.status, row.created_at ? DATE_FMT.format(new Date(row.created_at)) : '—'] }))} /></StatePanel></ReportBlock>
     <ReportBlock eyebrow="KHẢO SÁT" title="Kết quả khảo sát">
-      <StatePanel state={surveyList} empty={!surveys.length} emptyText="Chưa có khảo sát.">
+      <StatePanel state={surveyList} empty={!surveys.length} emptyText="Không có khảo sát diễn ra trong khoảng thời gian báo cáo đã chọn.">
         <label className="reports-field">Chọn khảo sát<select value={surveyId} onChange={event => setSurveyId(event.target.value)} aria-label="Chọn khảo sát để xem kết quả">{surveys.map(survey => <option key={survey.survey_id} value={survey.survey_id}>{survey.title}</option>)}</select></label>
       </StatePanel>
       {surveyId && <StatePanel state={results} empty={!results.data?.questions?.length} emptyText="Khảo sát chưa có câu hỏi hoặc kết quả.">
