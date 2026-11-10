@@ -28,7 +28,7 @@ async function addLoyaltyTransaction(client, { customerId, orderId, type, delta,
 
   const { rows: customerRows } = await client.query(
     `UPDATE customer
-     SET points_balance = CASE WHEN $3 = 'EarnReversed' THEN points_balance + $1 ELSE points_balance + $1 END,
+     SET points_balance = points_balance + $1,
          lifetime_points = CASE
            WHEN $3 = 'Earned' THEN lifetime_points + $1
            WHEN $3 = 'EarnReversed' THEN GREATEST(0, lifetime_points + $1)

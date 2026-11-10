@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
     }
     if (tier) {
       params.push(tier);
-      conditions.push(`customer_tier_for_points(c.lifetime_points) = ${params.length}`);
+      conditions.push(`customer_tier_for_points(c.lifetime_points) = $${params.length}`);
     }
     if (gender) {
       params.push(gender);

@@ -279,7 +279,7 @@ export default function CustomersView({ userRole }) {
         </div>
         <FilterPopover title="Bộ lọc khách hàng" activeCount={[search, tier, gender].filter(Boolean).length}
           onClear={() => { setSearch(''); setTier(''); setGender(''); setPage(1); }}>
-          <label className="flex flex-col gap-1.5 text-xs text-white/65">Hạng khách hàng<select className={SELECT} value={tier} onChange={e => { setTier(e.target.value); setPage(1); }}><option value="">Tất cả hạng</option>{TIERS.map(t => <option key={t} value={t}>{CUSTOMER_TIER_LABELS[t]}</option>)}</select></label>
+          <label className="flex flex-col gap-1.5 text-xs text-white/65">Hạng thành viên<select className={SELECT} value={tier} onChange={e => { setTier(e.target.value); setPage(1); }}><option value="">Tất cả hạng</option>{TIERS.map(t => <option key={t} value={t}>{CUSTOMER_TIER_LABELS[t]}</option>)}</select></label>
           <label className="flex flex-col gap-1.5 text-xs text-white/65">Giới tính<select className={SELECT} value={gender} onChange={e => { setGender(e.target.value); setPage(1); }}>{GENDERS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
         </FilterPopover>
       </div>
