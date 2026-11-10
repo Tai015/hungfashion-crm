@@ -360,5 +360,5 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
   await page.getByRole('button', { name: 'Xem lịch sử tương tác của E2E Timeline Customer' }).click();
   await expect(page.getByText('Lịch sử tương tác')).toBeVisible();
   await expect(page.getByText('Đặt đơn hàng #9001')).toBeVisible();
-  await expect(page.getByText(/250\\.000/)).toBeVisible();
+  await expect(page.getByText(/250\.000/)).toBeVisible();
 });
