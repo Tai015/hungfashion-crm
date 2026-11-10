@@ -51,7 +51,7 @@ async function openRegistration(page) {
 
 async function fillRegistration(page, account) {
   await page.getByLabel('Họ và tên').fill(account.full_name);
-  await page.getByLabel('Ngày sinh').fill(account.date_of_birth);
+  if (account.date_of_birth) await page.getByLabel('Ngày sinh').fill(account.date_of_birth);
   await page.getByLabel('Tên đăng nhập').fill(account.username);
   await page.getByLabel('Email').fill(account.email);
   await page.locator('input[autocomplete="new-password"]').fill(account.password);
@@ -132,4 +132,34 @@ test('API + PostgreSQL thật: đăng nhập nhân viên bằng tài khoản n�
   await expect(page).toHaveURL(/#\/admin\/dashboard$/);
   await expect.poll(() => page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).not.toBeNull();
   expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
+});
+
+
+
+test('API + PostgreSQL thật: cho phép đăng ký khi bỏ trống ngày sinh và sở thích', async ({ page }) => {
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
+  const account = {
+    username: `e2e_optional_${suffix}`,
+    email: `e2e-optional+${suffix}@example.test`,
+    password: 'E2eOptionalPass123!',
+    full_name: 'E2E Optional Profile',
+  };
+  createdUsernames.add(account.username);
+
+  await openRegistration(page);
+  await fillRegistration(page, account);
+  await expect(page.getByLabel('Ngày sinh')).toHaveValue('');
+  await page.getByRole('button', { name: 'Đăng ký' }).click();
+  await dismissSuccess(page);
+
+  const { rows } = await cleanupPool.query(
+    `SELECT c.date_of_birth,
+            (SELECT COUNT(*)::int FROM customer_interest ci WHERE ci.customer_id = c.customer_id) AS interest_count
+     FROM customer c JOIN account a ON a.account_id = c.account_id
+     WHERE a.username = $1`,
+    [account.username],
+  );
+  expect(rows).toHaveLength(1);
+  expect(rows[0].date_of_birth).toBeNull();
+  expect(rows[0].interest_count).toBe(0);
 });

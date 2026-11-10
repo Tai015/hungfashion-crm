@@ -52,7 +52,7 @@ export default function AuthScreen({ onAuthenticated }) {
       const isLogin = mode === 'login';
       const result = isLogin
         ? await apiFetch('/api/auth/login', { method: 'POST', body: { identifier, password, audience } })
-        : await apiFetch('/api/auth/register', { method: 'POST', body: { username, email, password, full_name: fullName, date_of_birth: dateOfBirth, interests } });
+        : await apiFetch('/api/auth/register', { method: 'POST', body: { username, email, password, full_name: fullName, date_of_birth: dateOfBirth || null, interests } });
 
       await showSuccessAlert(
         isLogin
@@ -120,7 +120,7 @@ export default function AuthScreen({ onAuthenticated }) {
                   placeholder="Nhập họ và tên" value={fullName} onChange={e => setFullName(e.target.value)} />
               </label>
               <fieldset className="block">
-                <legend className="block text-xs font-semibold text-stone-800 mb-2">Sở thích mua sắm <span className="font-normal text-stone-600">(có thể chọn nhiều)</span></legend>
+                <legend className="block text-xs font-semibold text-stone-800 mb-2">Sở thích mua sắm <span className="font-normal text-stone-600">(không bắt buộc, có thể chọn nhiều)</span></legend>
                 <div className="flex flex-wrap gap-2">
                   {CUSTOMER_INTERESTS.map(interest => {
                     const selected = interests.includes(interest);
@@ -133,8 +133,8 @@ export default function AuthScreen({ onAuthenticated }) {
                 </div>
               </fieldset>
               <label className="block">
-                <span className="block text-xs font-semibold text-stone-800 mb-1.5">Ngày sinh</span>
-                <input required type="date" max={new Date().toISOString().slice(0, 10)} autoComplete="bday" className={INPUT}
+                <span className="block text-xs font-semibold text-stone-800 mb-1.5">Ngày sinh <span className="font-normal text-stone-600">(không bắt buộc)</span></span>
+                <input type="date" max={new Date().toISOString().slice(0, 10)} autoComplete="bday" className={INPUT}
                   value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)} />
                 <span className="block text-xs text-stone-600 mt-1.5">Nhóm tuổi: {ageGroup || 'Chọn ngày sinh để xem nhóm tuổi'}</span>
               </label>
@@ -184,7 +184,7 @@ export default function AuthScreen({ onAuthenticated }) {
               Bạn thao tác quá nhiều lần. Vui lòng chờ {formatCountdown(rateLimitRemaining)} để thử lại.
             </p>
           )}
-          <button type="submit" disabled={busy || rateLimitRemaining > 0 || (mode === 'register' && !dateOfBirth)}
+          <button type="submit" disabled={busy || rateLimitRemaining > 0}
             aria-busy={busy}
             className="w-full h-11 mt-1 bg-gradient-to-br from-teal-400 to-sky-400 text-[#082f2a] font-semibold rounded-xl shadow-[0_10px_25px_rgba(45,212,191,0.28)] hover:shadow-[0_14px_32px_rgba(45,212,191,0.38)] hover:-translate-y-px transition-all disabled:opacity-55 disabled:cursor-not-allowed disabled:translate-y-0 cursor-pointer">
             {rateLimitRemaining > 0 ? `Vui lòng chờ ${formatCountdown(rateLimitRemaining)}` : busy ? 'Đang xử lý...' : mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}

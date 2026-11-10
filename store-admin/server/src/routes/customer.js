@@ -4,6 +4,15 @@ import { createCustomerInteractionsRouter } from './customer-interactions.js';
 
 const router = Router();
 
+function isValidOptionalDateOfBirth(value) {
+  if (value == null || value === '') return true;
+  if (typeof value !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  if (year < 1900 || year > new Date().getFullYear()) return false;
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day && date <= new Date();
+}
+
 // GET /api/customers – danh sách khách hàng (có lọc / tìm kiếm / phân trang)
 router.get('/', async (req, res) => {
   try {
@@ -136,6 +145,8 @@ router.post('/', async (req, res) => {
   const { full_name, gender, date_of_birth, phone, email, address, interests = [] } = req.body || {};
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   const normalizedGender = gender == null || gender === '' ? 'Other' : gender;
+  const normalizedDateOfBirth = date_of_birth || null;
+  if (!isValidOptionalDateOfBirth(normalizedDateOfBirth)) return res.status(400).json({ message: 'Ngày sinh không hợp lệ.' });
   if (typeof full_name !== 'string' || !full_name.trim() || full_name.trim().length > 150
     || !normalizedEmail || normalizedEmail.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     || !Array.isArray(interests) || interests.length > 20
@@ -148,7 +159,7 @@ router.post('/', async (req, res) => {
     const { rows } = await client.query(
       `INSERT INTO customer (full_name, gender, date_of_birth, phone, email, address)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [full_name.trim(), normalizedGender, date_of_birth, phone, normalizedEmail, address]
+      [full_name.trim(), normalizedGender, normalizedDateOfBirth, phone, normalizedEmail, address]
     );
     const customer = rows[0];
 
@@ -182,6 +193,8 @@ router.put('/:id', async (req, res) => {
   const { full_name, gender, date_of_birth, phone, email, address, interests = [] } = req.body || {};
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   const normalizedGender = gender == null || gender === '' ? 'Other' : gender;
+  const normalizedDateOfBirth = date_of_birth || null;
+  if (!isValidOptionalDateOfBirth(normalizedDateOfBirth)) return res.status(400).json({ message: 'Ngày sinh không hợp lệ.' });
   if (typeof full_name !== 'string' || !full_name.trim() || full_name.trim().length > 150
     || !normalizedEmail || normalizedEmail.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     || !Array.isArray(interests) || interests.length > 20
@@ -196,7 +209,7 @@ router.put('/:id', async (req, res) => {
        SET full_name=$1, gender=$2, date_of_birth=$3, phone=$4,
            email=$5, address=$6, updated_at=NOW()
        WHERE customer_id=$7 RETURNING *`,
-      [full_name.trim(), normalizedGender, date_of_birth, phone, normalizedEmail, address, req.params.id]
+      [full_name.trim(), normalizedGender, normalizedDateOfBirth, phone, normalizedEmail, address, req.params.id]
     );
     if (!rows.length) {
       await client.query('ROLLBACK');

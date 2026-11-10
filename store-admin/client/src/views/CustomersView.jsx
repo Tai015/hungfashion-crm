@@ -53,13 +53,14 @@ function CustomerModal({ customer, onClose, onSaved }) {
   const save = async e => {
     e.preventDefault(); setBusy(true); setError('');
     try {
-      if (!form.date_of_birth) throw new Error('Vui lòng nhập ngày sinh.');
-      const birthDate = new Date(`${form.date_of_birth}T00:00:00`);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) age -= 1;
-      if (Number.isNaN(birthDate.getTime()) || birthDate > new Date(today.getFullYear(), today.getMonth(), today.getDate()) || age < 0 || age > 120) {
-        throw new Error('Ngày sinh không hợp lệ. Tuổi khách hàng phải từ 0 đến 120.');
+      if (form.date_of_birth) {
+        const birthDate = new Date(`${form.date_of_birth}T00:00:00`);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) age -= 1;
+        if (Number.isNaN(birthDate.getTime()) || birthDate > new Date(today.getFullYear(), today.getMonth(), today.getDate()) || age < 0 || age > 120) {
+          throw new Error('Ngày sinh không hợp lệ. Tuổi khách hàng phải từ 0 đến 120.');
+        }
       }
       const existingDetails = isEdit ? await apiFetch(`/api/customers/${customer.customer_id}`) : null;
       const payload = { ...form, gender:form.gender || 'Other', interests:existingDetails?.interests || [] };
@@ -84,7 +85,7 @@ function CustomerModal({ customer, onClose, onSaved }) {
             <Field label="Họ tên *"><input required maxLength={150} placeholder="Nguyễn Văn A" className={INPUT} value={form.full_name} onChange={e => setForm({...form, full_name:e.target.value})} /></Field>
             <Field label="Số điện thoại"><input type="tel" maxLength={30} placeholder="09xxxxxxxx" className={INPUT} value={form.phone} onChange={e => setForm({...form, phone:e.target.value})} /></Field>
             <Field label="Email"><input type="email" maxLength={150} placeholder="email@example.com" className={INPUT} value={form.email} onChange={e => setForm({...form, email:e.target.value})} /></Field>
-            <Field label="Ngày sinh *"><input type="date" required max={new Date().toISOString().slice(0,10)} className={INPUT} value={form.date_of_birth} onChange={e => setForm({...form, date_of_birth:e.target.value})} /></Field>
+            <Field label="Ngày sinh (không bắt buộc)"><input type="date" max={new Date().toISOString().slice(0,10)} className={INPUT} value={form.date_of_birth} onChange={e => setForm({...form, date_of_birth:e.target.value})} /></Field>
             <Field label="Giới tính">
               <select className={SELECT} value={form.gender} onChange={e => setForm({...form, gender:e.target.value})}>
                 <option value="Other">Khác</option>
