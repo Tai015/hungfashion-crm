@@ -7,11 +7,10 @@ export function localTimestampRangeSql(column, fromParam, toParam) {
     AND ${column} < (($${toParam}::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`;
 }
 
-export function customerSpendingSegment(totalSpent) {
-  const amount = Number(totalSpent) || 0;
-  if (amount <= 0) return 'No purchases (0)';
-  if (amount >= 5000000) return 'VIP (≥5M)';
-  if (amount >= 2000000) return 'Gold (2M–5M)';
-  if (amount >= 500000) return 'Silver (500K–2M)';
-  return 'Under 500K';
-}
+export const CUSTOMER_SPENDING_SEGMENT_CASE_SQL = `CASE
+  WHEN lifetime_spent = 0 THEN 'No purchases (0)'
+  WHEN lifetime_spent >= 5000000 THEN 'VIP (≥5M)'
+  WHEN lifetime_spent >= 2000000 THEN 'Gold (2M–5M)'
+  WHEN lifetime_spent >= 500000 THEN 'Silver (500K–2M)'
+  ELSE 'Under 500K'
+END`;
