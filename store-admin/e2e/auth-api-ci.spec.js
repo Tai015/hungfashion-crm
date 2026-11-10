@@ -155,7 +155,7 @@ test('tự ghi nhận đăng nhập và đăng xuất qua outbox vào lịch s�
   let logoutEvent = null;
   await expect.poll(async () => {
     const result = await db.query(
-      `SELECT event_id, user_id, session_id, event_type, action
+      `SELECT id, event_id, user_id, session_id, event_type, action
        FROM user_events
        WHERE user_id = $1 AND session_id = $2 AND action = 'logout_success'
        ORDER BY occurred_at DESC LIMIT 1`,
