@@ -310,7 +310,7 @@ async function updateProduct(req, res) {
       let defaultCount = 0;
       for (const variant of variants) {
         const sku = typeof variant?.sku === 'string' ? variant.sku.trim() : '';
-        const quantity = Number(variant?.quantity);
+        const quantity = Number(variant?.quantity ?? 0);
         if (!sku || sku.length > 100 || !Number.isInteger(quantity) || quantity < 0) {
           return res.status(400).json({ message: 'Mã SKU hoặc số lượng biến thể không hợp lệ.' });
         }
