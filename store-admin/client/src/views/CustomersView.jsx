@@ -9,10 +9,9 @@ import Spinner from '../components/Spinner';
 import FilterPopover from '../components/FilterPopover';
 import { confirmDestructiveAction } from '../utils/confirmAction';
 import { useSweetAlertMessages } from '../utils/notifications';
+import { CUSTOMER_GENDER_LABELS, CUSTOMER_TIER_LABELS } from '../utils/viLabels';
 
 const TIERS   = ['New','Regular','Silver','Gold','VIP'];
-const TIER_LABEL = { New:'Mới', Regular:'Thường', Silver:'Bạc', Gold:'Vàng', VIP:'VIP' };
-const GENDER_LABEL = { Female:'Nữ', Male:'Nam', Other:'Khác' };
 const formatAge = age => Number.isInteger(age) && age >= 0 ? `${age} tuổi` : 'Chưa cập nhật';
 const GENDERS = [['','Tất cả'],['Female','Nữ'],['Male','Nam'],['Other','Khác']];
 const EMPTY   = { full_name:'', phone:'', email:'', gender:'Other', date_of_birth:'' };
@@ -248,7 +247,7 @@ export default function CustomersView({ userRole }) {
     setError(''); setNotice(''); setBusyCustomerId(customer.customer_id);
     try {
       const result = await apiFetch(`/api/customers/${customer.customer_id}/tier`, { method:'PATCH', body:{ tier:nextTier } });
-      setNotice(`Đã đổi hạng ${customer.full_name} thành ${TIER_LABEL[result.customer_tier] || result.customer_tier}.`);
+      setNotice(`Đã đổi hạng ${customer.full_name} thành ${CUSTOMER_TIER_LABELS[result.customer_tier] || result.customer_tier}.`);
       setRefresh(value => value + 1);
     } catch(err) { setError(err.message); }
     finally { setBusyCustomerId(null); }
@@ -293,7 +292,7 @@ export default function CustomersView({ userRole }) {
         </div>
         <FilterPopover title="Bộ lọc khách hàng" activeCount={[search, tier, gender].filter(Boolean).length}
           onClear={() => { setSearch(''); setTier(''); setGender(''); setPage(1); }}>
-          <label className="flex flex-col gap-1.5 text-xs text-white/65">Hạng khách hàng<select className={SELECT} value={tier} onChange={e => { setTier(e.target.value); setPage(1); }}><option value="">Tất cả hạng</option>{TIERS.map(t => <option key={t} value={t}>{TIER_LABEL[t]}</option>)}</select></label>
+          <label className="flex flex-col gap-1.5 text-xs text-white/65">Hạng khách hàng<select className={SELECT} value={tier} onChange={e => { setTier(e.target.value); setPage(1); }}><option value="">Tất cả hạng</option>{TIERS.map(t => <option key={t} value={t}>{CUSTOMER_TIER_LABELS[t]}</option>)}</select></label>
           <label className="flex flex-col gap-1.5 text-xs text-white/65">Giới tính<select className={SELECT} value={gender} onChange={e => { setGender(e.target.value); setPage(1); }}>{GENDERS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
         </FilterPopover>
       </div>
@@ -340,7 +339,7 @@ export default function CustomersView({ userRole }) {
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{c.phone||'—'}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{c.email||'—'}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/70">{formatAge(c.age)}</td>
-                      <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{GENDER_LABEL[c.gender] || 'Khác'}</td>
+                      <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{CUSTOMER_GENDER_LABELS[c.gender] || 'Khác'}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05]">
                         {canWrite ? (
                           <select
@@ -350,9 +349,9 @@ export default function CustomersView({ userRole }) {
                             value={c.customer_tier||'New'}
                             disabled={busyCustomerId === c.customer_id}
                             onChange={event => changeCustomerTier(c, event.target.value)}>
-                            {TIERS.map(value => <option key={value} value={value}>{TIER_LABEL[value]}</option>)}
+                            {TIERS.map(value => <option key={value} value={value}>{CUSTOMER_TIER_LABELS[value]}</option>)}
                           </select>
-                        ) : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ color:tc, background:`${tc}18` }}>{TIER_LABEL[c.customer_tier] || 'Mới'}</span>}
+                        ) : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ color:tc, background:`${tc}18` }}>{CUSTOMER_TIER_LABELS[c.customer_tier] || 'Mới'}</span>}
                       </td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/70 tabular-nums font-medium">{(c.loyalty_point||0).toLocaleString()}</td>
                       {canWrite && (
