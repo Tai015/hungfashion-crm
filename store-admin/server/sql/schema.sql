@@ -177,7 +177,7 @@ CREATE INDEX IF NOT EXISTS customer_tier_idx   ON customer(customer_tier);
 CREATE INDEX IF NOT EXISTS customer_phone_idx  ON customer(phone);
 CREATE INDEX IF NOT EXISTS customer_gender_idx ON customer(gender);
 CREATE INDEX IF NOT EXISTS customer_dob_idx    ON customer(date_of_birth);
-CREATE UNIQUE INDEX IF NOT EXISTS customer_email_unique_idx ON customer(email);
+CREATE UNIQUE INDEX IF NOT EXISTS customer_email_unique_idx ON customer(LOWER(BTRIM(email)));
 CREATE INDEX IF NOT EXISTS customer_name_idx   ON customer(full_name);
 
 -- ─────────────────────────────────────────────
