@@ -99,7 +99,27 @@ jobs:
 
           psql -h localhost -U postgres -d store_admin_migration_test -v ON_ERROR_STOP=1 -c "SELECT * FROM customer_interaction_timeline LIMIT 0"
 
-          echo "Verified: 19 migrations, latest 019, timeline view, UUID event_id and legacy_event_id."
+          # Exercise the view against real PostgreSQL rows, not only an empty SELECT.
+          psql -h localhost -U postgres -d store_admin_migration_test -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO customer (full_name) VALUES ('Timeline CI customer');
+          INSERT INTO "order" (customer_id, order_channel)
+          SELECT customer_id, 'Website' FROM customer WHERE full_name = 'Timeline CI customer';
+          INSERT INTO survey (title) VALUES ('Timeline CI survey');
+          INSERT INTO survey_invitation (survey_id, customer_id)
+          SELECT s.survey_id, c.customer_id
+          FROM survey s CROSS JOIN customer c
+          WHERE s.title = 'Timeline CI survey'
+            AND c.full_name = 'Timeline CI customer';
+          SQL
+
+          timeline_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer'")"
+          test "$timeline_count" = "3"
+          order_event_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer' AND t.interaction_type = 'order'")"
+          test "$order_event_count" = "1"
+          survey_event_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer' AND t.interaction_type = 'survey_invitation'")"
+          test "$survey_event_count" = "1"
+
+          echo "Verified: 19 migrations, latest 019, timeline view returns seeded profile/order/survey rows, UUID event_id and legacy_event_id."
 
       - name: Verify migration runner is safe to rerun
         working-directory: store-admin
