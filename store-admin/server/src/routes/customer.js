@@ -136,7 +136,7 @@ router.post('/', async (req, res) => {
   const { full_name, gender, date_of_birth, phone, email, address, interests = [] } = req.body || {};
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   if (typeof full_name !== 'string' || !full_name.trim() || full_name.trim().length > 150
-    || !normalizedEmail || normalizedEmail.length > 150 || !/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(normalizedEmail)
+    || !normalizedEmail || normalizedEmail.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     || !Array.isArray(interests) || interests.length > 20
     || interests.some((name) => typeof name !== 'string' || name.length > 100)) {
     return res.status(400).json({ message: 'Họ tên, email hoặc danh sách sở thích không hợp lệ.' });
@@ -181,7 +181,7 @@ router.put('/:id', async (req, res) => {
   const { full_name, gender, date_of_birth, phone, email, address, interests = [] } = req.body || {};
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   if (typeof full_name !== 'string' || !full_name.trim() || full_name.trim().length > 150
-    || !normalizedEmail || normalizedEmail.length > 150 || !/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(normalizedEmail)
+    || !normalizedEmail || normalizedEmail.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     || !Array.isArray(interests) || interests.length > 20
     || interests.some((name) => typeof name !== 'string' || name.length > 100)) {
     return res.status(400).json({ message: 'Họ tên, email hoặc danh sách sở thích không hợp lệ.' });
