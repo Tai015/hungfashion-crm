@@ -317,7 +317,7 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
   }));
 
   await login(page, '/#/nhan-vien/login', EXISTING_STAFF, 'staff');
-  await page.getByRole('button', { name: 'Khách hàng', exact: true }).click();
+  await page.locator('.dashboard-nav-item').nth(3).click();
   await expect(page.getByRole('heading', { name: 'Quản lý khách hàng' })).toBeVisible();
   await page.getByRole('button', { name: 'Xem lịch sử tương tác của E2E Timeline Customer' }).click();
   await expect(page.getByText('Lịch sử tương tác')).toBeVisible();
