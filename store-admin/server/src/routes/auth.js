@@ -109,6 +109,27 @@ async function loadUser(accountId) {
   return user;
 }
 
+async function enqueueAuthEvent(client, { accountId, sessionId, eventType, action }) {
+  const eventId = randomUUID();
+  const occurredAt = new Date().toISOString();
+  await writeOutboxEvent(client, {
+    eventId,
+    topic: 'user-events',
+    partitionKey: String(accountId),
+    payload: {
+      eventId,
+      userId: String(accountId),
+      sessionId: String(sessionId),
+      eventType,
+      page: 'authentication',
+      section: 'authentication',
+      event: action,
+      sourceCheck: 'auth-api',
+      occurredAt,
+    },
+  });
+}
+
 router.post('/register', registerIpLimiter, async (req, res) => {
   try {
     validateJwtSecret();
