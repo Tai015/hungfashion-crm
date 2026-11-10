@@ -1,6 +1,11 @@
 name: E2E authentication
 
 on:
+  push:
+    branches: [test/e2e-auth-playwright]
+    paths:
+      - "store-admin/**"
+      - ".github/workflows/e2e-auth.yml"
   pull_request:
     branches: [main]
     paths:
