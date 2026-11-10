@@ -114,48 +114,64 @@ test('ghi nhận login user event qua outbox, Kafka và consumer vào PostgreSQL
 });
 
 test('tự ghi nhận đăng nhập và đăng xuất qua outbox vào lịch sử khách hàng', async ({ request }) => {
+  test.setTimeout(45_000);
+
   const login = await request.post('/api/auth/login', {
     data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
   });
   expect(login.status()).toBe(200);
   const { token, user } = await login.json();
+  const tokenParts = token.split('.');
+  expect(tokenParts).toHaveLength(3);
+  const sessionId = JSON.parse(Buffer.from(tokenParts[1], 'base64url').toString('utf8')).jti;
+  expect(sessionId, 'JWT phải chứa jti của phiên vừa đăng nhập').toEqual(expect.any(String));
   const authorization = { Authorization: `Bearer ${token}` };
 
   let loginEvent = null;
-  for (let attempt = 0; attempt < 30; attempt += 1) {
+  await expect.poll(async () => {
     const result = await db.query(
       `SELECT event_id, user_id, session_id, event_type, action
        FROM user_events
-       WHERE user_id = $1 AND action = 'login_success'
-         AND occurred_at >= NOW() - INTERVAL '2 minutes'
+       WHERE user_id = $1 AND session_id = $2 AND action = 'login_success'
        ORDER BY occurred_at DESC LIMIT 1`,
-      [String(user.account_id)],
+      [String(user.account_id), sessionId],
     );
     loginEvent = result.rows[0] || null;
-    if (loginEvent) break;
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-  expect(loginEvent, 'Đăng nhập phải tự phát sinh user event').toBeTruthy();
-  expect(loginEvent.event_type).toBe('login');
+    return Boolean(loginEvent);
+  }, {
+    message: 'Đăng nhập phải phát sinh login_success cho đúng phiên vừa tạo',
+    timeout: 15_000,
+    intervals: [250, 500, 1_000],
+  }).toBe(true);
+
   expect(loginEvent.user_id).toBe(String(user.account_id));
+  expect(loginEvent.event_type).toBe('login');
+  expect(loginEvent.session_id).toBe(sessionId);
+  expect(loginEvent.session_id).not.toBeNull();
 
   const logout = await request.post('/api/auth/logout', { headers: authorization });
   expect(logout.status()).toBe(200);
 
   let logoutEvent = null;
-  for (let attempt = 0; attempt < 30; attempt += 1) {
+  await expect.poll(async () => {
     const result = await db.query(
       `SELECT event_id, user_id, session_id, event_type, action
        FROM user_events
        WHERE user_id = $1 AND session_id = $2 AND action = 'logout_success'
        ORDER BY occurred_at DESC LIMIT 1`,
-      [String(user.account_id), loginEvent.session_id],
+      [String(user.account_id), sessionId],
     );
     logoutEvent = result.rows[0] || null;
-    if (logoutEvent) break;
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-  expect(logoutEvent, 'Đăng xuất phải tự phát sinh user event').toBeTruthy();
+    return Boolean(logoutEvent);
+  }, {
+    message: 'Đăng xuất phải phát sinh logout_success cho đúng phiên vừa đăng xuất',
+    timeout: 15_000,
+    intervals: [250, 500, 1_000],
+  }).toBe(true);
+
+  expect(logoutEvent.user_id).toBe(String(user.account_id));
   expect(logoutEvent.event_type).toBe('logout');
+  expect(logoutEvent.session_id).toBe(sessionId);
   expect(logoutEvent.session_id).toBe(loginEvent.session_id);
+  expect(logoutEvent.session_id).not.toBeNull();
 });
