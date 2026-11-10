@@ -744,21 +744,31 @@ router.get('/:id/results', async (req, res) => {
       `SELECT sq.question_id, sq.question_text, sq.question_type,
               so.option_id, so.option_text,
               CASE WHEN sq.question_type = 'Rating' THEN sa.answer_text END AS rating_value,
-              COUNT(sa.answer_id)::int AS vote_count
+              CASE WHEN sq.question_type = 'Text' THEN sa.answer_text END AS text_answer,
+              COUNT(sa.answer_id)::int AS vote_count,
+              (SELECT COUNT(DISTINCT sa2.response_id)::int
+               FROM survey_answer sa2
+               JOIN survey_response sr2 ON sr2.response_id = sa2.response_id
+               WHERE sa2.question_id = sq.question_id
+                 AND sr2.survey_id = $1
+                 AND ($2::date IS NULL OR (sr2.submitted_at >= $2::date AND sr2.submitted_at < $3::date + INTERVAL '1 day'))
+              ) AS answered_count
        FROM survey_question sq
-       LEFT JOIN survey_option so   ON so.question_id = sq.question_id
-       LEFT JOIN survey_answer sa ON (
-         (sa.question_id = sq.question_id AND sa.option_id = so.option_id)
-         OR (sq.question_type = 'Rating' AND sa.question_id = sq.question_id AND sa.option_id IS NULL)
-       ) AND sa.response_id IN (
-                                      SELECT sr.response_id FROM survey_response sr
-                                      WHERE sr.survey_id = $1
-                                        AND ($2::date IS NULL OR (sr.submitted_at >= $2::date AND sr.submitted_at < $3::date + INTERVAL '1 day'))
-       )
+       LEFT JOIN survey_option so ON so.question_id = sq.question_id
+       LEFT JOIN survey_answer sa ON sa.question_id = sq.question_id
+         AND (
+           sa.option_id = so.option_id
+           OR (sq.question_type IN ('Rating', 'Text') AND sa.option_id IS NULL)
+         )
+         AND sa.response_id IN (
+           SELECT sr.response_id FROM survey_response sr
+           WHERE sr.survey_id = $1
+             AND ($2::date IS NULL OR (sr.submitted_at >= $2::date AND sr.submitted_at < $3::date + INTERVAL '1 day'))
+         )
        WHERE sq.survey_id = $1
        GROUP BY sq.question_id, sq.question_text, sq.question_type,
-                so.option_id, so.option_text, rating_value
-       ORDER BY sq.display_order, so.display_order, rating_value`,
+                so.option_id, so.option_text, rating_value, text_answer
+       ORDER BY sq.display_order, so.display_order, rating_value, text_answer`,
       [req.params.id, rangeFrom, rangeTo]
     );
 
@@ -770,7 +780,9 @@ router.get('/:id/results', async (req, res) => {
           question_id: row.question_id,
           question_text: row.question_text,
           question_type: row.question_type,
+          answered_count: row.answered_count,
           options: [],
+          text_answers: [],
         };
       }
       if (row.option_id) {
@@ -784,6 +796,8 @@ router.get('/:id/results', async (req, res) => {
           option_text: `${row.rating_value} sao`,
           vote_count: row.vote_count,
         });
+      } else if (row.text_answer !== null) {
+        questionsMap[row.question_id].text_answers.push({ answer_text: row.text_answer, count: row.vote_count });
       }
     }
 
