@@ -181,6 +181,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const { full_name, gender, date_of_birth, phone, email, address, interests = [] } = req.body || {};
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const normalizedGender = gender == null || gender === '' ? 'Other' : gender;
   if (typeof full_name !== 'string' || !full_name.trim() || full_name.trim().length > 150
     || !normalizedEmail || normalizedEmail.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     || !Array.isArray(interests) || interests.length > 20
