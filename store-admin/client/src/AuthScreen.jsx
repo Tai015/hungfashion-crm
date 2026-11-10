@@ -1,13 +1,14 @@
-import { useState } from 'react';
-import { apiFetch, TOKEN_KEY } from './api';
+import { useEffect, useState } from 'react';
+import { apiFetch, saveAuthToken } from './api';
 import PasswordInput from './PasswordInput';
-import { useSweetAlertMessages } from './utils/notifications';
+import { showErrorAlert, showSuccessAlert } from './utils/notifications';
 
 const INPUT = 'w-full h-11 px-3 bg-white/70 border border-stone-400 rounded-xl text-stone-900 text-sm placeholder-stone-500 outline-none focus:border-sky-700 focus:ring-2 focus:ring-sky-700/30 transition-all disabled:bg-stone-100 disabled:text-stone-500 disabled:cursor-not-allowed';
 const CUSTOMER_INTERESTS = ['Áo thun', 'Áo sơ mi', 'Áo khoác', 'Quần jean', 'Quần kaki', 'Váy', 'Phụ kiện', 'Giày dép'];
 
 function authErrorMessage(error, audience) {
   if (error?.name === 'TypeError') return 'Không thể kết nối máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.';
+  if (error?.status === 429) return 'Bạn thao tác quá nhiều lần. Vui lòng chờ hết thời gian đếm ngược rồi thử lại.';
   if (error?.status === 401 && audience === 'customer') return 'Tài khoản không tồn tại hoặc thông tin đăng nhập không chính xác.';
   if (error?.status === 401) return 'Thông tin đăng nhập không chính xác. Vui lòng kiểm tra lại.';
   if (error?.status >= 500) return 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.';
@@ -25,27 +26,71 @@ export default function AuthScreen({ onAuthenticated }) {
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [interests, setInterests] = useState([]);
-  const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [rateLimitUntil, setRateLimitUntil] = useState(0);
+  const [countdownNow, setCountdownNow] = useState(() => Date.now());
+  const rateLimitRemaining = Math.max(0, Math.ceil((rateLimitUntil - countdownNow) / 1000));
   const ageGroup = getAgeGroup(dateOfBirth);
-  useSweetAlertMessages({ error });
+
+  useEffect(() => {
+    if (!rateLimitUntil || rateLimitRemaining <= 0) return undefined;
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      setCountdownNow(now);
+      if (now >= rateLimitUntil) window.clearInterval(timer);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [rateLimitUntil, rateLimitRemaining > 0]);
 
   const submit = async (e) => {
-    e.preventDefault(); setError(''); setBusy(true);
+    e.preventDefault();
+    if (busy || Date.now() < rateLimitUntil) return;
+    setBusy(true);
+
     try {
-      const result = mode === 'login'
+      const isLogin = mode === 'login';
+      const result = isLogin
         ? await apiFetch('/api/auth/login', { method: 'POST', body: { identifier, password, audience } })
         : await apiFetch('/api/auth/register', { method: 'POST', body: { username, email, password, full_name: fullName, date_of_birth: dateOfBirth, interests } });
-      window.localStorage.setItem(TOKEN_KEY, result.token);
+
+      await showSuccessAlert(
+        isLogin
+          ? `Xin chào ${result.user?.full_name || result.user?.username || 'bạn'}!`
+          : 'Tài khoản của bạn đã được tạo. Chào mừng bạn đến với Hung Fashion!',
+      );
+
+      if (!isLogin) {
+        // Đăng ký chỉ tạo tài khoản; người dùng cần đăng nhập riêng để tạo phiên.
+        setIdentifier(username);
+        setPassword('');
+        setMode('login');
+        window.location.hash = '#/khach-hang/login';
+        return;
+      }
+
+      // Chỉ lưu phiên và chuyển trang sau khi toast đăng nhập tự tắt.
+      saveAuthToken(result.token, rememberMe);
       onAuthenticated(result.user);
-    } catch (err) { setError(authErrorMessage(err, audience)); }
-    finally { setBusy(false); }
+    } catch (err) {
+      if (err?.status === 429) {
+        const waitSeconds = Math.max(1, Number(err.retryAfterSeconds) || 5 * 60);
+        setCountdownNow(Date.now());
+        setRateLimitUntil(Date.now() + waitSeconds * 1000);
+      }
+      await showErrorAlert(authErrorMessage(err, audience), {
+        title: mode === 'login' ? 'Đăng nhập thất bại' : 'Đăng ký thất bại',
+        confirmButtonText: 'Thử lại',
+        allowOutsideClick: false,
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const switchAudience = nextAudience => {
     setAudience(nextAudience);
     setMode('login');
-    setError('');
     setPassword('');
     setIdentifier('');
     window.location.hash = nextAudience === 'customer' ? '#/khach-hang/login' : '#/nhan-vien/login';
@@ -122,17 +167,33 @@ export default function AuthScreen({ onAuthenticated }) {
               value={password} onChange={e => setPassword(e.target.value)} />
           </label>
 
-          <button type="submit" disabled={busy || (mode === 'register' && !dateOfBirth)}
+          {mode === 'login' && (
+            <label className="flex items-center gap-2 text-sm text-stone-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-stone-400 accent-sky-700"
+              />
+              <span>Duy trì đăng nhập</span>
+            </label>
+          )}
+
+          {rateLimitRemaining > 0 && (
+            <p className="m-0 text-center text-sm font-medium text-rose-700" role="status" aria-live="polite">
+              Bạn thao tác quá nhiều lần. Vui lòng chờ {formatCountdown(rateLimitRemaining)} để thử lại.
+            </p>
+          )}
+          <button type="submit" disabled={busy || rateLimitRemaining > 0 || (mode === 'register' && !dateOfBirth)}
             aria-busy={busy}
             className="w-full h-11 mt-1 bg-gradient-to-br from-teal-400 to-sky-400 text-[#082f2a] font-semibold rounded-xl shadow-[0_10px_25px_rgba(45,212,191,0.28)] hover:shadow-[0_14px_32px_rgba(45,212,191,0.38)] hover:-translate-y-px transition-all disabled:opacity-55 disabled:cursor-not-allowed disabled:translate-y-0 cursor-pointer">
-            {busy ? 'Đang xử lý...' : mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
+            {rateLimitRemaining > 0 ? `Vui lòng chờ ${formatCountdown(rateLimitRemaining)}` : busy ? 'Đang xử lý...' : mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
           </button>
         </form>
 
         {audience === 'customer' && <div className="mt-6 pt-6 border-t border-stone-300/70 text-center">
           <button type="button"
             onClick={() => {
-              setError('');
               const nextMode = mode === 'login' ? 'register' : 'login';
               setMode(nextMode);
               window.location.hash = nextMode === 'register' ? '#/khach-hang/register' : '#/khach-hang/login';
@@ -145,6 +206,12 @@ export default function AuthScreen({ onAuthenticated }) {
       </section>
     </main>
   );
+}
+
+function formatCountdown(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function getAgeGroup(value) {

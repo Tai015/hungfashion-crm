@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { calcPointsEarned } from '../domain/index.js';
-import { writeOutboxEvent } from '../outbox-writer.js';
+import { enqueueTransactionEvent } from '../transaction-events.js';
 
 const router = Router();
 const rateLimits = new Map();
@@ -147,23 +147,16 @@ router.post('/pay/demo/:token/confirm', isEnabled, limitRequests, async (req, re
        WHERE payment_id=$2 RETURNING payment_id, amount, transaction_ref, paid_at`,
       [transactionRef, order.payment_id],
     );
-    const eventId = `payment-${paidRows[0].payment_id}-payment_completed`;
-    const paidTransactionId = paidRows[0].transaction_ref;
-    const transactionEvent = {
-      eventId,
-      transactionId: paidTransactionId,
+    await enqueueTransactionEvent(client, {
       eventType: 'payment_completed',
-      amount: Number(paidRows[0].amount),
-      currency: 'VND',
+      orderId: order.order_id,
+      amount: paidRows[0].amount,
       status: 'Paid',
       source: 'demo_qr',
-      occurredAt: paidRows[0].paid_at.toISOString(),
-    };
-    await writeOutboxEvent(client, {
-      eventId,
-      topic: 'transaction-events',
-      partitionKey: paidTransactionId,
-      payload: transactionEvent,
+      customerId: order.customer_id,
+      paymentId: paidRows[0].payment_id,
+      paymentMethod: order.method,
+      transactionId: transactionRef,
     });
     await client.query(
       `UPDATE demo_payment_tokens SET used_at=NOW() WHERE order_id=$1`, [order.order_id],

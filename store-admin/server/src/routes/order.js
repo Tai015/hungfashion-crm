@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   applySale,
   calcOrderTotals,
@@ -9,6 +9,7 @@ import {
   isOrderStatus,
 } from '../domain/index.js';
 import { pool } from '../db.js';
+import { enqueueTransactionEvent } from '../transaction-events.js';
 
 const router = Router();
 const CUSTOMER_PAYMENT_METHODS = new Set(['Cash', 'BankTransfer']);
@@ -68,7 +69,7 @@ async function expirePendingBankTransfers() {
   try {
     await client.query('BEGIN');
     const { rows: expiredOrders } = await client.query(
-      `SELECT o.order_id, o.customer_id
+      `SELECT o.order_id, o.customer_id, o.total_amount
        FROM "order" o
        JOIN payment p ON p.order_id = o.order_id
        WHERE o.order_status = 'Pending'
@@ -94,6 +95,12 @@ async function expirePendingBankTransfers() {
       await client.query(`UPDATE payment SET status='Failed' WHERE order_id=$1 AND status='Pending'`, [order.order_id]);
       await client.query(`UPDATE "order" SET order_status='Cancelled', updated_at=NOW() WHERE order_id=$1`, [order.order_id]);
       await reverseOrderLoyalty(client, order.customer_id, order.order_id);
+      await enqueueTransactionEvent(client, {
+        eventType: 'order_cancelled', orderId: order.order_id, amount: order.total_amount,
+        status: 'Cancelled', source: 'payment_expiry_worker', customerId: order.customer_id,
+        itemCount: details.reduce((sum, detail) => sum + Number(detail.quantity), 0),
+        previousStatus: 'Pending', reason: 'payment_expired',
+      });
     }
     await client.query('COMMIT');
   } catch (error) {
@@ -687,9 +694,10 @@ router.post('/', async (req, res) => {
     }
 
     const paymentStatus = paymentRequired ? 'Pending' : 'Paid';
-    await client.query(
+    const { rows: [payment] } = await client.query(
       `INSERT INTO payment (order_id, method, amount, status, paid_at)
-       VALUES ($1, $2, $3, $4, CASE WHEN $3::numeric = 0 THEN NOW() ELSE NULL END)`,
+       VALUES ($1, $2, $3, $4, CASE WHEN $3::numeric = 0 THEN NOW() ELSE NULL END)
+       RETURNING payment_id`,
       [order.order_id, payment_method, total_amount, paymentStatus]
     );
 
@@ -705,6 +713,12 @@ router.post('/', async (req, res) => {
       );
     }
 
+    await enqueueTransactionEvent(client, {
+      eventType: 'order_created', orderId: order.order_id, amount: total_amount,
+      status: order.order_status, source: 'orders_api', userId: req.user.account_id,
+      customerId: customer_id, paymentId: payment.payment_id, paymentMethod: payment_method,
+      itemCount: pricedItems.reduce((sum, item) => sum + item.quantity, 0),
+    });
     await client.query('COMMIT');
     const instructions = demoPaymentUrl ? { demo_url: demoPaymentUrl } : null;
     res.status(201).json({
@@ -745,7 +759,7 @@ router.patch('/:id/status', async (req, res) => {
     }
 
     const { rows: orderRows } = await client.query(
-      `SELECT customer_id, order_status FROM "order" WHERE order_id = $1 FOR UPDATE`,
+      `SELECT customer_id, order_status, total_amount FROM "order" WHERE order_id = $1 FOR UPDATE`,
       [req.params.id]
     );
     if (!orderRows.length) {
@@ -807,6 +821,12 @@ router.patch('/:id/status', async (req, res) => {
        WHERE order_id=$2 RETURNING order_id, order_status`,
       [status, req.params.id]
     );
+    await enqueueTransactionEvent(client, {
+      eventType: status === 'Cancelled' ? 'order_cancelled' : 'order_status_changed',
+      orderId: rows[0].order_id, amount: orderRows[0].total_amount, status,
+      previousStatus: currentStatus, source: 'orders_status_api',
+      userId: req.user.account_id, customerId: orderRows[0].customer_id,
+    });
     await client.query('COMMIT');
     res.json(rows[0]);
   } catch (err) {
@@ -860,6 +880,11 @@ router.patch('/:id/payment', async (req, res) => {
         }
         await client.query(`UPDATE "order" SET order_status='Cancelled', updated_at=NOW() WHERE order_id=$1`, [req.params.id]);
         await reverseOrderLoyalty(client, order.customer_id, Number(req.params.id));
+        await enqueueTransactionEvent(client, {
+          eventType: 'order_cancelled', orderId: Number(req.params.id), amount: order.total_amount,
+          status: 'Cancelled', previousStatus: 'Pending', source: 'payment_expiry_guard',
+          customerId: order.customer_id, reason: 'payment_expired',
+        });
       }
       await client.query('COMMIT');
       return res.status(409).json({ message: `Đã hết thời hạn thanh toán ${ttlMinutes} phút. Thanh toán đã hết hạn và không thể xác nhận.` });
@@ -913,6 +938,16 @@ router.patch('/:id/payment', async (req, res) => {
     }
     if (status === 'Refunded') {
       await reverseOrderLoyalty(client, orderRows[0].customer_id, Number(req.params.id));
+    }
+    if (status !== order.payment_status && (status === 'Paid' || status === 'Refunded')) {
+      await enqueueTransactionEvent(client, {
+        eventType: status === 'Paid' ? 'payment_completed' : 'payment_refunded',
+        orderId: Number(req.params.id), amount: rows[0].amount, status,
+        source: 'orders_payment_api', userId: req.user.account_id,
+        customerId: order.customer_id, paymentId: rows[0].payment_id,
+        paymentMethod: order.payment_method,
+        transactionId: rows[0].transaction_ref || null,
+      });
     }
     await client.query('COMMIT');
     res.json(rows[0]);

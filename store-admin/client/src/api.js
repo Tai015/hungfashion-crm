@@ -1,5 +1,21 @@
 export const TOKEN_KEY = 'hung-fashion-access-token';
 
+export function getAuthToken() {
+  return window.localStorage.getItem(TOKEN_KEY) || window.sessionStorage.getItem(TOKEN_KEY);
+}
+
+export function saveAuthToken(token, rememberMe) {
+  const persistentStorage = rememberMe ? window.localStorage : window.sessionStorage;
+  const temporaryStorage = rememberMe ? window.sessionStorage : window.localStorage;
+  temporaryStorage.removeItem(TOKEN_KEY);
+  persistentStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearAuthToken() {
+  window.localStorage.removeItem(TOKEN_KEY);
+  window.sessionStorage.removeItem(TOKEN_KEY);
+}
+
 export async function checkRuntimeServices() {
   const healthResponse = await fetch('/api/health', { signal: AbortSignal.timeout(4000) });
   return { apiReady: healthResponse.ok };
@@ -7,7 +23,7 @@ export async function checkRuntimeServices() {
 
 export function authHeaders(extraHeaders = {}) {
   const headers = new Headers(extraHeaders);
-  const token = window.localStorage.getItem(TOKEN_KEY);
+  const token = getAuthToken();
   if (token) headers.set('authorization', `Bearer ${token}`);
   return headers;
 }
@@ -102,7 +118,7 @@ function startChatEventStream() {
         }, { signal: chatEventController.signal });
       } catch (error) {
         if (error.status === 401 || error.status === 403) {
-          window.localStorage.removeItem(TOKEN_KEY);
+          clearAuthToken();
           window.dispatchEvent(new CustomEvent('auth:expired', {
             detail: { code: error.code, message: error.message },
           }));
@@ -168,13 +184,19 @@ export async function apiFetch(url, options = {}) {
     : await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 401) {
-      window.localStorage.removeItem(TOKEN_KEY);
+      clearAuthToken();
       window.dispatchEvent(new CustomEvent('auth:expired', {
         detail: { code: result?.code, message: result?.message },
       }));
     }
     const error = new Error(result?.message || `Yêu cầu thất bại (${response.status}).`);
     error.status = response.status;
+    const retryAfterHeader = response.headers.get('retry-after');
+    const rateLimitResetHeader = response.headers.get('ratelimit-reset');
+    const retryAfterSeconds = Number(result?.retryAfterSeconds ?? retryAfterHeader ?? rateLimitResetHeader);
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+      error.retryAfterSeconds = Math.ceil(retryAfterSeconds);
+    }
     throw error;
   }
   return result;

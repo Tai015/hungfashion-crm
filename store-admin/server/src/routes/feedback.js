@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { randomUUID } from 'node:crypto';
-import { mkdir, unlink } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pool } from '../db.js';
+import { cleanupTemporaryCopies, cleanupUploadedMedia, isCloudinaryRef, storeUploadedMedia, streamCloudinaryMedia } from '../media-storage.js';
 
 const router = Router();
 const uploadDirectory = path.resolve(process.env.FEEDBACK_UPLOAD_DIR
@@ -47,7 +48,7 @@ const uploadMedia = multer({
 });
 
 async function removeUploadedFiles(files = []) {
-  await Promise.all(files.map(file => unlink(file.path).catch(() => {})));
+  await cleanupUploadedMedia(files);
 }
 
 function mediaSelect() {
@@ -212,6 +213,14 @@ router.get('/media/:attachmentId', async (req, res) => {
       && Number(attachment.customer_id) === Number(req.user.customer_id);
     const canManageFeedback = ['ADMIN', 'QL_KHACH_HANG'].includes(req.user.role_name);
     if (!isCustomerOwner && !canManageFeedback) return res.sendStatus(403);
+    if (isCloudinaryRef(attachment.media_url)) {
+      await streamCloudinaryMedia(res, attachment.media_url, {
+        mimeType: attachment.mime_type,
+        filename: attachment.original_name,
+        attachment: false,
+      });
+      return;
+    }
     const safeFilename = path.basename(attachment.media_url);
     res.set({ 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' });
     return res.type(attachment.mime_type).sendFile(path.join(uploadDirectory, safeFilename), error => {
@@ -302,6 +311,13 @@ router.post('/', (req, res, next) => {
         if (!rowCount) return reject(404, 'Không tìm thấy đơn hàng của tài khoản.');
       }
     }
+    try {
+      for (const file of files) await storeUploadedMedia(file, 'feedback');
+    } catch (uploadError) {
+      await removeUploadedFiles(files);
+      console.error('[feedback] Cloudinary upload failed:', uploadError);
+      return res.status(502).json({ message: 'Không thể lưu tệp phản hồi. Vui lòng thử lại.' });
+    }
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -316,11 +332,12 @@ router.post('/', (req, res, next) => {
         const { rows: [attachment] } = await client.query(
           `INSERT INTO feedback_attachment (feedback_id, media_url, media_type, mime_type, original_name, file_size)
            VALUES ($1,$2,$3,$4,$5,$6) RETURNING attachment_id`,
-          [feedback.feedback_id, path.basename(file.path), mediaType, file.mimetype, path.basename(file.originalname), file.size]
+          [feedback.feedback_id, file.storageRef || path.basename(file.path), mediaType, file.mimetype, path.basename(file.originalname), file.size]
         );
         file.attachmentId = attachment.attachment_id;
       }
       await client.query('COMMIT');
+      await cleanupTemporaryCopies(files);
       feedback.attachments = files.map(file => ({
         attachment_id: file.attachmentId,
         url: `/api/feedbacks/media/${file.attachmentId}`,
