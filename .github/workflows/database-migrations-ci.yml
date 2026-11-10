@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   fresh-database-migrations:
-    name: Fresh PostgreSQL migration (000-023)
+    name: Fresh PostgreSQL migration (000-024)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -83,10 +83,10 @@ jobs:
           set -euo pipefail
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "23"
+          test "$applied_count" = "24"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "023"
+          test "$latest_version" = "024"
 
           view_exists="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT to_regclass('public.customer_interaction_timeline') IS NOT NULL")"
           test "$view_exists" = "t"
@@ -122,7 +122,12 @@ jobs:
           default_gender="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT gender::text FROM customer WHERE email = 'timeline-ci@hungfashion.test'")"
           test "$default_gender" = "Other"
 
-          echo "Verified: 23 migrations, latest 023, customer gender defaults to Other, timeline view returns seeded profile/order/survey rows, UUID event_id and legacy_event_id."
+          tier_boundaries="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT string_agg(customer_tier_for_points(points)::text, ',' ORDER BY points) FROM (VALUES (999),(1000),(4999),(5000),(19999),(20000),(99999),(100000)) AS tiers(points)")"
+          test "$tier_boundaries" = "New,Regular,Regular,Silver,Silver,Gold,Gold,VIP"
+          points_columns="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='customer' AND column_name IN ('points_balance','lifetime_points')")"
+          test "$points_columns" = "2"
+
+          echo "Verified: 24 migrations, latest 024, customer gender defaults to Other, timeline view returns seeded profile/order/survey rows, UUID event_id and legacy_event_id."
 
       - name: Verify migration runner is safe to rerun
         working-directory: store-admin
@@ -134,7 +139,7 @@ jobs:
         run: |
           set -euo pipefail
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "23"
+          test "$applied_count" = "24"
           echo "Verified: rerunning migrations does not create duplicate migration records."
 
   legacy-database-upgrade:
@@ -209,7 +214,7 @@ jobs:
 
           echo "Prepared a database at migration 017 with valid UUID, legacy text, NULL event IDs and a customer with NULL gender."
 
-      - name: Upgrade existing database through migrations 018-023
+      - name: Upgrade existing database through migrations 018-024
         working-directory: store-admin
         run: npm run db:migrate --workspace server
 
@@ -232,10 +237,10 @@ jobs:
           test "$null_event_count" = "1"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "023"
+          test "$latest_version" = "024"
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "23"
+          test "$applied_count" = "24"
 
           legacy_gender="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT gender::text FROM customer WHERE email = 'legacy-gender@hungfashion.test'")"
           test "$legacy_gender" = "Other"
@@ -246,4 +251,4 @@ jobs:
 
           psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -c "SELECT * FROM customer_interaction_timeline LIMIT 0"
 
-          echo "Verified: all 3 legacy transaction rows survived; valid UUID retained; invalid text preserved in legacy_event_id; NULL retained; migrations 018-023 completed."
+          echo "Verified: all 3 legacy transaction rows survived; valid UUID retained; invalid text preserved in legacy_event_id; NULL retained; migrations 018-024 completed."

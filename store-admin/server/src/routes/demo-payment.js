@@ -170,15 +170,16 @@ router.post('/pay/demo/:token/confirm', isEnabled, limitRequests, async (req, re
       const points = earnedRows.length ? 0 : calcPointsEarned(Number(paidRows[0].amount));
       if (points > 0) {
         const { rows: customerRows } = await client.query(
-          `UPDATE customer SET loyalty_point=loyalty_point+$1
-           WHERE customer_id=$2 RETURNING loyalty_point`, [points, order.customer_id],
+          `UPDATE customer SET points_balance=points_balance+$1, lifetime_points=lifetime_points+$1, updated_at=NOW()
+           WHERE customer_id=$2 RETURNING points_balance`, [points, order.customer_id],
         );
         if (!customerRows.length) throw new Error('Customer record missing for demo payment points.');
+        await client.query(`UPDATE "order" SET loyalty_points_earned=$1 WHERE order_id=$2`, [points, order.order_id]);
         await client.query(
           `INSERT INTO loyalty_point_transaction
              (customer_id, order_id, transaction_type, points_delta, balance_after, note)
            VALUES ($1,$2,'Earned',$3,$4,$5)`,
-          [order.customer_id, order.order_id, points, customerRows[0].loyalty_point,
+          [order.customer_id, order.order_id, points, customerRows[0].points_balance,
             `Tích điểm từ thanh toán demo đơn hàng #${order.order_id}`],
         );
       }

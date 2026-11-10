@@ -6,6 +6,15 @@ function clampNonNegative(value) {
 
 export { DEFAULT_LOYALTY_RULES };
 
+export function getCustomerTier(lifetimePoints) {
+  const points = clampNonNegative(lifetimePoints);
+  if (points >= 100_000) return 'VIP';
+  if (points >= 20_000) return 'Gold';
+  if (points >= 5_000) return 'Silver';
+  if (points >= 1_000) return 'Regular';
+  return 'New';
+}
+
 export function calcPointsEarned(totalAmount, rules = DEFAULT_LOYALTY_RULES) {
   const paid = clampNonNegative(totalAmount);
   if (rules.pointsPerTenThousandVnd <= 0) return 0;

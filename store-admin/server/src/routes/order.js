@@ -27,11 +27,20 @@ async function addLoyaltyTransaction(client, { customerId, orderId, type, delta,
   if (existing.length) return null;
 
   const { rows: customerRows } = await client.query(
-    'UPDATE customer SET loyalty_point = loyalty_point + $1 WHERE customer_id = $2 RETURNING loyalty_point',
-    [delta, customerId],
+    `UPDATE customer
+     SET points_balance = points_balance + $1,
+         lifetime_points = CASE
+           WHEN $3 = 'Earned' THEN lifetime_points + $1
+           WHEN $3 = 'EarnReversed' THEN GREATEST(0, lifetime_points + $1)
+           ELSE lifetime_points
+         END,
+         updated_at = NOW()
+     WHERE customer_id = $2 RETURNING points_balance`,
+    [delta, customerId, type],
   );
   if (!customerRows.length) throw new Error('Không tìm thấy hồ sơ khách hàng để cập nhật điểm.');
-  const balance = customerRows[0].loyalty_point;
+  const balance = customerRows[0].points_balance;
+  if (type === 'Earned') await client.query('UPDATE "order" SET loyalty_points_earned=$1 WHERE order_id=$2', [delta, orderId]);
   await client.query(
     `INSERT INTO loyalty_point_transaction
        (customer_id, order_id, transaction_type, points_delta, balance_after, note)
@@ -43,18 +52,19 @@ async function addLoyaltyTransaction(client, { customerId, orderId, type, delta,
 
 async function reverseOrderLoyalty(client, customerId, orderId) {
   if (!customerId) return;
+  const { rows: [order] } = await client.query('SELECT loyalty_points_earned FROM "order" WHERE order_id=$1', [orderId]);
+  if (!order) return;
   const { rows: entries } = await client.query(
     `SELECT transaction_type, points_delta FROM loyalty_point_transaction
-     WHERE order_id = $1 AND transaction_type IN ('Earned', 'Redeemed')`,
-    [orderId],
+     WHERE order_id = $1 AND transaction_type IN ('Earned', 'Redeemed')`, [orderId],
   );
+  const earnedPoints = Math.max(0, Number(order.loyalty_points_earned)
+    || Number(entries.find(entry => entry.transaction_type === 'Earned')?.points_delta) || 0);
+  if (earnedPoints > 0) await addLoyaltyTransaction(client, {
+    customerId, orderId, type: 'EarnReversed', delta: -earnedPoints,
+    note: 'Thu hồi điểm tích lũy do đơn hàng bị hủy/hoàn tiền',
+  });
   for (const entry of entries) {
-    if (entry.transaction_type === 'Earned' && entry.points_delta > 0) {
-      await addLoyaltyTransaction(client, {
-        customerId, orderId, type: 'EarnReversed', delta: -entry.points_delta,
-        note: 'Thu hồi điểm tích lũy do đơn hàng bị hủy/hoàn tiền',
-      });
-    }
     if (entry.transaction_type === 'Redeemed' && entry.points_delta < 0) {
       await addLoyaltyTransaction(client, {
         customerId, orderId, type: 'RedeemedReturned', delta: -entry.points_delta,

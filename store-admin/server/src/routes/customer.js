@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
     }
     if (tier) {
       params.push(tier);
-      conditions.push(`c.customer_tier = $${params.length}`);
+      conditions.push(`customer_tier_for_points(c.lifetime_points) = $${params.length}`);
     }
     if (gender) {
       params.push(gender);
@@ -69,8 +69,8 @@ router.get('/stats/overview', async (_req, res) => {
   try {
     const [tierStats, genderStats, ageStats] = await Promise.all([
       pool.query(
-        `SELECT customer_tier, COUNT(*)::int AS count
-         FROM customer GROUP BY customer_tier ORDER BY count DESC`
+        `SELECT customer_tier_for_points(lifetime_points) AS customer_tier, COUNT(*)::int AS count
+         FROM customer GROUP BY customer_tier_for_points(lifetime_points) ORDER BY count DESC`
       ),
       pool.query(
         `SELECT gender, COUNT(*)::int AS count
@@ -240,30 +240,6 @@ router.put('/:id', async (req, res) => {
     return res.status(500).json({ message: 'Không thể cập nhật khách hàng.' });
   } finally {
     client.release();
-  }
-});
-
-// PATCH /api/customers/:id/tier – cập nhật hạng khách hàng
-router.patch('/:id/tier', async (req, res) => {
-  const customerId = Number(req.params.id);
-  const validTiers = ['New', 'Regular', 'Silver', 'Gold', 'VIP'];
-  if (!Number.isSafeInteger(customerId) || customerId < 1) {
-    return res.status(400).json({ message: 'Mã khách hàng không hợp lệ.' });
-  }
-  const tier = req.body?.tier;
-  if (!validTiers.includes(tier)) {
-    return res.status(400).json({ message: 'Hạng khách hàng không hợp lệ.' });
-  }
-  try {
-    const { rows } = await pool.query(
-      `UPDATE customer SET customer_tier=$1, updated_at=NOW()
-       WHERE customer_id=$2 RETURNING customer_id, full_name, customer_tier`,
-      [tier, customerId]
-    );
-    if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy khách hàng' });
-    res.json(rows[0]);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
   }
 });
 
