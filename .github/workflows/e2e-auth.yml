@@ -116,7 +116,6 @@ jobs:
           --health-timeout 10s
           --health-retries 20
     env:
-      DATABASE_URL: postgres://postgres:ci-only-not-production-password@127.0.0.1:5432/hungfashion_e2e
       POSTGRES_HOST: 127.0.0.1
       POSTGRES_PORT: 5432
       POSTGRES_DB: hungfashion_e2e
