@@ -254,3 +254,79 @@ test('hiển thị đồng hồ đếm ngược và khóa nút khi API giới h�
   await expect(page.getByRole('status')).toContainText(/01:0[0-5]/);
   await expect(page.getByRole('button', { name: /Vui lòng chờ 01:0[0-5]/ })).toBeDisabled();
 });
+
+
+test('nhân viên mở được lịch sử tương tác của khách hàng trong màn hình quản lý khách hàng', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem('hung-fashion-access-token', 'timeline-admin-token');
+  });
+  await page.route('**/api/**', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({}),
+  }));
+  await page.route('**/api/health', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true }),
+  }));
+  await page.route('**/api/auth/me', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      account_id: 1,
+      username: 'timeline-admin',
+      full_name: 'Timeline Admin',
+      role: 'ADMIN',
+    }),
+  }));
+  await page.route('**/api/auth/heartbeat', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ role: 'ADMIN' }),
+  }));
+  await page.route('**/api/customers?**', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      data: [{
+        customer_id: 12,
+        full_name: 'E2E Timeline Customer',
+        phone: '0900000012',
+        email: 'timeline-customer@example.test',
+        gender: 'Other',
+        customer_tier: 'Regular',
+        loyalty_point: 25,
+        account_id: 12,
+        account_status: 'Active',
+      }],
+      total: 1,
+    }),
+  }));
+  await page.route('**/api/customers/12/interactions?**', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      data: [{
+        interaction_id: 'order:9001',
+        customer_id: 12,
+        interaction_type: 'order',
+        title: 'Đặt đơn hàng #9001',
+        summary: 'Trạng thái: Pending · Tổng tiền: 250.000 ₫',
+        occurred_at: '2026-11-10T08:00:00.000Z',
+      }],
+      limit: 20,
+      hasMore: false,
+      nextCursor: null,
+      olderCursor: null,
+      range: 'last-12-months',
+    }),
+  }));
+
+  await page.goto('/#/admin/customers');
+  await expect(page.getByRole('heading', { name: 'Quản lý khách hàng' })).toBeVisible();
+  await page.getByRole('button', { name: 'Xem lịch sử tương tác của E2E Timeline Customer' }).click();
+  await expect(page.getByText('Lịch sử tương tác')).toBeVisible();
+  await expect(page.getByText('Đặt đơn hàng #9001')).toBeVisible();
+  await expect(page.getByText(/250\.000/)).toBeVisible();
+});
