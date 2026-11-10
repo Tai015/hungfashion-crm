@@ -228,6 +228,45 @@ router.get('/user/:customerId', async (req, res) => {
   }
 });
 
+// GET /api/promotions/assign/customers – tìm kiếm khách hàng có phân trang khi phân bổ voucher
+router.get('/assign/customers', async (req, res) => {
+  try {
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 20);
+    if (search.length > 100 || !Number.isInteger(page) || page < 1
+      || !Number.isInteger(limit) || limit < 1 || limit > 100) {
+      return res.status(400).json({ message: 'Từ khóa hoặc tham số phân trang khách hàng không hợp lệ.' });
+    }
+
+    const conditions = [];
+    const params = [];
+    if (search) {
+      const escapedSearch = search.replace(/[\\%_]/g, '\\// POST /api/promotions/assign – gán mã cho khách hàng');
+      params.push(`%${escapedSearch}%`);
+      conditions.push(`(full_name ILIKE $1 OR phone ILIKE $1 OR email ILIKE $1)`);
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const limitParam = params.length + 1;
+    const offsetParam = params.length + 2;
+    const [customers, count] = await Promise.all([
+      pool.query(
+        `SELECT customer_id, full_name, phone, email
+         FROM customer
+         ${where}
+         ORDER BY full_name, customer_id
+         LIMIT ${limitParam} OFFSET ${offsetParam}`,
+        [...params, limit, (page - 1) * limit],
+      ),
+      pool.query(`SELECT COUNT(*)::int AS total FROM customer ${where}`, params),
+    ]);
+    return res.json({ data: customers.rows, total: count.rows[0].total, page, limit });
+  } catch (error) {
+    console.error('[promotions] customer assignment search failed:', error.message);
+    return res.status(500).json({ message: 'Không thể tải danh sách khách hàng để phân bổ.' });
+  }
+});
+
 // POST /api/promotions/assign – gán mã cho khách hàng
 router.post('/assign', async (req, res) => {
   try {
