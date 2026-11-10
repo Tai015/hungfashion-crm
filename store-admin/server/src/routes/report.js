@@ -100,7 +100,7 @@ router.get('/warehouse/suppliers', async (req, res) => {
        LEFT JOIN supplier s ON s.supplier_id = r.supplier_id
        LEFT JOIN import_detail d ON d.receipt_id = r.receipt_id
        WHERE r.receipt_type = 'Import'
-         AND ($1::date IS NULL OR (r.receipt_date >= $1::date AND r.receipt_date < $2::date + INTERVAL '1 day'))
+         AND ($1::date IS NULL OR (${localTimestampRangeSql('r.receipt_date', 1, 2)}))
        GROUP BY s.supplier_id, s.supplier_name
        ORDER BY imported_value DESC, supplier_name`,
       [dateRange.from, dateRange.to],
@@ -238,7 +238,7 @@ router.get('/dashboard', async (req, res) => {
         pool.query(`
           SELECT customer_tier, COUNT(*)::int AS count
           FROM customer
-          WHERE ($1::date IS NULL OR (registered_at >= $1::date AND registered_at < $2::date + INTERVAL '1 day'))
+          WHERE ($1::date IS NULL OR (${localTimestampRangeSql('registered_at', 1, 2)}))
           GROUP BY customer_tier ORDER BY count DESC
         `, [dateRange.from, dateRange.to]),
 
@@ -246,7 +246,7 @@ router.get('/dashboard', async (req, res) => {
         pool.query(`
           SELECT gender, COUNT(*)::int AS count
           FROM customer
-          WHERE ($1::date IS NULL OR (registered_at >= $1::date AND registered_at < $2::date + INTERVAL '1 day'))
+          WHERE ($1::date IS NULL OR (${localTimestampRangeSql('registered_at', 1, 2)}))
           GROUP BY gender
         `, [dateRange.from, dateRange.to]),
 
@@ -254,7 +254,7 @@ router.get('/dashboard', async (req, res) => {
         pool.query(`
           SELECT rating, COUNT(*)::int AS count
           FROM feedback WHERE rating IS NOT NULL
-            AND ($1::date IS NULL OR (created_at >= $1::date AND created_at < $2::date + INTERVAL '1 day'))
+            AND ($1::date IS NULL OR (${localTimestampRangeSql('created_at', 1, 2)}))
           GROUP BY rating ORDER BY rating DESC
         `, [dateRange.from, dateRange.to]),
 
@@ -276,7 +276,7 @@ router.get('/dashboard', async (req, res) => {
                  COUNT(sr.response_id)::int AS response_count
           FROM survey s
           LEFT JOIN survey_response sr ON sr.survey_id = s.survey_id
-            AND ($1::date IS NULL OR (sr.submitted_at >= $1::date AND sr.submitted_at < $2::date + INTERVAL '1 day'))
+            AND ($1::date IS NULL OR (${localTimestampRangeSql('sr.submitted_at', 1, 2)}))
           WHERE s.status = 'Active'
           GROUP BY s.survey_id
           ORDER BY s.created_at DESC LIMIT 5
@@ -414,7 +414,7 @@ router.get('/customer-ages', async (req, res) => {
            ELSE '45+'
          END AS age_band
          FROM customer
-         WHERE ($1::date IS NULL OR (registered_at >= $1::date AND registered_at < $2::date + INTERVAL '1 day'))
+         WHERE ($1::date IS NULL OR (${localTimestampRangeSql('registered_at', 1, 2)}))
        ), counts AS (
          SELECT age_band, COUNT(*)::int AS customer_count FROM ages GROUP BY age_band
        )
@@ -486,7 +486,7 @@ router.get('/interests', async (req, res) => {
     const { rows } = await pool.query(`
       WITH eligible_customers AS (
         SELECT customer_id FROM customer
-        WHERE ($1::date IS NULL OR (registered_at >= $1::date AND registered_at < $2::date + INTERVAL '1 day'))
+        WHERE ($1::date IS NULL OR (${localTimestampRangeSql('registered_at', 1, 2)}))
       )
       SELECT i.interest_id, i.interest_name AS interest,
              COUNT(DISTINCT ci.customer_id)::int AS count,
@@ -547,9 +547,9 @@ router.get('/audit-logs', async (req, res) => {
     addFilter("COALESCE(c.full_name, e.full_name, a.username, '')", req.query.user);
     if (from !== undefined) {
       values.push(from);
-      conditions.push(`ue.occurred_at >= $${values.length}::date`);
+      conditions.push(`ue.occurred_at >= (${values.length}::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`);
       values.push(to);
-      conditions.push(`ue.occurred_at < ($${values.length}::date + INTERVAL '1 day')`);
+      conditions.push(`ue.occurred_at < ((${values.length}::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`);
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const joins = `FROM user_events ue
