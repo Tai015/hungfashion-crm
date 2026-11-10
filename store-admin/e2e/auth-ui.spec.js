@@ -260,61 +260,72 @@ test('hiển thị đồng hồ đếm ngược và khóa nút khi API giới h�
 
 
 test('nhân viên mở được lịch sử tương tác của khách hàng trong màn hình quản lý khách hàng', async ({ page }) => {
-  await page.route('**/api/**', route => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({}),
-  }));
-  await page.route('**/api/auth/login', route => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({
-      token: 'timeline-admin-token',
-      user: { account_id: 1, username: 'timeline-admin', full_name: 'Timeline Admin', role: 'ADMIN' },
-    }),
-  }));
-  await page.route('**/api/auth/heartbeat', route => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ role: 'ADMIN' }),
-  }));
-  await page.route('**/api/customers?**', route => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({
-      data: [{
-        customer_id: 12,
-        full_name: 'E2E Timeline Customer',
-        phone: '0900000012',
-        email: 'timeline-customer@example.test',
-        gender: 'Other',
-        customer_tier: 'Regular',
-        loyalty_point: 25,
-        account_id: 12,
-        account_status: 'Active',
-      }],
-      total: 1,
-    }),
-  }));
-  await page.route('**/api/customers/12/interactions?**', route => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({
-      data: [{
-        interaction_id: 'order:9001',
-        customer_id: 12,
-        interaction_type: 'order',
-        title: 'Đặt đơn hàng #9001',
-        summary: 'Trạng thái: Pending · Tổng tiền: 250.000 ₫',
-        occurred_at: '2026-11-10T08:00:00.000Z',
-      }],
-      limit: 20,
-      hasMore: false,
-      nextCursor: null,
-      olderCursor: null,
-      range: 'last-12-months',
-    }),
-  }));
+  await page.route('**/api/**', async route => {
+    const { pathname } = new URL(route.request().url());
+    if (pathname === '/api/auth/login') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          token: 'timeline-admin-token',
+          user: { account_id: 1, username: 'timeline-admin', full_name: 'Timeline Admin', role: 'ADMIN' },
+        }),
+      });
+    }
+    if (pathname === '/api/auth/heartbeat') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ role: 'ADMIN' }),
+      });
+    }
+    if (pathname === '/api/customers') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [{
+            customer_id: 12,
+            full_name: 'E2E Timeline Customer',
+            phone: '0900000012',
+            email: 'timeline-customer@example.test',
+            gender: 'Other',
+            customer_tier: 'Regular',
+            loyalty_point: 25,
+            account_id: 12,
+            account_status: 'Active',
+          }],
+          total: 1,
+        }),
+      });
+    }
+    if (pathname === '/api/customers/12/interactions') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [{
+            interaction_id: 'order:9001',
+            customer_id: 12,
+            interaction_type: 'order',
+            title: 'Đặt đơn hàng #9001',
+            summary: 'Trạng thái: Pending · Tổng tiền: 250.000 ₫',
+            occurred_at: '2026-11-10T08:00:00.000Z',
+          }],
+          limit: 20,
+          hasMore: false,
+          nextCursor: null,
+          olderCursor: null,
+          range: 'last-12-months',
+        }),
+      });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    });
+  });
 
   await login(page, '/#/nhan-vien/login', EXISTING_STAFF, 'staff');
   await page.locator('.dashboard-nav-item').nth(3).click();
