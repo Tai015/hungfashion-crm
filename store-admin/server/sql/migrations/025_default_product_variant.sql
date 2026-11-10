@@ -3,9 +3,18 @@ ALTER TABLE product_variant
   ALTER COLUMN color_id DROP NOT NULL,
   ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT FALSE;
 
-ALTER TABLE product_variant
-  ADD CONSTRAINT product_variant_default_attributes_check
-  CHECK (NOT is_default OR (size_id IS NULL AND color_id IS NULL));
+DO $
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'product_variant_default_attributes_check'
+      AND conrelid = 'product_variant'::regclass
+  ) THEN
+    ALTER TABLE product_variant
+      ADD CONSTRAINT product_variant_default_attributes_check
+      CHECK (NOT is_default OR (size_id IS NULL AND color_id IS NULL));
+  END IF;
+END $;
 
 CREATE UNIQUE INDEX IF NOT EXISTS variant_one_default_per_product_idx
   ON product_variant(product_id) WHERE is_default = TRUE;
