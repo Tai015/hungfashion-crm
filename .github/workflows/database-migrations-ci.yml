@@ -130,6 +130,13 @@ jobs:
           nullable_variant_attrs="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='product_variant' AND column_name IN ('size_id','color_id') AND is_nullable='YES'")"
           test "$nullable_variant_attrs" = "2"
 
+          product_supplier_table="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT to_regclass('public.product_supplier') IS NOT NULL")"
+          test "$product_supplier_table" = "t"
+          product_supplier_column="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='product' AND column_name='supplier_id'")"
+          test "$product_supplier_column" = "0"
+          supplier_fk_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.table_constraints WHERE table_schema='public' AND table_name='product_supplier' AND constraint_type='FOREIGN KEY'")"
+          test "$supplier_fk_count" = "2"
+
           echo "Verified: 26 migrations, latest 026, customer gender defaults to Other, timeline view, UUID event_id, loyalty tiers and nullable default-variant attributes."
 
       - name: Verify migration runner is safe to rerun
@@ -142,7 +149,7 @@ jobs:
         run: |
           set -euo pipefail
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "25"
+          test "$applied_count" = "26"
           echo "Verified: rerunning migrations does not create duplicate migration records."
 
   legacy-database-upgrade:
@@ -248,7 +255,7 @@ jobs:
           test "$null_event_count" = "1"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "025"
+          test "$latest_version" = "026"
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
           test "$applied_count" = "25"
