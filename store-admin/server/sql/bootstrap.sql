@@ -270,22 +270,20 @@ CREATE TABLE IF NOT EXISTS color (
 --  10. PRODUCT_VARIANT  (size + màu + tồn kho)
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS product_variant (
-  variant_id SERIAL PRIMARY KEY,
-  product_id INT NOT NULL REFERENCES product(product_id) ON DELETE CASCADE,
-  size_id INT REFERENCES size(size_id),
-  color_id INT REFERENCES color(color_id),
-  sku VARCHAR(100) UNIQUE,
-  quantity INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-  selling_price NUMERIC(15,2) CHECK (selling_price IS NULL OR selling_price >= 0),
-  is_active BOOLEAN NOT NULL DEFAULT TRUE,
-  is_default BOOLEAN NOT NULL DEFAULT FALSE,
+  variant_id   SERIAL          PRIMARY KEY,
+  product_id   INT             NOT NULL REFERENCES product(product_id) ON DELETE CASCADE,
+  size_id      INT             NOT NULL REFERENCES size(size_id),
+  color_id     INT             NOT NULL REFERENCES color(color_id),
+  sku          VARCHAR(100)    UNIQUE,
+  quantity     INT             NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+  selling_price NUMERIC(15,2)  CHECK (selling_price IS NULL OR selling_price >= 0),
+  is_active    BOOLEAN         NOT NULL DEFAULT TRUE,
   UNIQUE (product_id, size_id, color_id)
 );
 CREATE INDEX IF NOT EXISTS variant_product_idx ON product_variant(product_id);
 CREATE INDEX IF NOT EXISTS variant_size_idx ON product_variant(size_id);
 CREATE INDEX IF NOT EXISTS variant_color_idx ON product_variant(color_id);
 CREATE INDEX IF NOT EXISTS variant_active_idx ON product_variant(is_active);
-CREATE UNIQUE INDEX IF NOT EXISTS variant_one_default_per_product_idx ON product_variant(product_id) WHERE is_default = TRUE;
 
 -- ─────────────────────────────────────────────
 --  11. SUPPLIER
