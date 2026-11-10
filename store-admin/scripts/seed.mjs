@@ -177,7 +177,7 @@ async function ensureCustomer(client, {
   let customerId = matches[0]?.customer_id;
   if (!customerId) {
     const { rows: [created] } = await client.query(
-      `INSERT INTO customer (account_id, full_name, gender, date_of_birth, phone, email, address, loyalty_point, customer_tier)
+      `INSERT INTO customer (account_id, full_name, gender, date_of_birth, phone, email, address, points_balance, customer_tier)
        VALUES ($1,$2,$3::gender_type,$4,$5,$6,$7,$8,$9)
        RETURNING customer_id`,
       [accountId, fullName, normalizedGender, dob, phone, normalizedEmail, address, points, tier],

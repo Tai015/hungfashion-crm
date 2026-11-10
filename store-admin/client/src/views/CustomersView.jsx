@@ -4,14 +4,12 @@ import { createPortal } from 'react-dom';
 import { useModalEffects } from '../hooks/useModalEffects';
 import { ChevronLeft, ChevronRight, LockKeyhole, Pencil, Trash2, UnlockKeyhole, UserPlus, Search, X, Clock3, ChevronDown, ChevronUp } from 'lucide-react';
 import { apiFetch } from '../api';
-import TierBadge from '../components/TierBadge';
 import Spinner from '../components/Spinner';
 import FilterPopover from '../components/FilterPopover';
 import { confirmDestructiveAction } from '../utils/confirmAction';
 import { useSweetAlertMessages } from '../utils/notifications';
 import { CUSTOMER_GENDER_LABELS, CUSTOMER_TIER_LABELS } from '../utils/viLabels';
 
-const TIERS   = ['New','Regular','Silver','Gold','VIP'];
 const formatAge = age => Number.isInteger(age) && age >= 0 ? `${age} tuổi` : 'Chưa cập nhật';
 const GENDERS = [['','Tất cả'],['Female','Nữ'],['Male','Nam'],['Other','Khác']];
 const EMPTY   = { full_name:'', phone:'', email:'', gender:'Other', date_of_birth:'' };
@@ -242,17 +240,6 @@ export default function CustomersView({ userRole }) {
     finally { setBusyCustomerId(null); }
   };
 
-  const changeCustomerTier = async (customer, nextTier) => {
-    if (!TIERS.includes(nextTier) || nextTier === customer.customer_tier) return;
-    setError(''); setNotice(''); setBusyCustomerId(customer.customer_id);
-    try {
-      const result = await apiFetch(`/api/customers/${customer.customer_id}/tier`, { method:'PATCH', body:{ tier:nextTier } });
-      setNotice(`Đã đổi hạng ${customer.full_name} thành ${CUSTOMER_TIER_LABELS[result.customer_tier] || result.customer_tier}.`);
-      setRefresh(value => value + 1);
-    } catch(err) { setError(err.message); }
-    finally { setBusyCustomerId(null); }
-  };
-
   const deleteCustomer = async customer => {
     const confirmed = await confirmDestructiveAction({
       title: 'Xóa hồ sơ khách hàng?',
@@ -313,7 +300,7 @@ export default function CustomersView({ userRole }) {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  {['Mã','Họ tên','Số điện thoại','Email','Tuổi','Giới tính','Hạng khách hàng','Điểm tích lũy', ...(canWrite?['Thao tác']:[])].map(h => (
+                  {['Mã','Họ tên','Số điện thoại','Email','Tuổi','Giới tính','Hạng thành viên','Điểm hiện có','Điểm tích lũy trọn đời', ...(canWrite?['Thao tác']:[])].map(h => (
                     <th key={h} className="px-3.5 py-2.5 text-left text-[0.72rem] font-semibold tracking-[0.05em] uppercase text-white/38 border-b border-white/[0.08] whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -341,19 +328,10 @@ export default function CustomersView({ userRole }) {
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/70">{formatAge(c.age)}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{CUSTOMER_GENDER_LABELS[c.gender] || 'Khác'}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05]">
-                        {canWrite ? (
-                          <select
-                            aria-label={`Đổi hạng khách hàng ${c.full_name}`}
-                            className="h-8 max-w-32 rounded-lg border px-2 text-xs font-bold outline-none focus:ring-2 focus:ring-violet-400/30 disabled:cursor-wait disabled:opacity-60"
-                            style={{ color:tc, backgroundColor:`${tc}18`, borderColor:`${tc}55` }}
-                            value={c.customer_tier||'New'}
-                            disabled={busyCustomerId === c.customer_id}
-                            onChange={event => changeCustomerTier(c, event.target.value)}>
-                            {TIERS.map(value => <option key={value} value={value}>{CUSTOMER_TIER_LABELS[value]}</option>)}
-                          </select>
-                        ) : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ color:tc, background:`${tc}18` }}>{CUSTOMER_TIER_LABELS[c.customer_tier] || 'Mới'}</span>}
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ color:tc, background:`${tc}18` }}>{CUSTOMER_TIER_LABELS[c.customer_tier] || 'Mới'}</span>
                       </td>
-                      <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/70 tabular-nums font-medium">{(c.loyalty_point||0).toLocaleString()}</td>
+                      <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/70 tabular-nums font-medium">{(c.points_balance||0).toLocaleString('vi-VN')}</td>
+                      <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/70 tabular-nums font-medium">{(c.lifetime_points||0).toLocaleString('vi-VN')}</td>
                       {canWrite && (
                         <td className="px-3.5 py-3 border-b border-white/[0.05]">
                           <div className="flex items-center gap-1.5">
@@ -379,7 +357,7 @@ export default function CustomersView({ userRole }) {
                     </tr>
                     {expandedCustomerId === c.customer_id && (
                       <tr key={"history-" + c.customer_id}>
-                        <td colSpan={canWrite ? 9 : 8} className="p-0 border-b border-white/[0.06]">
+                        <td colSpan={canWrite ? 10 : 9} className="p-0 border-b border-white/[0.06]">
                           <CustomerInteractionHistory customerId={c.customer_id} />
                         </td>
                       </tr>
@@ -387,7 +365,7 @@ export default function CustomersView({ userRole }) {
                     </Fragment>
                   );
                 }) : (
-                  <tr><td colSpan={canWrite?9:8} className="px-3.5 py-10 text-center text-white/25 text-sm">Không có khách hàng</td></tr>
+                  <tr><td colSpan={canWrite?10:9} className="px-3.5 py-10 text-center text-white/25 text-sm">Không có khách hàng</td></tr>
                 )}
               </tbody>
             </table>

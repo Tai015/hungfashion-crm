@@ -314,7 +314,7 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
             email: 'timeline-customer@example.test',
             gender: 'Other',
             customer_tier: 'Regular',
-            loyalty_point: 25,
+            points_balance: 25,
             account_id: 12,
             account_status: 'Active',
           }],

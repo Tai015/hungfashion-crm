@@ -55,7 +55,9 @@ export default function CustomerLoyaltyView() {
         <div>
           <p className="m-0 text-sm text-white/55">Số dư hiện tại</p>
           <p className="m-0 mt-1 text-2xl font-bold text-orange-300">{Number(data.balance).toLocaleString('vi-VN')} điểm</p>
-          <p className="m-0 mt-1 text-sm text-white/55">Hạng khách hàng: <strong className="text-white/80">{data.tier}</strong></p>
+          <p className="m-0 mt-1 text-sm text-white/55">Tổng điểm đã tích lũy: <strong className="text-white/80">{Number(data.lifetimePoints).toLocaleString('vi-VN')} điểm</strong></p>
+          <p className="m-0 mt-1 text-sm text-white/55">Hạng thành viên: <strong className="text-white/80">{data.tier}</strong></p>
+          <p className="m-0 mt-1 text-xs text-white/40">Đổi điểm không làm giảm tổng điểm tích lũy hoặc hạng thành viên.</p>
         </div>
       </section>
       <section className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-5">

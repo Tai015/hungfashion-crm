@@ -227,7 +227,7 @@ function CustomersTab({ from, to }) {
   const genderChart = gender.map(row => ({ label: CUSTOMER_GENDER_LABELS[row.gender] || 'Chưa có thông tin', value: Number(row.count) || 0 }));
   const rows = [
     ...ageRows.map(row => ['Độ tuổi', row.ageBand, Number(row.customerCount) || 0, Number(row.percent) || 0, '', '']),
-    ...tier.map(row => ['Hạng khách hàng', CUSTOMER_TIER_LABELS[row.customer_tier] || 'Chưa phân hạng', Number(row.count) || 0, null, '', '']),
+    ...tier.map(row => ['Hạng thành viên', CUSTOMER_TIER_LABELS[row.customer_tier] || 'Chưa phân hạng', Number(row.count) || 0, null, '', '']),
     ...gender.map(row => ['Giới tính', CUSTOMER_GENDER_LABELS[row.gender] || 'Chưa có thông tin', Number(row.count) || 0, null, '', '']),
     ...segmentRows.map(row => ['Phân khúc chi tiêu', CUSTOMER_SPENDING_SEGMENT_LABELS[row.segment] || row.segment, Number(row.customer_count) || 0, null, Number(row.lifetime_avg_spent) || 0, Number(row.period_avg_spent) || 0]),
     ...interestRows.map(row => ['Sở thích', row.interest, Number(row.count) || 0, Number(row.percent) || 0, '', '']),

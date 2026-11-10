@@ -236,10 +236,10 @@ router.get('/dashboard', async (req, res) => {
 
         // Khách theo hạng
         pool.query(`
-          SELECT customer_tier, COUNT(*)::int AS count
+          SELECT customer_tier_for_points(lifetime_points) AS customer_tier, COUNT(*)::int AS count
           FROM customer
           WHERE ($1::date IS NULL OR (${localTimestampRangeSql('registered_at', 1, 2)}))
-          GROUP BY customer_tier ORDER BY count DESC
+          GROUP BY customer_tier_for_points(lifetime_points) ORDER BY count DESC
         `, [dateRange.from, dateRange.to]),
 
         // Khách theo giới tính

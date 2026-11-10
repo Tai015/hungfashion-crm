@@ -15,7 +15,7 @@ router.get('/me', async (req, res) => {
 
   try {
     const { rows: [customer] } = await pool.query(
-      'SELECT loyalty_point, customer_tier FROM customer WHERE customer_id = $1',
+      'SELECT points_balance, lifetime_points, customer_tier_for_points(lifetime_points) AS customer_tier FROM customer WHERE customer_id = $1',
       [customerId],
     );
     if (!customer) return res.status(404).json({ message: 'Không tìm thấy hồ sơ khách hàng.' });
@@ -34,7 +34,8 @@ router.get('/me', async (req, res) => {
     ]);
 
     res.json({
-      balance: customer.loyalty_point,
+      balance: customer.points_balance,
+      lifetimePoints: customer.lifetime_points,
       tier: customer.customer_tier,
       history,
       total: count.total,
