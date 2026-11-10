@@ -156,16 +156,21 @@ router.get('/mine', async (req, res) => {
 // GET /api/surveys – danh sách khảo sát
 router.get('/', async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, from, to } = req.query;
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const isValidRangeDate = value => typeof value === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(value)
+      && !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`))
+      && new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value;
     const page = Number(req.query.page ?? 1);
     const limit = Number(req.query.limit ?? 20);
     if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 100) {
       return res.status(400).json({ message: 'Tham số phân trang không hợp lệ.' });
     }
     if ((status !== undefined && (typeof status !== 'string' || !['Draft', 'Active', 'Closed'].includes(status)))
-      || search.length > 100) {
-      return res.status(400).json({ message: 'Bộ lọc khảo sát không hợp lệ.' });
+      || search.length > 100
+      || ((from === undefined) !== (to === undefined))
+      || (from !== undefined && (!isValidRangeDate(from) || !isValidRangeDate(to) || from > to))) {
+      return res.status(400).json({ message: 'Bộ lọc khảo sát hoặc khoảng ngày không hợp lệ.' });
     }
     const offset = (page - 1) * limit;
     const conditions = [];
@@ -177,7 +182,13 @@ router.get('/', async (req, res) => {
     }
     if (search) {
       params.push(`%${search}%`);
-      conditions.push(`s.title ILIKE $${params.length}`);
+      conditions.push(`s.title ILIKE ${params.length}`);
+    }
+    if (from !== undefined) {
+      params.push(to);
+      conditions.push(`(s.start_date IS NULL OR s.start_date <= ${params.length}::date)`);
+      params.push(from);
+      conditions.push(`(s.end_date IS NULL OR s.end_date >= ${params.length}::date)`);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
