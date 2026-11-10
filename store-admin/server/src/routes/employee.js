@@ -94,4 +94,41 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+
+// DELETE /api/employees/:id – chỉ cho phép xóa nhân viên đã ngừng hoạt động.
+router.delete('/:id', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: employeeRows } = await client.query(
+      'SELECT employee_id, account_id, is_active FROM employee WHERE employee_id = $1 FOR UPDATE',
+      [req.params.id],
+    );
+    if (!employeeRows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Không tìm thấy nhân viên.' });
+    }
+    const employee = employeeRows[0];
+    if (employee.is_active) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ message: 'Không thể xóa nhân viên đang hoạt động. Hãy ngừng hoạt động trước.' });
+    }
+    // Khóa tài khoản đăng nhập liên kết (nếu có), giữ lại dấu vết tài khoản.
+    if (employee.account_id) {
+      await client.query("UPDATE account SET status = 'Blocked' WHERE account_id = $1", [employee.account_id]);
+    }
+    await client.query('DELETE FROM employee WHERE employee_id = $1', [employee.employee_id]);
+    await client.query('COMMIT');
+    return res.json({ message: 'Đã xóa nhân viên.' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    if (error.code === '23503') {
+      return res.status(409).json({ message: 'Không thể xóa nhân viên vì hồ sơ đang được sử dụng trong chứng từ hoặc dữ liệu lịch sử.' });
+    }
+    return res.status(500).json({ message: 'Không thể xóa nhân viên.' });
+  } finally {
+    client.release();
+  }
+});
+
 export default router;
