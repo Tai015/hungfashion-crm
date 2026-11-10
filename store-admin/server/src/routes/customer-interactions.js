@@ -5,11 +5,12 @@ const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
 const DEFAULT_RANGE_MONTHS = 12;
 
-function encodeCursor(row, includeOlder) {
+function encodeCursor(row, includeOlder, purpose = 'next') {
   return Buffer.from(JSON.stringify({
     occurredAt: new Date(row.occurred_at).toISOString(),
     interactionId: row.interaction_id,
     includeOlder,
+    purpose,
   })).toString('base64url');
 }
 
@@ -22,11 +23,13 @@ function decodeCursor(value) {
       || !decoded.interactionId
       || typeof decoded.occurredAt !== 'string'
       || !Number.isFinite(Date.parse(decoded.occurredAt))
-      || typeof decoded.includeOlder !== 'boolean') return null;
+      || typeof decoded.includeOlder !== 'boolean'
+      || !['next', 'older'].includes(decoded.purpose)) return null;
     return {
       occurredAt: new Date(decoded.occurredAt).toISOString(),
       interactionId: decoded.interactionId,
       includeOlder: decoded.includeOlder,
+      purpose: decoded.purpose,
     };
   } catch {
     return null;
@@ -57,6 +60,12 @@ export function createCustomerInteractionsRouter(database = pool) {
     if (req.query.cursor != null && !cursor) {
       return res.status(400).json({ message: 'Con trỏ phân trang không hợp lệ hoặc không khớp bộ lọc.' });
     }
+    if (cursor && (
+      (cursor.purpose === 'next' && cursor.includeOlder !== includeOlder)
+      || (cursor.purpose === 'older' && (includeOlder !== true || cursor.includeOlder !== false))
+    )) {
+      return res.status(400).json({ message: 'Con trỏ phân trang không khớp phạm vi lịch sử.' });
+    }
 
     const params = [customerId];
     const conditions = ['customer_id = $1'];
@@ -85,7 +94,7 @@ export function createCustomerInteractionsRouter(database = pool) {
         limit: rawLimit,
         hasMore,
         nextCursor: hasMore && lastRow ? encodeCursor(lastRow, includeOlder) : null,
-        olderCursor: !includeOlder && lastRow ? encodeCursor(lastRow, true) : null,
+        olderCursor: !includeOlder && lastRow ? encodeCursor(lastRow, false, 'older') : null,
         range: includeOlder ? 'all' : `last-${DEFAULT_RANGE_MONTHS}-months`,
       });
     } catch (error) {
