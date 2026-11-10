@@ -137,7 +137,7 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="m-0 text-sm font-semibold">Biến thể sản phẩm</h3>
-                <p className="m-0 mt-1 text-xs text-white/45">Thêm tổ hợp kích cỡ, màu, mã SKU và tồn kho ban đầu.</p>
+                <p className="m-0 mt-1 text-xs text-white/45">Nếu không thêm biến thể, hệ thống tự tạo một biến thể “Mặc định” với tồn kho ban đầu bằng 0.</p>
               </div>
               <button type="button" className={BTN_GHOST} onClick={() => setVariants(current => [...current, { size_id:'', color_id:'', sku:'', quantity:'0' }])}>
                 <Plus size={14}/> Thêm biến thể
