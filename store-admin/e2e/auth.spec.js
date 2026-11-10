@@ -9,8 +9,13 @@ async function gotoApp(page, path) {
   // The Preview may not have a reachable API. Dismiss the app's non-blocking
   // connectivity warning so this read-only UI check can still inspect the form.
   const backendWarning = page.getByRole('heading', { name: 'Không kết nối được máy chủ' });
+  // The warning is opened asynchronously after the app checks API availability.
+  // Wait briefly for that check before inspecting the form, otherwise the modal
+  // can appear after the test has already tried to locate the submit button.
+  await backendWarning.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
   if (await backendWarning.isVisible().catch(() => false)) {
     await page.getByRole('button', { name: 'Đóng' }).click();
+    await expect(backendWarning).toBeHidden();
   }
 
   // Vercel Deployment Protection renders its own login page instead of the app.
