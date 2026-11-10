@@ -227,7 +227,7 @@ router.get('/stats/rating', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT rating, COUNT(*)::int AS count
        FROM feedback WHERE rating IS NOT NULL
-         AND ($1::date IS NULL OR (created_at >= $1::date AND created_at < $2::date + INTERVAL '1 day'))
+         AND ($1::date IS NULL OR (created_at >= ($1::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh') AND created_at < (($2::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')))
        GROUP BY rating ORDER BY rating DESC`,
       [range.from, range.to],
     );
