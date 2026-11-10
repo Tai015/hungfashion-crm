@@ -189,7 +189,7 @@ jobs:
 
       - name: Run authentication API E2E
         working-directory: store-admin
-        run: npx playwright test e2e/auth-api.spec.js
+        run: npx playwright test e2e/auth-api-ci.spec.js
 
       - name: Print API log on failure
         if: failure()
