@@ -83,7 +83,7 @@ function VariantModal({ product, onAdd, onClose }) {
                           disabled={v.quantity<=0}
                           checked={selected?.variant_id===v.variant_id}
                           onChange={() => { setSelected(v); setQty(1); }} />
-                        <span className="flex-1 text-sm">{v.size_name} — {v.color_name}</span>
+                        <span className="flex-1 text-sm">{v.variant_label || (v.is_default ? 'Mặc định' : `${v.size_name} — ${v.color_name}`)}</span>
                         <span className={`portal-stock text-xs ${v.quantity<=5?'is-low':''}`}>Còn {v.quantity}</span>
                       </label>
                     ))}

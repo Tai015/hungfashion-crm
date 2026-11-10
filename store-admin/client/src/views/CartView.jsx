@@ -54,7 +54,7 @@ export default function CartView({ onCheckout }) {
               {/* Thông tin */}
               <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                 <strong className="text-[0.95rem] font-semibold text-[#f5f0eb] truncate">{item.product_name}</strong>
-                <p className="m-0 text-white/40 text-xs">{item.size_name} · {item.color_name} · SKU: {item.sku}</p>
+                <p className="m-0 text-white/40 text-xs">{item.variant_label || [item.size_name, item.color_name].filter(Boolean).join(' · ') || 'Mặc định'} · SKU: {item.sku || '—'}</p>
                 <p className="m-0 text-orange-400 text-sm font-bold">{fmtVND(item.selling_price)} / sản phẩm</p>
               </div>
 

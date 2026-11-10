@@ -212,12 +212,16 @@ router.get('/:id', async (req, res) => {
     if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
 
     const { rows: variants } = await pool.query(
-      `SELECT pv.*, s.size_name, co.color_name, co.hex_code
+      `SELECT pv.*,
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE s.size_name END AS size_name,
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE co.color_name END AS color_name,
+              co.hex_code,
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE CONCAT_WS(' / ', s.size_name, co.color_name) END AS variant_label
        FROM product_variant pv
-       JOIN size s ON s.size_id = pv.size_id
-       JOIN color co ON co.color_id = pv.color_id
+       LEFT JOIN size s ON s.size_id = pv.size_id
+       LEFT JOIN color co ON co.color_id = pv.color_id
        WHERE pv.product_id = $1 AND pv.is_active = TRUE
-       ORDER BY s.size_id, co.color_name`,
+       ORDER BY pv.is_default DESC, s.size_id NULLS FIRST, co.color_name NULLS FIRST`,
       [req.params.id]
     );
 
@@ -248,12 +252,28 @@ router.post('/', receiveProductImage, parseProductImage, async (req, res) => {
     );
     const product = rows[0];
 
-    for (const v of variants) {
+    if (variants.length === 0) {
       await client.query(
-        `INSERT INTO product_variant (product_id, size_id, color_id, sku, quantity)
-         VALUES ($1,$2,$3,$4,$5)`,
-        [product.product_id, v.size_id, v.color_id, v.sku, v.quantity ?? 0]
+        `INSERT INTO product_variant (product_id, size_id, color_id, sku, quantity, is_default)
+         VALUES ($1, NULL, NULL, $2, 0, TRUE)`,
+        [product.product_id, `DEFAULT-${product.product_id}`]
       );
+    } else {
+      for (const v of variants) {
+        if (!v || !Number.isInteger(Number(v.size_id)) || Number(v.size_id) < 1
+          || !Number.isInteger(Number(v.color_id)) || Number(v.color_id) < 1
+          || typeof v.sku !== 'string' || !v.sku.trim()
+          || !Number.isInteger(Number(v.quantity ?? 0)) || Number(v.quantity ?? 0) < 0) {
+          const error = new Error('Thông tin biến thể không hợp lệ.');
+          error.status = 400;
+          throw error;
+        }
+        await client.query(
+          `INSERT INTO product_variant (product_id, size_id, color_id, sku, quantity, is_default)
+           VALUES ($1,$2,$3,$4,$5,FALSE)`,
+          [product.product_id, Number(v.size_id), Number(v.color_id), v.sku.trim(), Number(v.quantity ?? 0)]
+        );
+      }
     }
 
     await client.query('COMMIT');
@@ -265,7 +285,7 @@ router.post('/', receiveProductImage, parseProductImage, async (req, res) => {
     console.error('[products] create failed:', err);
     const storageFailed = req.file && !uploadedImage;
     const cloudinaryMode = String(process.env.MEDIA_STORAGE || '').trim().toLowerCase() === 'cloudinary';
-    res.status(storageFailed && cloudinaryMode ? 502 : 500).json({
+    res.status(storageFailed && cloudinaryMode ? 502 : err.status || 500).json({
       message: storageFailed ? `Không thể lưu ảnh${cloudinaryMode ? ' lên Cloudinary' : ''}. Vui lòng thử lại.` : err.message,
     });
   } finally {

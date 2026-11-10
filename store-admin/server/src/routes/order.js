@@ -313,12 +313,14 @@ router.get('/mine/:id', async (req, res) => {
     const { rows: details } = await pool.query(
       `SELECT od.detail_id, od.quantity, od.unit_price, od.subtotal, p.product_id,
               pv.sku, p.product_name, p.image_url,
-              s.size_name, co.color_name
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE s.size_name END AS size_name,
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE co.color_name END AS color_name,
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE CONCAT_WS(' / ', s.size_name, co.color_name) END AS variant_label
        FROM order_detail od
        JOIN product_variant pv ON pv.variant_id = od.variant_id
-       JOIN product p  ON p.product_id = pv.product_id
-       JOIN size s     ON s.size_id    = pv.size_id
-       JOIN color co   ON co.color_id  = pv.color_id
+       JOIN product p ON p.product_id = pv.product_id
+       LEFT JOIN size s ON s.size_id = pv.size_id
+       LEFT JOIN color co ON co.color_id = pv.color_id
        WHERE od.order_id = $1`,
       [req.params.id]
     );
@@ -459,12 +461,14 @@ router.get('/:id', async (req, res) => {
     const { rows: details } = await pool.query(
       `SELECT od.detail_id, od.quantity, od.unit_price, od.subtotal,
               pv.sku, p.product_name, p.image_url,
-              s.size_name, co.color_name
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE s.size_name END AS size_name,
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE co.color_name END AS color_name,
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE CONCAT_WS(' / ', s.size_name, co.color_name) END AS variant_label
        FROM order_detail od
        JOIN product_variant pv ON pv.variant_id = od.variant_id
-       JOIN product p  ON p.product_id = pv.product_id
-       JOIN size s     ON s.size_id = pv.size_id
-       JOIN color co   ON co.color_id = pv.color_id
+       JOIN product p ON p.product_id = pv.product_id
+       LEFT JOIN size s ON s.size_id = pv.size_id
+       LEFT JOIN color co ON co.color_id = pv.color_id
        WHERE od.order_id = $1`,
       [req.params.id]
     );

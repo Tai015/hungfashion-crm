@@ -43,12 +43,15 @@ router.get('/', async (req, res) => {
       `SELECT pv.variant_id, pv.sku, pv.quantity,
               p.product_id, p.product_name, p.selling_price,
               c.category_name,
-              s.size_name, co.color_name, co.hex_code
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE s.size_name END AS size_name,
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE co.color_name END AS color_name,
+              CASE WHEN pv.is_default THEN 'Mặc định' ELSE CONCAT_WS(' / ', s.size_name, co.color_name) END AS variant_label,
+              co.hex_code
        FROM product_variant pv
-       JOIN product p  ON p.product_id = pv.product_id
+       JOIN product p ON p.product_id = pv.product_id
        JOIN category c ON c.category_id = p.category_id
-       JOIN size s     ON s.size_id = pv.size_id
-       JOIN color co   ON co.color_id = pv.color_id
+       LEFT JOIN size s ON s.size_id = pv.size_id
+       LEFT JOIN color co ON co.color_id = pv.color_id
        ${where}
        ORDER BY pv.quantity ASC
        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
