@@ -115,7 +115,7 @@ function DistributionChart({ items = [], formatValue = formatCount }) {
 
 function csvValue(value) {
   const text = String(value ?? '');
-  const safe = /^[\\s]*[=+\\-@\\t\\r]/.test(text) ? `'${text}` : text;
+  const safe = /^[\s]*[=+\-@\t\r]/.test(text) ? `'${text}` : text;
   return `"${safe.replaceAll('"', '""')}"`;
 }
 
