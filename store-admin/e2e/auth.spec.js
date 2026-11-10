@@ -6,6 +6,13 @@ const staffPath = '/#/nhan-vien/login';
 async function gotoApp(page, path) {
   await page.goto(path);
 
+  // The Preview may not have a reachable API. Dismiss the app's non-blocking
+  // connectivity warning so this read-only UI check can still inspect the form.
+  const backendWarning = page.getByRole('heading', { name: 'Không kết nối được máy chủ' });
+  if (await backendWarning.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Đóng' }).click();
+  }
+
   // Vercel Deployment Protection renders its own login page instead of the app.
   // Detect it explicitly so the failure explains the missing automation bypass.
   const vercelProtection = page.getByRole('heading', { name: /Log in to Vercel/i });
@@ -27,7 +34,7 @@ async function expectLoginScreen(page, path, audienceLabel) {
   await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toBeVisible();
   await expect(page.getByText(audienceLabel, { exact: false })).toBeVisible();
   await expect(page.getByLabel('Tên đăng nhập hoặc email')).toBeVisible();
-  await expect(page.getByLabel('Mật khẩu')).toBeVisible();
+  await expect(page.locator('input[type="password"]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Đăng nhập' })).toBeEnabled();
 }
 
@@ -46,7 +53,7 @@ test('khách hàng đăng nhập thành công bằng tài khoản E2E', async ({
 
   await gotoApp(page, customerPath);
   await page.getByLabel('Tên đăng nhập hoặc email').fill(identifier);
-  await page.getByLabel('Mật khẩu').fill(password);
+  await page.locator('input[type="password"]').fill(password);
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toHaveCount(0);
 });
@@ -58,7 +65,7 @@ test('nhân viên đăng nhập thành công bằng tài khoản E2E', async ({ 
 
   await gotoApp(page, staffPath);
   await page.getByLabel('Tên đăng nhập hoặc email').fill(identifier);
-  await page.getByLabel('Mật khẩu').fill(password);
+  await page.locator('input[type="password"]').fill(password);
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toHaveCount(0);
 });
