@@ -151,6 +151,9 @@ test('khách hàng đăng ký bằng tài khoản cũ phải nhận lỗi trùng
 });
 
 test('đăng nhập khách hàng bằng tài khoản cũ và lưu token trong sessionStorage mặc định', async ({ page }) => {
+  await page.route('**/api/**', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({}),
+  }));
   await page.route('**/api/auth/login', route => {
     const submitted = route.request().postDataJSON();
     expect(submitted.audience).toBe('customer');
@@ -257,27 +260,17 @@ test('hiển thị đồng hồ đếm ngược và khóa nút khi API giới h�
 
 
 test('nhân viên mở được lịch sử tương tác của khách hàng trong màn hình quản lý khách hàng', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.sessionStorage.setItem('hung-fashion-access-token', 'timeline-admin-token');
-  });
   await page.route('**/api/**', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({}),
   }));
-  await page.route('**/api/health', route => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ ok: true }),
-  }));
-  await page.route('**/api/auth/me', route => route.fulfill({
+  await page.route('**/api/auth/login', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({
-      account_id: 1,
-      username: 'timeline-admin',
-      full_name: 'Timeline Admin',
-      role: 'ADMIN',
+      token: 'timeline-admin-token',
+      user: { account_id: 1, username: 'timeline-admin', full_name: 'Timeline Admin', role: 'ADMIN' },
     }),
   }));
   await page.route('**/api/auth/heartbeat', route => route.fulfill({
@@ -323,10 +316,11 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
     }),
   }));
 
-  await page.goto('/#/admin/customers');
+  await login(page, '/#/nhan-vien/login', EXISTING_STAFF, 'staff');
+  await page.evaluate(() => { window.location.hash = '#/admin/customers'; });
   await expect(page.getByRole('heading', { name: 'Quản lý khách hàng' })).toBeVisible();
   await page.getByRole('button', { name: 'Xem lịch sử tương tác của E2E Timeline Customer' }).click();
   await expect(page.getByText('Lịch sử tương tác')).toBeVisible();
   await expect(page.getByText('Đặt đơn hàng #9001')).toBeVisible();
-  await expect(page.getByText(/250\.000/)).toBeVisible();
+  await expect(page.getByText(/250\\.000/)).toBeVisible();
 });
