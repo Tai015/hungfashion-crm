@@ -21,7 +21,7 @@ function accountInput(role, identifier, password) {
   return {
     role,
     username: isEmail ? `e2e_${role.toLowerCase()}` : identifier,
-    email: isEmail ? identifier.toLowerCase() : null,
+    email: isEmail ? identifier.toLowerCase() : (role === 'KHACH_HANG' ? 'e2e.customer@hungfashion.test' : null),
     password,
     fullName: role === 'KHACH_HANG' ? 'E2E Customer (disposable DB)' : 'E2E Staff (disposable DB)',
   };

@@ -151,6 +151,9 @@ test('khách hàng đăng ký bằng tài khoản cũ phải nhận lỗi trùng
 });
 
 test('đăng nhập khách hàng bằng tài khoản cũ và lưu token trong sessionStorage mặc định', async ({ page }) => {
+  await page.route('**/api/**', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({}),
+  }));
   await page.route('**/api/auth/login', route => {
     const submitted = route.request().postDataJSON();
     expect(submitted.audience).toBe('customer');
@@ -253,4 +256,109 @@ test('hiển thị đồng hồ đếm ngược và khóa nút khi API giới h�
 
   await expect(page.getByRole('status')).toContainText(/01:0[0-5]/);
   await expect(page.getByRole('button', { name: /Vui lòng chờ 01:0[0-5]/ })).toBeDisabled();
+});
+
+
+test('nhân viên mở được lịch sử tương tác của khách hàng trong màn hình quản lý khách hàng', async ({ page }) => {
+  await page.route('**/api/**', async route => {
+    const { pathname } = new URL(route.request().url());
+    // The broad matcher also matches Vite modules under /src/api/; let those load normally.
+    if (!pathname.startsWith('/api/')) return route.continue();
+    if (pathname === '/api/auth/login') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          token: 'timeline-admin-token',
+          user: { account_id: 1, username: 'timeline-admin', full_name: 'Timeline Admin', role: 'ADMIN' },
+        }),
+      });
+    }
+    if (pathname === '/api/auth/heartbeat') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ role: 'ADMIN' }),
+      });
+    }
+    if (pathname === '/api/reports/summary') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          revenue: 0,
+          activeUsers: 0,
+          orders: 0,
+          conversionPercent: 0,
+          growthPercent: 0,
+          conversionChange: 0,
+        }),
+      });
+    }
+    if (pathname === '/api/reports/top-products' || pathname === '/api/reports/revenue') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+    }
+    if (pathname === '/api/customers') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [{
+            customer_id: 12,
+            full_name: 'E2E Timeline Customer',
+            phone: '0900000012',
+            email: 'timeline-customer@example.test',
+            gender: 'Other',
+            customer_tier: 'Regular',
+            loyalty_point: 25,
+            account_id: 12,
+            account_status: 'Active',
+          }],
+          total: 1,
+        }),
+      });
+    }
+    if (pathname === '/api/customers/12/interactions') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [{
+            interaction_id: 'order:9001',
+            customer_id: 12,
+            interaction_type: 'order',
+            title: 'Đặt đơn hàng #9001',
+            summary: 'Trạng thái: Pending · Tổng tiền: 250.000 ₫',
+            occurred_at: '2026-11-10T08:00:00.000Z',
+          }],
+          limit: 20,
+          hasMore: false,
+          nextCursor: null,
+          olderCursor: null,
+          range: 'last-12-months',
+        }),
+      });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    });
+  });
+
+  // Use the mobile layout so the test follows the real menu interaction:
+  // open the navigation drawer, then select the Khách hàng item.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login(page, '/#/nhan-vien/login', EXISTING_STAFF, 'staff');
+  await page.locator('button.dashboard-mobile-menu').click();
+  await page.getByRole('button', { name: 'Khách hàng', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Quản lý khách hàng' })).toBeVisible();
+  await page.getByRole('button', { name: 'Xem lịch sử tương tác của E2E Timeline Customer' }).click();
+  await expect(page.getByText('Lịch sử tương tác')).toBeVisible();
+  await expect(page.getByText('Đặt đơn hàng #9001')).toBeVisible();
+  await expect(page.getByText(/250\.000/)).toBeVisible();
 });

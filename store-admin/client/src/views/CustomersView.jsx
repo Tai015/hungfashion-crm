@@ -1,8 +1,8 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { Fragment, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { useModalEffects } from '../hooks/useModalEffects';
-import { ChevronLeft, ChevronRight, LockKeyhole, Pencil, Trash2, UnlockKeyhole, UserPlus, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LockKeyhole, Pencil, Trash2, UnlockKeyhole, UserPlus, Search, X, Clock3, ChevronDown, ChevronUp } from 'lucide-react';
 import { apiFetch } from '../api';
 import TierBadge from '../components/TierBadge';
 import Spinner from '../components/Spinner';
@@ -11,8 +11,11 @@ import { confirmDestructiveAction } from '../utils/confirmAction';
 import { useSweetAlertMessages } from '../utils/notifications';
 
 const TIERS   = ['New','Regular','Silver','Gold','VIP'];
+const TIER_LABEL = { New:'Mới', Regular:'Thường', Silver:'Bạc', Gold:'Vàng', VIP:'VIP' };
+const GENDER_LABEL = { Female:'Nữ', Male:'Nam', Other:'Khác' };
+const formatAge = age => Number.isInteger(age) && age >= 0 ? `${age} tuổi` : 'Chưa cập nhật';
 const GENDERS = [['','Tất cả'],['Female','Nữ'],['Male','Nam'],['Other','Khác']];
-const EMPTY   = { full_name:'', phone:'', email:'', gender:'' };
+const EMPTY   = { full_name:'', phone:'', email:'', gender:'Other', date_of_birth:'' };
 const LIMIT   = 20;
 
 const INPUT  = 'w-full h-10 px-3 bg-white/[0.07] border border-white/[0.12] rounded-xl text-[#f5f0eb] text-sm placeholder-white/22 outline-none focus:border-violet-400/60 focus:bg-white/10 focus:ring-2 focus:ring-violet-400/[0.15] transition-all dark-input';
@@ -42,7 +45,7 @@ function CustomerModal({ customer, onClose, onSaved }) {
   useModalEffects(true, onClose);
   const isEdit = Boolean(customer);
   const [form, setForm] = useState(customer
-    ? { full_name:customer.full_name||'', phone:customer.phone||'', email:customer.email||'', gender:customer.gender||'' }
+    ? { full_name:customer.full_name||'', phone:customer.phone||'', email:customer.email||'', gender:customer.gender||'Other', date_of_birth:customer.date_of_birth ? String(customer.date_of_birth).slice(0,10) : '' }
     : EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -50,8 +53,18 @@ function CustomerModal({ customer, onClose, onSaved }) {
   const save = async e => {
     e.preventDefault(); setBusy(true); setError('');
     try {
-      if (isEdit) await apiFetch(`/api/customers/${customer.customer_id}`, { method:'PATCH', body:form });
-      else await apiFetch('/api/customers', { method:'POST', body:{ ...form, gender:form.gender||null, interests:[] } });
+      if (!form.date_of_birth) throw new Error('Vui lòng nhập ngày sinh.');
+      const birthDate = new Date(`${form.date_of_birth}T00:00:00`);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) age -= 1;
+      if (Number.isNaN(birthDate.getTime()) || birthDate > new Date(today.getFullYear(), today.getMonth(), today.getDate()) || age < 0 || age > 120) {
+        throw new Error('Ngày sinh không hợp lệ. Tuổi khách hàng phải từ 0 đến 120.');
+      }
+      const existingDetails = isEdit ? await apiFetch(`/api/customers/${customer.customer_id}`) : null;
+      const payload = { ...form, gender:form.gender || 'Other', interests:existingDetails?.interests || [] };
+      if (isEdit) await apiFetch(`/api/customers/${customer.customer_id}`, { method:'PUT', body:payload });
+      else await apiFetch('/api/customers', { method:'POST', body:payload });
       onSaved();
     }
     catch(err) { setError(err.message); } finally { setBusy(false); }
@@ -71,10 +84,11 @@ function CustomerModal({ customer, onClose, onSaved }) {
             <Field label="Họ tên *"><input required maxLength={150} placeholder="Nguyễn Văn A" className={INPUT} value={form.full_name} onChange={e => setForm({...form, full_name:e.target.value})} /></Field>
             <Field label="Số điện thoại"><input type="tel" maxLength={30} placeholder="09xxxxxxxx" className={INPUT} value={form.phone} onChange={e => setForm({...form, phone:e.target.value})} /></Field>
             <Field label="Email"><input type="email" maxLength={150} placeholder="email@example.com" className={INPUT} value={form.email} onChange={e => setForm({...form, email:e.target.value})} /></Field>
+            <Field label="Ngày sinh *"><input type="date" required max={new Date().toISOString().slice(0,10)} className={INPUT} value={form.date_of_birth} onChange={e => setForm({...form, date_of_birth:e.target.value})} /></Field>
             <Field label="Giới tính">
               <select className={SELECT} value={form.gender} onChange={e => setForm({...form, gender:e.target.value})}>
-                <option value="">Chưa cung cấp</option>
-                <option value="Female">Nữ</option><option value="Male">Nam</option><option value="Other">Khác</option>
+                <option value="Other">Khác</option>
+                <option value="Female">Nữ</option><option value="Male">Nam</option>
               </select>
             </Field>
           </div>
@@ -89,6 +103,97 @@ function CustomerModal({ customer, onClose, onSaved }) {
 }
 
 const TIER_COLOR = { New:'#64748b', Regular:'#0ea5e9', Silver:'#94a3b8', Gold:'#f59e0b', VIP:'#a855f7' };
+
+function CustomerInteractionHistory({ customerId }) {
+  const [items, setItems] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [olderCursor, setOlderCursor] = useState(null);
+  const [includeOlder, setIncludeOlder] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    setItems([]);
+    setNextCursor(null);
+    setOlderCursor(null);
+    setIncludeOlder(false);
+    apiFetch('/api/customers/' + customerId + '/interactions?limit=20')
+      .then(result => {
+        if (!active) return;
+        setItems(result.data || []);
+        setNextCursor(result.nextCursor);
+        setOlderCursor(result.olderCursor);
+      })
+      .catch(err => { if (active) setError(err.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [customerId]);
+
+  const loadMore = async (older = false) => {
+    const cursor = older ? olderCursor : nextCursor;
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    setError('');
+    try {
+      const all = older || includeOlder;
+      const query = new URLSearchParams({ limit: '20', cursor });
+      if (all) query.set('all', '1');
+      const result = await apiFetch('/api/customers/' + customerId + '/interactions?' + query);
+      setItems(current => [...current, ...(result.data || [])]);
+      setNextCursor(result.nextCursor);
+      setOlderCursor(result.olderCursor);
+      if (older) setIncludeOlder(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const dateFormatter = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium', timeStyle: 'short' });
+  return (
+    <div className="px-5 py-4 bg-white/[0.035] border-t border-white/[0.08]">
+      <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-white/85">
+        <Clock3 size={15} className="text-violet-300" />
+        Lịch sử tương tác
+        <span className="text-xs font-normal text-white/35">({includeOlder ? 'Toàn bộ thời gian' : '12 tháng gần nhất'})</span>
+      </div>
+      {loading ? <div className="py-5 text-center text-sm text-white/45">Đang tải lịch sử...</div>
+        : error && !items.length ? <p className="py-3 text-sm text-rose-300">{error}</p>
+        : !items.length ? <p className="py-3 text-sm text-white/40">Chưa có hoạt động nào được ghi nhận.</p>
+        : (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.interaction_id} className="flex gap-3 rounded-xl border border-white/[0.07] bg-black/10 px-3.5 py-3">
+                <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-violet-300/80" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                    <p className="m-0 text-sm font-medium text-white/85">{{'login':'Đăng nhập','logout':'Đăng xuất','order_created':'Tạo đơn hàng','order_cancelled':'Hủy đơn hàng','payment_completed':'Thanh toán thành công','payment_refunded':'Hoàn tiền','feedback_submitted':'Gửi phản hồi','feedback_replied':'Nhân viên phản hồi','survey_invited':'Được mời khảo sát','survey_completed':'Hoàn thành khảo sát','promotion_assigned':'Nhận ưu đãi','promotion_used':'Sử dụng ưu đãi','loyalty_points_earned':'Tích điểm','loyalty_points_redeemed':'Đổi điểm','loyalty_points_adjusted':'Điều chỉnh điểm'}[item.interaction_type] || item.title}</p>
+                    <time className="text-[11px] text-white/35">{dateFormatter.format(new Date(item.occurred_at))}</time>
+                  </div>
+                  <p className="mt-1 mb-0 text-xs leading-relaxed text-white/48">{item.summary}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      {error && items.length > 0 && <p className="mt-2 text-xs text-rose-300">{error}</p>}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {nextCursor && <button type="button" className={BTN_GHOST} disabled={loadingMore} onClick={() => loadMore()}>
+          {loadingMore ? 'Đang tải...' : 'Xem thêm hoạt động'}
+        </button>}
+        {!includeOlder && olderCursor && <button type="button" className={BTN_GHOST} disabled={loadingMore} onClick={() => loadMore(true)}>
+          {loadingMore ? 'Đang tải...' : 'Xem toàn bộ lịch sử'}
+        </button>}
+      </div>
+    </div>
+  );
+}
+
 
 export default function CustomersView({ userRole }) {
   const [customers, setCustomers] = useState([]);
@@ -105,6 +210,7 @@ export default function CustomersView({ userRole }) {
   const [refresh, setRefresh] = useState(0);
   const [adding, setAdding]   = useState(false);
   const [editing, setEditing] = useState(null);
+  const [expandedCustomerId, setExpandedCustomerId] = useState(null);
   const canWrite = ['ADMIN','QL_KHACH_HANG'].includes(userRole);
 
   useEffect(() => {
@@ -141,7 +247,7 @@ export default function CustomersView({ userRole }) {
     setError(''); setNotice(''); setBusyCustomerId(customer.customer_id);
     try {
       const result = await apiFetch(`/api/customers/${customer.customer_id}/tier`, { method:'PATCH', body:{ tier:nextTier } });
-      setNotice(`Đã đổi hạng ${customer.full_name} thành ${result.customer_tier}.`);
+      setNotice(`Đã đổi hạng ${customer.full_name} thành ${TIER_LABEL[result.customer_tier] || result.customer_tier}.`);
       setRefresh(value => value + 1);
     } catch(err) { setError(err.message); }
     finally { setBusyCustomerId(null); }
@@ -181,12 +287,12 @@ export default function CustomersView({ userRole }) {
       <div className="flex items-center flex-wrap gap-2.5 px-4 py-3 bg-white/[0.06] border border-white/10 rounded-2xl backdrop-blur-xl">
         <div className="relative flex items-center flex-1">
           <Search size={14} className="absolute left-3 text-white/30 pointer-events-none"/>
-          <input className={`${INPUT} pl-9 flex-1`} placeholder="Tên, SĐT hoặc email..."
+          <input className={`${INPUT} pl-9 flex-1`} placeholder="Tìm theo tên, số điện thoại hoặc email..."
             value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
-        <FilterPopover title="Lọc khách hàng" activeCount={[search, tier, gender].filter(Boolean).length}
+        <FilterPopover title="Bộ lọc khách hàng" activeCount={[search, tier, gender].filter(Boolean).length}
           onClear={() => { setSearch(''); setTier(''); setGender(''); setPage(1); }}>
-          <label className="flex flex-col gap-1.5 text-xs text-white/65">Hạng khách hàng<select className={SELECT} value={tier} onChange={e => { setTier(e.target.value); setPage(1); }}><option value="">Tất cả hạng</option>{TIERS.map(t => <option key={t}>{t}</option>)}</select></label>
+          <label className="flex flex-col gap-1.5 text-xs text-white/65">Hạng khách hàng<select className={SELECT} value={tier} onChange={e => { setTier(e.target.value); setPage(1); }}><option value="">Tất cả hạng</option>{TIERS.map(t => <option key={t} value={t}>{TIER_LABEL[t]}</option>)}</select></label>
           <label className="flex flex-col gap-1.5 text-xs text-white/65">Giới tính<select className={SELECT} value={gender} onChange={e => { setGender(e.target.value); setPage(1); }}>{GENDERS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
         </FilterPopover>
       </div>
@@ -196,7 +302,7 @@ export default function CustomersView({ userRole }) {
       <div className={PANEL}>
         <div className="flex items-center justify-between gap-4">
           <h2 className="flex items-center gap-2.5 m-0 text-[1.05rem] font-semibold">
-            Danh sách
+            Danh sách khách hàng
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-violet-400/15 border border-violet-300/25 text-violet-200 text-xs font-semibold">
               {total.toLocaleString('vi-VN')} khách
             </span>
@@ -207,7 +313,7 @@ export default function CustomersView({ userRole }) {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  {['#','Họ tên','SĐT','Email','Giới tính','Hạng','Điểm', ...(canWrite?['Thao tác']:[])].map(h => (
+                  {['Mã','Họ tên','Số điện thoại','Email','Tuổi','Giới tính','Hạng khách hàng','Điểm tích lũy', ...(canWrite?['Thao tác']:[])].map(h => (
                     <th key={h} className="px-3.5 py-2.5 text-left text-[0.72rem] font-semibold tracking-[0.05em] uppercase text-white/38 border-b border-white/[0.08] whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -216,12 +322,24 @@ export default function CustomersView({ userRole }) {
                 {customers.length ? customers.map(c => {
                   const tc = TIER_COLOR[c.customer_tier] || '#64748b';
                   return (
+                    <Fragment key={c.customer_id}>
                     <tr key={c.customer_id} className="hover:bg-white/[0.04] transition-colors">
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/28 text-xs tabular-nums w-10">{c.customer_id}</td>
-                      <td className="px-3.5 py-3 border-b border-white/[0.05]"><strong className="text-[#f5f0eb] font-semibold">{c.full_name}</strong></td>
+                      <td className="px-3.5 py-3 border-b border-white/[0.05]">
+                        <div className="flex items-center gap-2">
+                          <strong className="text-[#f5f0eb] font-semibold">{c.full_name}</strong>
+                          <button type="button" className={ICON_BTN} title="Xem lịch sử tương tác"
+                            aria-label={"Xem lịch sử tương tác của " + c.full_name}
+                            aria-expanded={expandedCustomerId === c.customer_id}
+                            onClick={() => setExpandedCustomerId(current => current === c.customer_id ? null : c.customer_id)}>
+                            {expandedCustomerId === c.customer_id ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
+                          </button>
+                        </div>
+                      </td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{c.phone||'—'}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{c.email||'—'}</td>
-                      <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{c.gender||'—'}</td>
+                      <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/70">{formatAge(c.age)}</td>
+                      <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{GENDER_LABEL[c.gender] || 'Khác'}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05]">
                         {canWrite ? (
                           <select
@@ -231,15 +349,15 @@ export default function CustomersView({ userRole }) {
                             value={c.customer_tier||'New'}
                             disabled={busyCustomerId === c.customer_id}
                             onChange={event => changeCustomerTier(c, event.target.value)}>
-                            {TIERS.map(value => <option key={value} value={value}>{value}</option>)}
+                            {TIERS.map(value => <option key={value} value={value}>{TIER_LABEL[value]}</option>)}
                           </select>
-                        ) : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ color:tc, background:`${tc}18` }}>{c.customer_tier||'New'}</span>}
+                        ) : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ color:tc, background:`${tc}18` }}>{TIER_LABEL[c.customer_tier] || 'Mới'}</span>}
                       </td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/70 tabular-nums font-medium">{(c.loyalty_point||0).toLocaleString()}</td>
                       {canWrite && (
                         <td className="px-3.5 py-3 border-b border-white/[0.05]">
                           <div className="flex items-center gap-1.5">
-                            <button className={ICON_BTN} title="Chỉnh sửa" onClick={() => setEditing(c)}><Pencil size={14}/></button>
+                            <button className={ICON_BTN} title="Sửa thông tin khách hàng" onClick={() => setEditing(c)}><Pencil size={14}/></button>
                             <button
                               className={`${ICON_BTN} ${c.account_id ? (c.account_status === 'Blocked' ? 'border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/10' : 'border-amber-500/20 text-amber-300 hover:bg-amber-500/10') : 'opacity-35 cursor-not-allowed'}`}
                               title={!c.account_id ? 'Khách chưa có tài khoản đăng nhập' : c.account_status === 'Blocked' ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
@@ -259,9 +377,17 @@ export default function CustomersView({ userRole }) {
                         </td>
                       )}
                     </tr>
+                    {expandedCustomerId === c.customer_id && (
+                      <tr key={"history-" + c.customer_id}>
+                        <td colSpan={canWrite ? 9 : 8} className="p-0 border-b border-white/[0.06]">
+                          <CustomerInteractionHistory customerId={c.customer_id} />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   );
                 }) : (
-                  <tr><td colSpan={canWrite?8:7} className="px-3.5 py-10 text-center text-white/25 text-sm">Không có khách hàng</td></tr>
+                  <tr><td colSpan={canWrite?9:8} className="px-3.5 py-10 text-center text-white/25 text-sm">Không có khách hàng</td></tr>
                 )}
               </tbody>
             </table>

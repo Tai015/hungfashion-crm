@@ -1,0 +1,243 @@
+name: Database migrations CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "store-admin/server/sql/**"
+      - "store-admin/server/src/migrate.js"
+      - "store-admin/server/src/migrations.js"
+      - "store-admin/server/src/db.js"
+      - "store-admin/server/package.json"
+      - "store-admin/package-lock.json"
+      - ".github/workflows/database-migrations-ci.yml"
+  push:
+    branches:
+      - main
+      - feat/customer-interaction-history
+    paths:
+      - "store-admin/server/sql/**"
+      - "store-admin/server/src/migrate.js"
+      - "store-admin/server/src/migrations.js"
+      - "store-admin/server/src/db.js"
+      - "store-admin/server/package.json"
+      - "store-admin/package-lock.json"
+      - ".github/workflows/database-migrations-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-database-migrations:
+    name: Fresh PostgreSQL migration (000-021)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: store_admin_migration_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d store_admin_migration_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: store_admin_migration_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_SSL: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Apply all migrations
+        working-directory: store-admin
+        run: npm run db:migrate --workspace server
+
+      - name: Verify migration history and required database objects
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+
+          applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
+          test "$applied_count" = "21"
+
+          latest_version="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
+          test "$latest_version" = "021"
+
+          view_exists="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT to_regclass('public.customer_interaction_timeline') IS NOT NULL")"
+          test "$view_exists" = "t"
+
+          event_id_type="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='event_id'")"
+          test "$event_id_type" = "uuid"
+
+          legacy_event_id_type="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='legacy_event_id'")"
+          test "$legacy_event_id_type" = "text"
+
+          psql -h localhost -U postgres -d store_admin_migration_test -v ON_ERROR_STOP=1 -c "SELECT * FROM customer_interaction_timeline LIMIT 0"
+
+          # Exercise the view against real PostgreSQL rows, not only an empty SELECT.
+          psql -h localhost -U postgres -d store_admin_migration_test -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO customer (full_name, email) VALUES ('Timeline CI customer', 'timeline-ci@hungfashion.test');
+          INSERT INTO "order" (customer_id, order_channel)
+          SELECT customer_id, 'Website' FROM customer WHERE full_name = 'Timeline CI customer';
+          INSERT INTO survey (title) VALUES ('Timeline CI survey');
+          INSERT INTO survey_invitation (survey_id, customer_id)
+          SELECT s.survey_id, c.customer_id
+          FROM survey s CROSS JOIN customer c
+          WHERE s.title = 'Timeline CI survey'
+            AND c.full_name = 'Timeline CI customer';
+          SQL
+
+          timeline_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer'")"
+          test "$timeline_count" = "3"
+          order_event_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer' AND t.interaction_type = 'order'")"
+          test "$order_event_count" = "1"
+          survey_event_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer' AND t.interaction_type = 'survey_invitation'")"
+          test "$survey_event_count" = "1"
+
+          default_gender="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT gender::text FROM customer WHERE email = 'timeline-ci@hungfashion.test'")"
+          test "$default_gender" = "Other"
+
+          echo "Verified: 21 migrations, latest 021, customer gender defaults to Other, timeline view returns seeded profile/order/survey rows, UUID event_id and legacy_event_id."
+
+      - name: Verify migration runner is safe to rerun
+        working-directory: store-admin
+        run: npm run db:migrate --workspace server
+
+      - name: Confirm migration count remains unchanged
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
+          test "$applied_count" = "21"
+          echo "Verified: rerunning migrations does not create duplicate migration records."
+
+  legacy-database-upgrade:
+    name: Upgrade existing database with legacy event IDs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: store_admin_legacy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d store_admin_legacy_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: store_admin_legacy_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_SSL: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Build a pre-018 database with representative legacy records
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -f store-admin/server/sql/schema.sql
+
+          # schema.sql already creates the migration table and records baseline 000.
+
+          for migration in store-admin/server/sql/migrations/0[0-1][0-7]_*.sql; do
+            version="$(basename "$migration" | cut -d_ -f1)"
+            psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -f "$migration"
+            psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -c "INSERT INTO store_admin_schema_migrations (version, name) VALUES ('$version', 'legacy fixture')"
+          done
+
+          psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO transactions (event_id, event_type, source, status, occurred_at)
+          VALUES
+            ('550e8400-e29b-41d4-a716-446655440000', 'payment_completed', 'legacy-fixture', 'success', NOW()),
+            ('legacy-kafka-event-001', 'payment_completed', 'legacy-fixture', 'success', NOW()),
+            (NULL, 'payment_completed', 'legacy-fixture', 'success', NOW());
+          SQL
+
+          psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -c "INSERT INTO customer (full_name, email, gender) VALUES ('Legacy gender fixture', 'legacy-gender@hungfashion.test', NULL)"
+
+          echo "Prepared a database at migration 017 with valid UUID, legacy text, NULL event IDs and a customer with NULL gender."
+
+      - name: Upgrade existing database through migrations 018-021
+        working-directory: store-admin
+        run: npm run db:migrate --workspace server
+
+      - name: Verify legacy data preservation and final schema
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+
+          row_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM transactions WHERE source = 'legacy-fixture'")"
+          test "$row_count" = "3"
+
+          valid_uuid="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT event_id::text FROM transactions WHERE source = 'legacy-fixture' AND legacy_event_id IS NULL AND event_id IS NOT NULL")"
+          test "$valid_uuid" = "550e8400-e29b-41d4-a716-446655440000"
+
+          preserved_legacy="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT legacy_event_id FROM transactions WHERE source = 'legacy-fixture' AND legacy_event_id IS NOT NULL")"
+          test "$preserved_legacy" = "legacy-kafka-event-001"
+
+          null_event_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM transactions WHERE source = 'legacy-fixture' AND event_id IS NULL AND legacy_event_id IS NULL")"
+          test "$null_event_count" = "1"
+
+          latest_version="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
+          test "$latest_version" = "021"
+
+          applied_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
+          test "$applied_count" = "21"
+
+          legacy_gender="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT gender::text FROM customer WHERE email = 'legacy-gender@hungfashion.test'")"
+          test "$legacy_gender" = "Other"
+
+          psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -c "SELECT * FROM customer_interaction_timeline LIMIT 0"
+
+          echo "Verified: all 3 legacy transaction rows survived; valid UUID retained; invalid text preserved in legacy_event_id; NULL retained; migrations 018-021 completed."

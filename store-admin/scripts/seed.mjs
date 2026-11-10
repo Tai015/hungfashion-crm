@@ -131,27 +131,65 @@ async function ensureEmployee(client, accountId, fullName, position) {
 }
 
 async function ensureCustomer(client, {
-  accountId = null, fullName, gender, dob, phone, email, address, tier = 'Regular', points = 100, interest = null,
+  accountId = null, fullName, gender = 'Other', dob, phone, email, address, tier = 'Regular', points = 100, interest = null,
 }) {
-  const { rows: [existing] } = await client.query(
-    'SELECT customer_id FROM customer WHERE email = $1',
-    [email],
+  // Seed data phải có email để có thể đối chiếu hồ sơ khách hàng.
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    throw new Error(`Email seed không hợp lệ hoặc bị thiếu của khách hàng "${fullName}".`);
+  }
+
+  // Seed data phải có ngày sinh trong bộ dữ liệu demo và giới tính hợp lệ.
+  // Không tự sinh ngày sinh ngẫu nhiên vì sẽ làm sai tuổi hiển thị trong CRM.
+  const normalizedGender = gender || 'Other';
+  if (!['Male', 'Female', 'Other'].includes(normalizedGender)) {
+    throw new Error(`Giới tính seed không hợp lệ của khách hàng "${fullName}".`);
+  }
+  if (typeof dob !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+    throw new Error(`Khách hàng seed "${fullName}" phải có ngày sinh theo định dạng YYYY-MM-DD.`);
+  }
+  const birthDate = new Date(`${dob}T00:00:00.000Z`);
+  const today = new Date();
+  const age = today.getUTCFullYear() - birthDate.getUTCFullYear()
+    - (today.getUTCMonth() < birthDate.getUTCMonth()
+      || (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() < birthDate.getUTCDate()) ? 1 : 0);
+  if (Number.isNaN(birthDate.getTime()) || birthDate.toISOString().slice(0, 10) !== dob
+    || birthDate > new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
+    || age < 0 || age > 120) {
+    throw new Error(`Ngày sinh seed không hợp lệ của khách hàng "${fullName}" (tuổi phải từ 0 đến 120).`);
+  }
+
+  // Khớp theo email trước; nếu hồ sơ seed cũ chưa có email thì dùng số điện thoại
+  // đã biết của chính dữ liệu demo để bổ sung email, tránh tạo hồ sơ trùng.
+  const { rows: matches } = await client.query(
+    `SELECT customer_id, email, phone
+     FROM customer
+     WHERE LOWER(BTRIM(email)) = $1
+        OR ($2::varchar IS NOT NULL AND phone = $2)
+     ORDER BY CASE WHEN LOWER(BTRIM(email)) = $1 THEN 0 ELSE 1 END
+     LIMIT 2`,
+    [normalizedEmail, phone || null],
   );
-  let customerId = existing?.customer_id;
+  if (matches.length > 1) {
+    throw new Error(`Không thể xác định duy nhất hồ sơ seed của "${fullName}" theo email/số điện thoại; cần kiểm tra dữ liệu trước khi seed.`);
+  }
+
+  let customerId = matches[0]?.customer_id;
   if (!customerId) {
     const { rows: [created] } = await client.query(
       `INSERT INTO customer (account_id, full_name, gender, date_of_birth, phone, email, address, loyalty_point, customer_tier)
        VALUES ($1,$2,$3::gender_type,$4,$5,$6,$7,$8,$9)
        RETURNING customer_id`,
-      [accountId, fullName, gender, dob, phone, email, address, points, tier],
+      [accountId, fullName, normalizedGender, dob, phone, normalizedEmail, address, points, tier],
     );
     customerId = created.customer_id;
   } else {
     await client.query(
-      `UPDATE customer SET account_id = COALESCE($2, account_id), full_name = $3, gender = $4::gender_type,
-              date_of_birth = $5, phone = $6, address = $7
+      `UPDATE customer SET account_id = COALESCE($2, account_id), full_name = $3,
+              gender = COALESCE($4::gender_type, 'Other'::gender_type),
+              date_of_birth = $5, phone = $6, email = $7, address = $8
        WHERE customer_id = $1`,
-      [customerId, accountId, fullName, gender, dob, phone, address],
+      [customerId, accountId, fullName, normalizedGender, dob, phone, normalizedEmail, address],
     );
   }
   if (interest) {

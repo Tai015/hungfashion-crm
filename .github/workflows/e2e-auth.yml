@@ -191,6 +191,79 @@ jobs:
         working-directory: store-admin
         run: npx playwright test e2e/auth-api-ci.spec.js
 
+      - name: Show auth outbox failure log from the API
+        if: always()
+        shell: bash
+        run: |
+          if grep -F "[auth] Could not enqueue authentication event" /tmp/hungfashion-api.log; then
+            echo "Verified: application logged the non-fatal auth outbox failure."
+          else
+            echo "::warning::No application-level auth outbox error log found in /tmp/hungfashion-api.log."
+          fi
+
+      - name: Diagnose customer outbox and user events on failure
+        if: failure()
+        working-directory: store-admin
+        run: |
+          node --input-type=module <<'NODE'
+          import pg from 'pg';
+
+          const { Pool } = pg;
+          const db = new Pool({
+            host: process.env.POSTGRES_HOST,
+            port: Number(process.env.POSTGRES_PORT),
+            database: process.env.POSTGRES_DB,
+            user: process.env.POSTGRES_USER,
+            password: process.env.POSTGRES_PASSWORD,
+            ssl: process.env.POSTGRES_SSL === 'true',
+          });
+
+          try {
+            const { rows: accounts } = await db.query(
+              `SELECT account_id
+               FROM account
+               WHERE LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1)
+               ORDER BY account_id
+               LIMIT 1`,
+              [process.env.E2E_CUSTOMER_IDENTIFIER],
+            );
+
+            if (!accounts.length) {
+              console.log('DIAGNOSTIC: E2E customer account was not found.');
+            } else {
+              const accountId = String(accounts[0].account_id);
+              console.log('DIAGNOSTIC account_id:', accountId);
+
+              const { rows: outbox } = await db.query(
+                `SELECT event_id, topic, partition_key, payload->>'eventType' AS event_type,
+                        payload->>'event' AS action, payload->>'sessionId' AS session_id,
+                        created_at, published_at
+                 FROM outbox_events
+                 WHERE partition_key = $1 OR payload->>'userId' = $1
+                 ORDER BY created_at DESC
+                 LIMIT 25`,
+                [accountId],
+              );
+              console.log('DIAGNOSTIC outbox_events:', JSON.stringify(outbox, null, 2));
+
+              const { rows: events } = await db.query(
+                `SELECT id, event_id, user_id, session_id, event_type, action,
+                        occurred_at, created_at, source
+                 FROM user_events
+                 WHERE user_id = $1
+                 ORDER BY id DESC
+                 LIMIT 25`,
+                [accountId],
+              );
+              console.log('DIAGNOSTIC user_events:', JSON.stringify(events, null, 2));
+            }
+          } catch (error) {
+            console.error('DIAGNOSTIC database query failed:', error);
+          } finally {
+            await db.end();
+          }
+          NODE
+
       - name: Print API log on failure
         if: failure()
         run: cat /tmp/hungfashion-api.log || true
