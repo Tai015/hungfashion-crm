@@ -133,6 +133,21 @@ router.post('/suppliers', async (req, res) => {
   }
 });
 
+router.patch('/suppliers/:id/status', async (req, res) => {
+  try {
+    const { is_active } = req.body || {};
+    if (typeof is_active !== 'boolean') return res.status(400).json({ message: 'Trạng thái nhà cung cấp không hợp lệ.' });
+    const { rows } = await pool.query(
+      'UPDATE supplier SET is_active=$1 WHERE supplier_id=$2 RETURNING *',
+      [is_active, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy nhà cung cấp.' });
+    return res.json(rows[0]);
+  } catch (err) {
+    return res.status(500).json({ message: 'Không thể cập nhật trạng thái nhà cung cấp.' });
+  }
+});
+
 router.patch('/suppliers/:id', async (req, res) => {
   try {
     const { supplier_name, contact_name = null, phone = null, email = null, address = null } = req.body || {};
