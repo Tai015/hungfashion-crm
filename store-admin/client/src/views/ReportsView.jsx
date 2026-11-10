@@ -262,7 +262,10 @@ function FeedbackSurveyTab({ from, to }) {
   const csvRows = [
     ...distribution.map(row => ['Đánh giá', `${row.rating} sao`, Number(row.count) || 0, '', '']),
     ...feedbackRows.map(row => ['Phản hồi gần đây', `${row.customer_name || 'Khách hàng'} · ${row.product_name || row.feedback_type}`, Number(row.rating) || '', row.status, row.created_at ? new Date(row.created_at).toISOString() : '']),
-    ...(results.data?.questions || []).flatMap(question => (question.options || []).map(option => ['Kết quả khảo sát', `${question.question_text} · ${option.option_text}`, Number(option.vote_count) || 0, '', ''])),
+    ...(results.data?.questions || []).flatMap(question => [
+      ...(question.options || []).map(option => ['Kết quả khảo sát', `${question.question_text} · ${option.option_text}`, Number(option.vote_count) || 0, '', '']),
+      ...(question.text_answers || []).map((answer, index) => ['Câu trả lời tự luận', `${question.question_text} · Câu trả lời ${index + 1}: ${answer}`, 1, '', '']),
+    ]),
   ];
   return <>
     <div className="reports-grid-two">
