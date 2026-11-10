@@ -4,7 +4,7 @@ const baseURL = process.env.E2E_BASE_URL?.trim().replace(/\/+$/, '');
 
 if (!baseURL) {
   throw new Error(
-    'E2E_BASE_URL is required. Set it to the local frontend URL or a Vercel Preview URL before running Playwright.'
+    'E2E_BASE_URL is required. Set it to the Vercel Preview URL or local API URL before running Playwright.'
   );
 }
 
