@@ -228,6 +228,42 @@ router.get('/user/:customerId', async (req, res) => {
   }
 });
 
+// GET /api/promotions/assign/customers – tìm kiếm khách hàng có phân trang khi phân bổ voucher
+router.get('/assign/customers', async (req, res) => {
+  try {
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 20);
+    if (search.length > 100 || !Number.isInteger(page) || page < 1
+      || !Number.isInteger(limit) || limit < 1 || limit > 100) {
+      return res.status(400).json({ message: 'Từ khóa hoặc tham số phân trang khách hàng không hợp lệ.' });
+    }
+    const conditions = [];
+    const params = [];
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(full_name ILIKE $1 OR phone ILIKE $1 OR email ILIKE $1)`);
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const limitParam = params.length + 1;
+    const offsetParam = params.length + 2;
+    const [customers, count] = await Promise.all([
+      pool.query(
+        `SELECT customer_id, full_name, phone, email
+         FROM customer
+         ${where}
+         ORDER BY full_name, customer_id
+         LIMIT $${limitParam} OFFSET $${offsetParam}`,
+        [...params, limit, (page - 1) * limit],
+      ),
+      pool.query(`SELECT COUNT(*)::int AS total FROM customer ${where}`, params),
+    ]);
+    return res.json({ data: customers.rows, total: count.rows[0].total, page, limit });
+  } catch (error) {
+    console.error('[promotions] customer assignment search failed:', error.message);
+    return res.status(500).json({ message: 'Không thể tải danh sách khách hàng để phân bổ.' });
+  }
+});
 // POST /api/promotions/assign – gán mã cho khách hàng
 router.post('/assign', async (req, res) => {
   try {
@@ -235,7 +271,7 @@ router.post('/assign', async (req, res) => {
     if (!Array.isArray(customer_ids)) return res.status(400).json({ message: 'Danh sách khách hàng không hợp lệ.' });
     const ids = [...new Set(customer_ids.map(Number))];
     const promoId = Number(promotion_id);
-    if (!ids.length || ids.length > 500
+    if (!ids.length || ids.length > 10000
       || ids.some(id => !Number.isInteger(id) || id < 1)
       || !Number.isInteger(promoId) || promoId < 1) {
       return res.status(400).json({ message: 'Khách hàng và chương trình khuyến mãi chưa hợp lệ.' });
@@ -246,15 +282,11 @@ router.post('/assign', async (req, res) => {
     ]);
     if (!promotion.rows.length) return res.status(404).json({ message: 'Khuyến mãi không tồn tại hoặc đã hết hạn.' });
     if (customers.rows.length !== ids.length) return res.status(400).json({ message: 'Danh sách có khách hàng không tồn tại.' });
-
-    const values = ids.map((_, i) => `($${i * 2 + 1}, $${i * 2 + 2})`).join(', ');
-    const params = ids.flatMap(id => [id, promoId]);
-
     await pool.query(
       `INSERT INTO user_promotion (customer_id, promotion_id)
-       VALUES ${values}
+       SELECT customer_id, $2 FROM unnest($1::int[]) AS selected(customer_id)
        ON CONFLICT (customer_id, promotion_id) DO NOTHING`,
-      params
+      [ids, promoId],
     );
     res.json({ message: `Đã gán mã cho ${ids.length} khách hàng` });
   } catch (err) {

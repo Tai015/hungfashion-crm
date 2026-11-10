@@ -121,21 +121,97 @@ function AssignForm({ promotion, onDone }) {
   const [search, setSearch] = useState('');
   const [customers, setCustomers] = useState([]);
   const [selected, setSelected] = useState([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const limit = 20;
+  const selectedIds = new Set(selected.map(customer => Number(customer.customer_id)));
+
   useEffect(() => {
-    apiFetch(`/api/orders/customers?search=${encodeURIComponent(search)}`).then(setCustomers).catch(error => showErrorAlert(error.message));
+    let active = true;
+    setLoading(true);
+    setPage(1);
+    setCustomers([]);
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams({ search: search.trim(), page: '1', limit: String(limit) });
+      apiFetch(`/api/promotions/assign/customers?${params}`)
+        .then(result => {
+          if (!active) return;
+          setCustomers(result.data || []);
+          setTotal(result.total || 0);
+        })
+        .catch(error => { if (active) showErrorAlert(error.message); })
+        .finally(() => { if (active) setLoading(false); });
+    }, 250);
+    return () => { active = false; window.clearTimeout(timer); };
   }, [search]);
+
+  const loadMore = async () => {
+    if (loading || customers.length >= total) return;
+    setLoading(true);
+    const nextPage = page + 1;
+    try {
+      const params = new URLSearchParams({ search: search.trim(), page: String(nextPage), limit: String(limit) });
+      const result = await apiFetch(`/api/promotions/assign/customers?${params}`);
+      setCustomers(current => [...current, ...(result.data || [])]);
+      setPage(nextPage);
+      setTotal(result.total || 0);
+    } catch (error) {
+      showErrorAlert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleCustomer = (customer, checked) => {
+    setSelected(current => checked
+      ? (current.some(item => Number(item.customer_id) === Number(customer.customer_id)) ? current : [...current, customer])
+      : current.filter(item => Number(item.customer_id) !== Number(customer.customer_id)));
+  };
+
   const assign = async () => {
     if (!selected.length) return showErrorAlert('Chọn ít nhất một khách hàng.');
     setBusy(true);
-    try { const result = await apiFetch('/api/promotions/assign', { method: 'POST', body: { promotion_id: promotion.promotion_id, customer_ids: selected } }); showSuccessAlert(result.message); onDone(); }
-    catch (error) { showErrorAlert(error.message); } finally { setBusy(false); }
+    try {
+      const result = await apiFetch('/api/promotions/assign', {
+        method: 'POST',
+        body: { promotion_id: promotion.promotion_id, customer_ids: selected.map(customer => customer.customer_id) },
+      });
+      showSuccessAlert(result.message);
+      onDone();
+    } catch (error) {
+      showErrorAlert(error.message);
+    } finally {
+      setBusy(false);
+    }
   };
+
   return <div className={PANEL}>
     <h3 className="m-0 font-semibold">Phân bổ {promotion.code}</h3>
-    <input className={FIELD} type="search" placeholder="Tìm khách hàng theo tên, số điện thoại, email..." value={search} onChange={e => setSearch(e.target.value)} />
-    <div className="max-h-52 overflow-y-auto flex flex-col gap-2">{customers.map(customer => <label key={customer.customer_id} className="flex items-center gap-2 text-sm text-white/70"><input type="checkbox" checked={selected.includes(customer.customer_id)} onChange={e => setSelected(current => e.target.checked ? [...current, customer.customer_id] : current.filter(id => id !== customer.customer_id))} /><span>{customer.full_name} · {customer.phone || customer.email || 'Không có liên hệ'}</span></label>)}{!customers.length && <p className="m-0 text-sm text-white/40">Không tìm thấy khách hàng.</p>}</div>
-    <div className="flex gap-2"><button className={`${BTN} admin-primary-action`} disabled={busy} onClick={assign}>{busy ? 'Đang phân bổ...' : `Phân bổ cho ${selected.length} khách`}</button><button className={BTN} onClick={onDone}>Đóng</button></div>
+    <input className={FIELD} type="search" placeholder="Tìm khách hàng theo tên, số điện thoại, email..." value={search} onChange={event => setSearch(event.target.value)} />
+    <div className="flex items-center justify-between gap-2 text-xs text-white/45">
+      <span>Đang hiển thị {customers.length.toLocaleString('vi-VN')} / {total.toLocaleString('vi-VN')} khách hàng</span>
+      <span>Đã chọn {selected.length.toLocaleString('vi-VN')}</span>
+    </div>
+    <div className="max-h-64 overflow-y-auto flex flex-col gap-2">
+      {customers.map(customer => <label key={customer.customer_id} className="flex items-center gap-2 text-sm text-white/70">
+        <input type="checkbox" checked={selectedIds.has(Number(customer.customer_id))} onChange={event => toggleCustomer(customer, event.target.checked)} />
+        <span>{customer.full_name} · {customer.phone || customer.email || 'Không có liên hệ'}</span>
+      </label>)}
+      {!loading && !customers.length && <p className="m-0 text-sm text-white/40">Không tìm thấy khách hàng.</p>}
+      {loading && <p className="m-0 text-center text-xs text-white/45">{customers.length ? 'Đang tải thêm khách hàng...' : 'Đang tải danh sách khách hàng...'}</p>}
+    </div>
+    {customers.length < total && <button type="button" className={BTN} disabled={loading} onClick={loadMore}>{loading ? 'Đang tải...' : 'Tải thêm khách hàng'}</button>}
+    {!!selected.length && <div className="flex flex-wrap gap-2">
+      {selected.map(customer => <button key={customer.customer_id} type="button" className="rounded-lg border border-violet-300/20 bg-violet-400/10 px-2 py-1 text-xs text-violet-100" onClick={() => toggleCustomer(customer, false)} title="Bỏ chọn khách hàng">
+        {customer.full_name} ×
+      </button>)}
+    </div>}
+    <div className="flex flex-wrap gap-2">
+      <button className={`${BTN} admin-primary-action`} disabled={busy || !selected.length} onClick={assign}>{busy ? 'Đang phân bổ...' : `Phân bổ cho ${selected.length} khách`}</button>
+      <button className={BTN} onClick={onDone}>Đóng</button>
+    </div>
   </div>;
 }
 
