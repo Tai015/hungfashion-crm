@@ -266,6 +266,16 @@ router.post('/receipts', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(400).json({ message: 'Phiếu nhập cần chọn nhà cung cấp.' });
     }
+    if (receipt_type === 'Import') {
+      const { rowCount } = await client.query(
+        'SELECT supplier_id FROM supplier WHERE supplier_id=$1 AND is_active=TRUE',
+        [Number(supplier_id)]
+      );
+      if (!rowCount) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: 'Nhà cung cấp không tồn tại hoặc đã ngừng hợp tác.' });
+      }
+    }
 
     // Tính tổng tiền
     const total_amount = details.reduce((sum, d) => sum + Number(d.quantity) * Number(d.unit_price), 0);
