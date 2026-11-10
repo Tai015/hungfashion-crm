@@ -113,3 +113,103 @@ jobs:
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
           test "$applied_count" = "19"
           echo "Verified: rerunning migrations does not create duplicate migration records."
+
+  legacy-database-upgrade:
+    name: Upgrade existing database with legacy event IDs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: store_admin_legacy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d store_admin_legacy_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: store_admin_legacy_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_SSL: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Build a pre-018 database with representative legacy records
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -f store-admin/server/sql/schema.sql
+
+          psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -c "INSERT INTO store_admin_schema_migrations (version, name) VALUES ('000', 'schema.sql baseline')"
+
+          for migration in store-admin/server/sql/migrations/0[0-1][0-7]_*.sql; do
+            version="$(basename "$migration" | cut -d_ -f1)"
+            psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -f "$migration"
+            psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -c "INSERT INTO store_admin_schema_migrations (version, name) VALUES ('$version', 'legacy fixture')"
+          done
+
+          psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO transactions (event_id, event_type, source, status, occurred_at)
+          VALUES
+            ('550e8400-e29b-41d4-a716-446655440000', 'payment_completed', 'legacy-fixture', 'success', NOW()),
+            ('legacy-kafka-event-001', 'payment_completed', 'legacy-fixture', 'success', NOW()),
+            (NULL, 'payment_completed', 'legacy-fixture', 'success', NOW());
+          SQL
+
+          echo "Prepared a database at migration 017 with valid UUID, legacy text and NULL event IDs."
+
+      - name: Upgrade existing database through migrations 018-019
+        working-directory: store-admin
+        run: npm run db:migrate --workspace server
+
+      - name: Verify legacy data preservation and final schema
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+
+          row_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM transactions WHERE source = 'legacy-fixture'")"
+          test "$row_count" = "3"
+
+          valid_uuid="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT event_id::text FROM transactions WHERE source = 'legacy-fixture' AND legacy_event_id IS NULL AND event_id IS NOT NULL")"
+          test "$valid_uuid" = "550e8400-e29b-41d4-a716-446655440000"
+
+          preserved_legacy="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT legacy_event_id FROM transactions WHERE source = 'legacy-fixture' AND legacy_event_id IS NOT NULL")"
+          test "$preserved_legacy" = "legacy-kafka-event-001"
+
+          null_event_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM transactions WHERE source = 'legacy-fixture' AND event_id IS NULL AND legacy_event_id IS NULL")"
+          test "$null_event_count" = "1"
+
+          latest_version="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
+          test "$latest_version" = "019"
+
+          applied_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
+          test "$applied_count" = "19"
+
+          psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -c "SELECT * FROM customer_interaction_timeline LIMIT 0"
+
+          echo "Verified: all 3 legacy transaction rows survived; valid UUID retained; invalid text preserved in legacy_event_id; NULL retained; migrations 018-019 completed."
