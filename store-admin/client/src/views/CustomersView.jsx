@@ -1,8 +1,8 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { Fragment, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { useModalEffects } from '../hooks/useModalEffects';
-import { ChevronLeft, ChevronRight, LockKeyhole, Pencil, Trash2, UnlockKeyhole, UserPlus, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LockKeyhole, Pencil, Trash2, UnlockKeyhole, UserPlus, Search, X, Clock3, ChevronDown, ChevronUp } from 'lucide-react';
 import { apiFetch } from '../api';
 import TierBadge from '../components/TierBadge';
 import Spinner from '../components/Spinner';
@@ -90,6 +90,97 @@ function CustomerModal({ customer, onClose, onSaved }) {
 
 const TIER_COLOR = { New:'#64748b', Regular:'#0ea5e9', Silver:'#94a3b8', Gold:'#f59e0b', VIP:'#a855f7' };
 
+function CustomerInteractionHistory({ customerId }) {
+  const [items, setItems] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [olderCursor, setOlderCursor] = useState(null);
+  const [includeOlder, setIncludeOlder] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    setItems([]);
+    setNextCursor(null);
+    setOlderCursor(null);
+    setIncludeOlder(false);
+    apiFetch('/api/customers/' + customerId + '/interactions?limit=20')
+      .then(result => {
+        if (!active) return;
+        setItems(result.data || []);
+        setNextCursor(result.nextCursor);
+        setOlderCursor(result.olderCursor);
+      })
+      .catch(err => { if (active) setError(err.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [customerId]);
+
+  const loadMore = async (older = false) => {
+    const cursor = older ? olderCursor : nextCursor;
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    setError('');
+    try {
+      const all = older || includeOlder;
+      const query = new URLSearchParams({ limit: '20', cursor });
+      if (all) query.set('all', '1');
+      const result = await apiFetch('/api/customers/' + customerId + '/interactions?' + query);
+      setItems(current => [...current, ...(result.data || [])]);
+      setNextCursor(result.nextCursor);
+      setOlderCursor(result.olderCursor);
+      if (older) setIncludeOlder(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const dateFormatter = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium', timeStyle: 'short' });
+  return (
+    <div className="px-5 py-4 bg-white/[0.035] border-t border-white/[0.08]">
+      <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-white/85">
+        <Clock3 size={15} className="text-violet-300" />
+        Lịch sử tương tác
+        <span className="text-xs font-normal text-white/35">({includeOlder ? 'Toàn bộ thời gian' : '12 tháng gần nhất'})</span>
+      </div>
+      {loading ? <div className="py-5 text-center text-sm text-white/45">Đang tải lịch sử...</div>
+        : error && !items.length ? <p className="py-3 text-sm text-rose-300">{error}</p>
+        : !items.length ? <p className="py-3 text-sm text-white/40">Chưa có hoạt động nào được ghi nhận.</p>
+        : (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.interaction_id} className="flex gap-3 rounded-xl border border-white/[0.07] bg-black/10 px-3.5 py-3">
+                <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-violet-300/80" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                    <p className="m-0 text-sm font-medium text-white/85">{item.title}</p>
+                    <time className="text-[11px] text-white/35">{dateFormatter.format(new Date(item.occurred_at))}</time>
+                  </div>
+                  <p className="mt-1 mb-0 text-xs leading-relaxed text-white/48">{item.summary}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      {error && items.length > 0 && <p className="mt-2 text-xs text-rose-300">{error}</p>}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {nextCursor && <button type="button" className={BTN_GHOST} disabled={loadingMore} onClick={() => loadMore()}>
+          {loadingMore ? 'Đang tải...' : 'Tải thêm'}
+        </button>}
+        {!includeOlder && olderCursor && <button type="button" className={BTN_GHOST} disabled={loadingMore} onClick={() => loadMore(true)}>
+          {loadingMore ? 'Đang tải...' : 'Xem toàn bộ lịch sử'}
+        </button>}
+      </div>
+    </div>
+  );
+}
+
+
 export default function CustomersView({ userRole }) {
   const [customers, setCustomers] = useState([]);
   const [total, setTotal]     = useState(0);
@@ -105,6 +196,7 @@ export default function CustomersView({ userRole }) {
   const [refresh, setRefresh] = useState(0);
   const [adding, setAdding]   = useState(false);
   const [editing, setEditing] = useState(null);
+  const [expandedCustomerId, setExpandedCustomerId] = useState(null);
   const canWrite = ['ADMIN','QL_KHACH_HANG'].includes(userRole);
 
   useEffect(() => {
@@ -216,9 +308,20 @@ export default function CustomersView({ userRole }) {
                 {customers.length ? customers.map(c => {
                   const tc = TIER_COLOR[c.customer_tier] || '#64748b';
                   return (
+                    <Fragment key={c.customer_id}>
                     <tr key={c.customer_id} className="hover:bg-white/[0.04] transition-colors">
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/28 text-xs tabular-nums w-10">{c.customer_id}</td>
-                      <td className="px-3.5 py-3 border-b border-white/[0.05]"><strong className="text-[#f5f0eb] font-semibold">{c.full_name}</strong></td>
+                      <td className="px-3.5 py-3 border-b border-white/[0.05]">
+                        <div className="flex items-center gap-2">
+                          <strong className="text-[#f5f0eb] font-semibold">{c.full_name}</strong>
+                          <button type="button" className={ICON_BTN} title="Xem lịch sử tương tác"
+                            aria-label={"Xem lịch sử tương tác của " + c.full_name}
+                            aria-expanded={expandedCustomerId === c.customer_id}
+                            onClick={() => setExpandedCustomerId(current => current === c.customer_id ? null : c.customer_id)}>
+                            {expandedCustomerId === c.customer_id ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
+                          </button>
+                        </div>
+                      </td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{c.phone||'—'}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{c.email||'—'}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/78">{c.gender||'—'}</td>
@@ -259,6 +362,14 @@ export default function CustomersView({ userRole }) {
                         </td>
                       )}
                     </tr>
+                    {expandedCustomerId === c.customer_id && (
+                      <tr key={"history-" + c.customer_id}>
+                        <td colSpan={canWrite ? 8 : 7} className="p-0 border-b border-white/[0.06]">
+                          <CustomerInteractionHistory customerId={c.customer_id} />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   );
                 }) : (
                   <tr><td colSpan={canWrite?8:7} className="px-3.5 py-10 text-center text-white/25 text-sm">Không có khách hàng</td></tr>

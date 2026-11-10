@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
+import { createCustomerInteractionsRouter } from './customer-interactions.js';
 
 const router = Router();
 
@@ -98,6 +99,9 @@ router.get('/stats/overview', async (_req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+// Lịch sử tương tác được tổng hợp từ VIEW, phân trang bằng cursor.
+router.use('/:id/interactions', createCustomerInteractionsRouter());
 
 // GET /api/customers/:id
 router.get('/:id', async (req, res) => {
