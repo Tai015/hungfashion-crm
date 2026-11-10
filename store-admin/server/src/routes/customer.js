@@ -135,6 +135,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const { full_name, gender, date_of_birth, phone, email, address, interests = [] } = req.body || {};
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const normalizedGender = gender == null || gender === '' ? 'Other' : gender;
   if (typeof full_name !== 'string' || !full_name.trim() || full_name.trim().length > 150
     || !normalizedEmail || normalizedEmail.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     || !Array.isArray(interests) || interests.length > 20
@@ -147,7 +148,7 @@ router.post('/', async (req, res) => {
     const { rows } = await client.query(
       `INSERT INTO customer (full_name, gender, date_of_birth, phone, email, address)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [full_name.trim(), gender, date_of_birth, phone, normalizedEmail, address]
+      [full_name.trim(), normalizedGender, date_of_birth, phone, normalizedEmail, address]
     );
     const customer = rows[0];
 
@@ -194,7 +195,7 @@ router.put('/:id', async (req, res) => {
        SET full_name=$1, gender=$2, date_of_birth=$3, phone=$4,
            email=$5, address=$6, updated_at=NOW()
        WHERE customer_id=$7 RETURNING *`,
-      [full_name.trim(), gender, date_of_birth, phone, normalizedEmail, address, req.params.id]
+      [full_name.trim(), normalizedGender, date_of_birth, phone, normalizedEmail, address, req.params.id]
     );
     if (!rows.length) {
       await client.query('ROLLBACK');
