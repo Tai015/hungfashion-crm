@@ -130,7 +130,7 @@ test('tự ghi nhận đăng nhập và đăng xuất qua outbox vào lịch s�
   let loginEvent = null;
   await expect.poll(async () => {
     const result = await db.query(
-      `SELECT event_id, user_id, session_id, event_type, action
+      `SELECT id, event_id, user_id, session_id, event_type, action
        FROM user_events
        WHERE user_id = $1 AND session_id = $2 AND action = 'login_success'
        ORDER BY occurred_at DESC LIMIT 1`,
@@ -183,7 +183,7 @@ test('tự ghi nhận đăng nhập và đăng xuất qua outbox vào lịch s�
      )
        AND interaction_id IN ($2, $3)
      ORDER BY occurred_at ASC`,
-    [user.account_id, `user-event:${loginEvent.event_id ? loginEvent.event_id : ''}`, `user-event:${logoutEvent.event_id ? logoutEvent.event_id : ''}`],
+    [user.account_id, `user-event:${loginEvent.id}`, `user-event:${logoutEvent.id}`],
   );
   expect(timeline.rows).toHaveLength(2);
   expect(timeline.rows.map(row => row.interaction_type)).toEqual(['account_access', 'account_access']);
