@@ -141,6 +141,7 @@ async function enqueueAuthEventBestEffort(client, event) {
     console.error('[auth] Could not enqueue authentication event; auth flow will continue.', {
       eventType: event.eventType,
       errorCode: error.code || 'UNKNOWN',
+      errorMessage: error.message,
     });
   }
 }
