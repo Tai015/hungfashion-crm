@@ -179,7 +179,8 @@ test('tự ghi nhận đăng nhập và đăng xuất qua outbox vào lịch s�
 
 test('đăng nhập và đăng xuất vẫn thành công khi ghi auth outbox bị lỗi', async ({ request }) => {
   test.setTimeout(60_000);
-  await db.query('DROP TRIGGER IF EXISTS e2e_reject_auth_outbox_trigger ON outbox_events');
+  try {
+    await db.query('DROP TRIGGER IF EXISTS e2e_reject_auth_outbox_trigger ON outbox_events');
   await db.query('DROP FUNCTION IF EXISTS e2e_reject_auth_outbox()');
   await db.query('DROP SEQUENCE IF EXISTS e2e_auth_outbox_failures');
   await db.query('CREATE SEQUENCE e2e_auth_outbox_failures START 1');
@@ -200,7 +201,6 @@ test('đăng nhập và đăng xuất vẫn thành công khi ghi auth outbox b�
     FOR EACH ROW EXECUTE FUNCTION e2e_reject_auth_outbox()
   `);
 
-  try {
     const login = await request.post('/api/auth/login', {
       data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
     });
