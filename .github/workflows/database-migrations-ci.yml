@@ -1,0 +1,115 @@
+name: Database migrations CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "store-admin/server/sql/**"
+      - "store-admin/server/src/migrate.js"
+      - "store-admin/server/src/migrations.js"
+      - "store-admin/server/src/db.js"
+      - "store-admin/server/package.json"
+      - "store-admin/package-lock.json"
+      - ".github/workflows/database-migrations-ci.yml"
+  push:
+    branches:
+      - main
+      - feat/customer-interaction-history
+    paths:
+      - "store-admin/server/sql/**"
+      - "store-admin/server/src/migrate.js"
+      - "store-admin/server/src/migrations.js"
+      - "store-admin/server/src/db.js"
+      - "store-admin/server/package.json"
+      - "store-admin/package-lock.json"
+      - ".github/workflows/database-migrations-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-database-migrations:
+    name: Fresh PostgreSQL migration (000-019)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: store_admin_migration_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d store_admin_migration_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: store_admin_migration_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_SSL: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Apply all migrations
+        working-directory: store-admin
+        run: npm run db:migrate --workspace server
+
+      - name: Verify migration history and required database objects
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+
+          applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
+          test "$applied_count" = "19"
+
+          latest_version="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
+          test "$latest_version" = "019"
+
+          view_exists="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT to_regclass('public.customer_interaction_timeline') IS NOT NULL")"
+          test "$view_exists" = "t"
+
+          event_id_type="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='event_id'")"
+          test "$event_id_type" = "uuid"
+
+          legacy_event_id_type="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='legacy_event_id'")"
+          test "$legacy_event_id_type" = "text"
+
+          psql -h localhost -U postgres -d store_admin_migration_test -v ON_ERROR_STOP=1 -c "SELECT * FROM customer_interaction_timeline LIMIT 0"
+
+          echo "Verified: 19 migrations, latest 019, timeline view, UUID event_id and legacy_event_id."
+
+      - name: Verify migration runner is safe to rerun
+        working-directory: store-admin
+        run: npm run db:migrate --workspace server
+
+      - name: Confirm migration count remains unchanged
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
+          test "$applied_count" = "19"
+          echo "Verified: rerunning migrations does not create duplicate migration records."
