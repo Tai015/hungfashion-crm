@@ -279,6 +279,27 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
         body: JSON.stringify({ role: 'ADMIN' }),
       });
     }
+    if (pathname === '/api/reports/summary') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          revenue: 0,
+          activeUsers: 0,
+          orders: 0,
+          conversionPercent: 0,
+          growthPercent: 0,
+          conversionChange: 0,
+        }),
+      });
+    }
+    if (pathname === '/api/reports/top-products' || pathname === '/api/reports/revenue') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+    }
     if (pathname === '/api/customers') {
       return route.fulfill({
         status: 200,
