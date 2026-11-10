@@ -2,20 +2,16 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   VALID_PAID_ORDER_SQL,
-  customerSpendingSegment,
+  CUSTOMER_SPENDING_SEGMENT_CASE_SQL,
   localTimestampRangeSql,
 } from '../src/domain/reporting.js';
 
-test('customer spending segments include zero-spend customers and use inclusive lower bounds', () => {
-  assert.equal(customerSpendingSegment(0), 'No purchases (0)');
-  assert.equal(customerSpendingSegment(null), 'No purchases (0)');
-  assert.equal(customerSpendingSegment(1), 'Under 500K');
-  assert.equal(customerSpendingSegment(499999), 'Under 500K');
-  assert.equal(customerSpendingSegment(500000), 'Silver (500K–2M)');
-  assert.equal(customerSpendingSegment(1999999), 'Silver (500K–2M)');
-  assert.equal(customerSpendingSegment(2000000), 'Gold (2M–5M)');
-  assert.equal(customerSpendingSegment(4999999), 'Gold (2M–5M)');
-  assert.equal(customerSpendingSegment(5000000), 'VIP (≥5M)');
+test('customer spending SQL keeps zero-spend customers and uses inclusive lower bounds', () => {
+  assert.match(CUSTOMER_SPENDING_SEGMENT_CASE_SQL, /lifetime_spent = 0 THEN 'No purchases \\(0\\)'/);
+  assert.match(CUSTOMER_SPENDING_SEGMENT_CASE_SQL, /lifetime_spent >= 5000000 THEN 'VIP/);
+  assert.match(CUSTOMER_SPENDING_SEGMENT_CASE_SQL, /lifetime_spent >= 2000000 THEN 'Gold/);
+  assert.match(CUSTOMER_SPENDING_SEGMENT_CASE_SQL, /lifetime_spent >= 500000 THEN 'Silver/);
+  assert.match(CUSTOMER_SPENDING_SEGMENT_CASE_SQL, /ELSE 'Under 500K'/);
 });
 
 test('shared paid-order rule excludes cancelled, refunded and refunded payment records', () => {
