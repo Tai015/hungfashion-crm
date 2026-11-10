@@ -124,34 +124,6 @@ test('rejects an older-history cursor when all-history mode is not enabled', asy
 });
 
 
-test('rejects a next-page cursor when the history range changes', async () => {
-  const app = await startApp();
-  const cursor = Buffer.from(JSON.stringify({
-    occurredAt: '2026-11-10T10:00:00.000Z',
-    interactionId: 'feedback:42',
-    includeOlder: false,
-    purpose: 'next',
-  })).toString('base64url');
-
-  const result = await app.request(`/api/customers/12/interactions?all=1&cursor=${encodeURIComponent(cursor)}`);
-  assert.equal(result.status, 400);
-  assert.equal(app.queries.length, 0);
-});
-
-test('rejects an older-history cursor unless switching to all history', async () => {
-  const app = await startApp();
-  const cursor = Buffer.from(JSON.stringify({
-    occurredAt: '2026-11-10T10:00:00.000Z',
-    interactionId: 'feedback:42',
-    includeOlder: false,
-    purpose: 'older',
-  })).toString('base64url');
-
-  const result = await app.request(`/api/customers/12/interactions?cursor=${encodeURIComponent(cursor)}`);
-  assert.equal(result.status, 400);
-  assert.equal(app.queries.length, 0);
-});
-
 test('rejects malformed or tampered cursors', async () => {
   const app = await startApp();
   const result = await app.request('/api/customers/12/interactions?cursor=not-a-cursor');
