@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   fresh-database-migrations:
-    name: Fresh PostgreSQL migration (000-025)
+    name: Fresh PostgreSQL migration (000-026)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -83,10 +83,10 @@ jobs:
           set -euo pipefail
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "25"
+          test "$applied_count" = "26"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "025"
+          test "$latest_version" = "026"
 
           view_exists="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT to_regclass('public.customer_interaction_timeline') IS NOT NULL")"
           test "$view_exists" = "t"
@@ -130,7 +130,20 @@ jobs:
           nullable_variant_attrs="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='product_variant' AND column_name IN ('size_id','color_id') AND is_nullable='YES'")"
           test "$nullable_variant_attrs" = "2"
 
-          echo "Verified: 25 migrations, latest 025, customer gender defaults to Other, timeline view, UUID event_id, loyalty tiers and nullable default-variant attributes."
+          product_supplier_table="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT to_regclass('public.product_supplier') IS NOT NULL")"
+          test "$product_supplier_table" = "t"
+          product_supplier_column="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='product' AND column_name='supplier_id'")"
+          test "$product_supplier_column" = "0"
+          supplier_fk_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.table_constraints WHERE table_schema='public' AND table_name='product_supplier' AND constraint_type='FOREIGN KEY'")"
+          test "$supplier_fk_count" = "2"
+          supplier_pair_pk="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.product_supplier'::regclass AND contype='p' AND pg_get_constraintdef(oid)='PRIMARY KEY (product_id, supplier_id)'")"
+          test "$supplier_pair_pk" = "1"
+          supplier_lookup_index="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM pg_indexes WHERE schemaname='public' AND tablename='product_supplier' AND indexname='product_supplier_supplier_idx'")"
+          test "$supplier_lookup_index" = "1"
+          supplier_delete_rules="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT string_agg(confdeltype::text, ',' ORDER BY confdeltype) FROM pg_constraint WHERE conrelid='public.product_supplier'::regclass AND contype='f'")"
+          test "$supplier_delete_rules" = "c,r"
+
+          echo "Verified: 26 migrations, latest 026, customer gender defaults to Other, timeline view, UUID event_id, loyalty tiers and nullable default-variant attributes."
 
       - name: Verify migration runner is safe to rerun
         working-directory: store-admin
@@ -142,7 +155,7 @@ jobs:
         run: |
           set -euo pipefail
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "25"
+          test "$applied_count" = "26"
           echo "Verified: rerunning migrations does not create duplicate migration records."
 
   legacy-database-upgrade:
@@ -217,6 +230,9 @@ jobs:
           INSERT INTO product (category_id, product_name, import_price, selling_price)
           SELECT category_id, 'Legacy no-variant product', 10000, 20000
           FROM category WHERE category_name = 'Legacy no-variant category';
+          INSERT INTO supplier (supplier_name) VALUES ('Legacy supplier fixture');
+          UPDATE product SET supplier_id=(SELECT supplier_id FROM supplier WHERE supplier_name='Legacy supplier fixture')
+          WHERE product_name='Legacy no-variant product';
           SQL
 
           # Simulate the old customer column before migration 022, even though schema.sql is the current baseline.
@@ -225,7 +241,7 @@ jobs:
 
           echo "Prepared a database at migration 017 with valid UUID, legacy text, NULL event IDs and a customer with NULL gender."
 
-      - name: Upgrade existing database through migrations 018-025
+      - name: Upgrade existing database through migrations 018-026
         working-directory: store-admin
         run: npm run db:migrate --workspace server
 
@@ -248,10 +264,10 @@ jobs:
           test "$null_event_count" = "1"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "025"
+          test "$latest_version" = "026"
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "25"
+          test "$applied_count" = "26"
 
           legacy_gender="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT gender::text FROM customer WHERE email = 'legacy-gender@hungfashion.test'")"
           test "$legacy_gender" = "Other"
@@ -267,4 +283,9 @@ jobs:
           nullable_variant_attrs="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='product_variant' AND column_name IN ('size_id','color_id') AND is_nullable='YES'")"
           test "$nullable_variant_attrs" = "2"
 
-          echo "Verified: legacy transaction rows preserved, migrations 018-025 completed and a legacy product with no variants received exactly one default variant."
+          migrated_supplier_link="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM product_supplier ps JOIN product p USING (product_id) JOIN supplier s USING (supplier_id) WHERE p.product_name='Legacy no-variant product' AND s.supplier_name='Legacy supplier fixture'")"
+          test "$migrated_supplier_link" = "1"
+          removed_legacy_supplier_column="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='product' AND column_name='supplier_id'")"
+          test "$removed_legacy_supplier_column" = "0"
+
+          echo "Verified: legacy transaction rows preserved, migrations 018-026 completed and a legacy product with no variants received exactly one default variant."

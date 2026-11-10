@@ -133,6 +133,21 @@ router.post('/suppliers', async (req, res) => {
   }
 });
 
+router.patch('/suppliers/:id/status', async (req, res) => {
+  try {
+    const { is_active } = req.body || {};
+    if (typeof is_active !== 'boolean') return res.status(400).json({ message: 'Trạng thái nhà cung cấp không hợp lệ.' });
+    const { rows } = await pool.query(
+      'UPDATE supplier SET is_active=$1 WHERE supplier_id=$2 RETURNING *',
+      [is_active, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy nhà cung cấp.' });
+    return res.json(rows[0]);
+  } catch (err) {
+    return res.status(500).json({ message: 'Không thể cập nhật trạng thái nhà cung cấp.' });
+  }
+});
+
 router.patch('/suppliers/:id', async (req, res) => {
   try {
     const { supplier_name, contact_name = null, phone = null, email = null, address = null } = req.body || {};
@@ -251,6 +266,16 @@ router.post('/receipts', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(400).json({ message: 'Phiếu nhập cần chọn nhà cung cấp.' });
     }
+    if (receipt_type === 'Import') {
+      const { rowCount } = await client.query(
+        'SELECT supplier_id FROM supplier WHERE supplier_id=$1 AND is_active=TRUE',
+        [Number(supplier_id)]
+      );
+      if (!rowCount) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: 'Nhà cung cấp không tồn tại hoặc đã ngừng hợp tác.' });
+      }
+    }
 
     // Tính tổng tiền
     const total_amount = details.reduce((sum, d) => sum + Number(d.quantity) * Number(d.unit_price), 0);
@@ -281,6 +306,21 @@ router.post('/receipts', async (req, res) => {
         error.statusCode = 409;
         throw error;
       }
+    }
+
+    // A committed import is an effective supply event. Record each supplier/product
+    // relationship in the same transaction as the receipt, details and stock changes.
+    // The composite primary key makes concurrent imports idempotent.
+    if (receipt_type === 'Import' && supplier_id != null) {
+      const variantIds = [...new Set(details.map((detail) => Number(detail.variant_id)))];
+      await client.query(
+        `INSERT INTO product_supplier (product_id, supplier_id)
+         SELECT DISTINCT pv.product_id, $2
+         FROM product_variant pv
+         WHERE pv.variant_id = ANY($1::int[])
+         ON CONFLICT (product_id, supplier_id) DO NOTHING`,
+        [variantIds, Number(supplier_id)]
+      );
     }
 
     await client.query('COMMIT');
