@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { LOW_STOCK_THRESHOLD } from '../domain/types.js';
-import { VALID_PAID_ORDER_SQL, localTimestampRangeSql } from '../domain/reporting.js';
+import { CUSTOMER_SPENDING_SEGMENT_CASE_SQL, VALID_PAID_ORDER_SQL, localTimestampRangeSql } from '../domain/reporting.js';
 
 const router = Router();
 
@@ -453,13 +453,7 @@ router.get('/customer-segments', async (req, res) => {
         GROUP BY c.customer_id
       ), customer_spending AS (
         SELECT c.customer_id, lifetime_spending.lifetime_spent, period_spending.period_spent,
-          CASE
-            WHEN lifetime_spending.lifetime_spent = 0 THEN 'No purchases (0)'
-            WHEN lifetime_spending.lifetime_spent >= 5000000 THEN 'VIP (≥5M)'
-            WHEN lifetime_spending.lifetime_spent >= 2000000 THEN 'Gold (2M–5M)'
-            WHEN lifetime_spending.lifetime_spent >= 500000 THEN 'Silver (500K–2M)'
-            ELSE 'Under 500K'
-          END AS segment
+          ${CUSTOMER_SPENDING_SEGMENT_CASE_SQL} AS segment
         FROM customer c
         JOIN lifetime_spending USING (customer_id)
         JOIN period_spending USING (customer_id)
