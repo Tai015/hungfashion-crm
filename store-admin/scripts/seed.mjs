@@ -131,8 +131,28 @@ async function ensureEmployee(client, accountId, fullName, position) {
 }
 
 async function ensureCustomer(client, {
-  accountId = null, fullName, gender, dob, phone, email, address, tier = 'Regular', points = 100, interest = null,
+  accountId = null, fullName, gender = 'Other', dob, phone, email, address, tier = 'Regular', points = 100, interest = null,
 }) {
+  // Seed data phải có ngày sinh thật trong bộ dữ liệu demo và giới tính hợp lệ.
+  // Không tự sinh ngày sinh ngẫu nhiên vì sẽ làm sai tuổi hiển thị trong CRM.
+  const normalizedGender = gender || 'Other';
+  if (!['Male', 'Female', 'Other'].includes(normalizedGender)) {
+    throw new Error(`Giới tính seed không hợp lệ của khách hàng "${fullName}".`);
+  }
+  if (typeof dob !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(dob)) {
+    throw new Error(`Khách hàng seed "${fullName}" phải có ngày sinh theo định dạng YYYY-MM-DD.`);
+  }
+  const birthDate = new Date(`${dob}T00:00:00.000Z`);
+  const today = new Date();
+  const age = today.getUTCFullYear() - birthDate.getUTCFullYear()
+    - (today.getUTCMonth() < birthDate.getUTCMonth()
+      || (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() < birthDate.getUTCDate()) ? 1 : 0);
+  if (Number.isNaN(birthDate.getTime()) || birthDate.toISOString().slice(0, 10) !== dob
+    || birthDate > new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
+    || age < 0 || age > 120) {
+    throw new Error(`Ngày sinh seed không hợp lệ của khách hàng "${fullName}" (tuổi phải từ 0 đến 120).`);
+  }
+
   const { rows: [existing] } = await client.query(
     'SELECT customer_id FROM customer WHERE email = $1',
     [email],
@@ -143,15 +163,16 @@ async function ensureCustomer(client, {
       `INSERT INTO customer (account_id, full_name, gender, date_of_birth, phone, email, address, loyalty_point, customer_tier)
        VALUES ($1,$2,$3::gender_type,$4,$5,$6,$7,$8,$9)
        RETURNING customer_id`,
-      [accountId, fullName, gender, dob, phone, email, address, points, tier],
+      [accountId, fullName, normalizedGender, dob, phone, email, address, points, tier],
     );
     customerId = created.customer_id;
   } else {
     await client.query(
-      `UPDATE customer SET account_id = COALESCE($2, account_id), full_name = $3, gender = $4::gender_type,
+      `UPDATE customer SET account_id = COALESCE($2, account_id), full_name = $3,
+              gender = COALESCE($4::gender_type, 'Other'::gender_type),
               date_of_birth = $5, phone = $6, address = $7
        WHERE customer_id = $1`,
-      [customerId, accountId, fullName, gender, dob, phone, address],
+      [customerId, accountId, fullName, normalizedGender, dob, phone, address],
     );
   }
   if (interest) {
