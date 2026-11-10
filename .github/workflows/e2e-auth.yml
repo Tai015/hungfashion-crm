@@ -191,6 +191,16 @@ jobs:
         working-directory: store-admin
         run: npx playwright test e2e/auth-api-ci.spec.js
 
+      - name: Show auth outbox failure log from the API
+        if: always()
+        shell: bash
+        run: |
+          if grep -F "[auth] Could not enqueue authentication event" /tmp/hungfashion-api.log; then
+            echo "Verified: application logged the non-fatal auth outbox failure."
+          else
+            echo "::warning::No application-level auth outbox error log found in /tmp/hungfashion-api.log."
+          fi
+
       - name: Diagnose customer outbox and user events on failure
         if: failure()
         working-directory: store-admin
