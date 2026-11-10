@@ -164,7 +164,7 @@ jobs:
           set -euo pipefail
           psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -f store-admin/server/sql/schema.sql
 
-          psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -c "INSERT INTO store_admin_schema_migrations (version, name) VALUES ('000', 'schema.sql baseline')"
+          # schema.sql already creates the migration table and records baseline 000.
 
           for migration in store-admin/server/sql/migrations/0[0-1][0-7]_*.sql; do
             version="$(basename "$migration" | cut -d_ -f1)"
