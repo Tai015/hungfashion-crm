@@ -331,7 +331,7 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
   // open the navigation drawer, then select the Khách hàng item.
   await page.setViewportSize({ width: 390, height: 844 });
   await login(page, '/#/nhan-vien/login', EXISTING_STAFF, 'staff');
-  await page.getByRole('button', { name: 'Mở menu' }).click();
+  await page.locator('button.dashboard-mobile-menu').click();
   await page.getByRole('button', { name: 'Khách hàng', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Quản lý khách hàng' })).toBeVisible();
   await page.getByRole('button', { name: 'Xem lịch sử tương tác của E2E Timeline Customer' }).click();
