@@ -136,6 +136,12 @@ jobs:
           test "$product_supplier_column" = "0"
           supplier_fk_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.table_constraints WHERE table_schema='public' AND table_name='product_supplier' AND constraint_type='FOREIGN KEY'")"
           test "$supplier_fk_count" = "2"
+          supplier_pair_pk="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.product_supplier'::regclass AND contype='p' AND pg_get_constraintdef(oid)='PRIMARY KEY (product_id, supplier_id)'")"
+          test "$supplier_pair_pk" = "1"
+          supplier_lookup_index="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM pg_indexes WHERE schemaname='public' AND tablename='product_supplier' AND indexname='product_supplier_supplier_idx'")"
+          test "$supplier_lookup_index" = "1"
+          supplier_delete_rules="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT string_agg(confdeltype::text, ',' ORDER BY confdeltype) FROM pg_constraint WHERE conrelid='public.product_supplier'::regclass AND contype='f'")"
+          test "$supplier_delete_rules" = "c,r"
 
           echo "Verified: 26 migrations, latest 026, customer gender defaults to Other, timeline view, UUID event_id, loyalty tiers and nullable default-variant attributes."
 
