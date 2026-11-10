@@ -27,11 +27,6 @@ export const ORDER_CHANNEL_LABELS = {
   InStore: 'Tại cửa hàng',
 };
 
-export const RECEIPT_TYPE_LABELS = {
-  Import: 'Nhập kho',
-  Export: 'Xuất kho',
-};
-
 export const EMPLOYEE_STATUS_LABELS = {
   Active: 'Đang làm việc',
   Inactive: 'Đã nghỉ việc',
