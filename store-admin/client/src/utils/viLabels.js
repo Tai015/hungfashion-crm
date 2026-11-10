@@ -37,3 +37,25 @@ export const EMPLOYEE_STATUS_LABELS = {
   Inactive: 'Đã nghỉ việc',
   Terminated: 'Đã nghỉ việc',
 };
+
+
+export const CUSTOMER_TIER_LABELS = {
+  New: 'Mới',
+  Regular: 'Thân thiết',
+  Silver: 'Bạc',
+  Gold: 'Vàng',
+  VIP: 'VIP',
+};
+
+export const CUSTOMER_GENDER_LABELS = {
+  Female: 'Nữ',
+  Male: 'Nam',
+  Other: 'Khác',
+};
+
+export const CUSTOMER_SPENDING_SEGMENT_LABELS = {
+  'VIP (≥5M)': 'VIP (từ 5 triệu đồng)',
+  'Gold (2M–5M)': 'Vàng (từ 2 đến dưới 5 triệu đồng)',
+  'Silver (500K–2M)': 'Bạc (từ 500 nghìn đến dưới 2 triệu đồng)',
+  'New (<500K)': 'Mới (dưới 500 nghìn đồng)',
+};
