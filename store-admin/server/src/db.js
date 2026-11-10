@@ -10,7 +10,7 @@ const projectDir = path.dirname(serverDir);
 dotenv.config({ path: path.join(serverDir, '.env') });
 dotenv.config({ path: path.join(serverDir, '.env.example') });
 
-// Bật SSL khi POSTGRES_SSL=true (Aiven bắt buộc SSL), local thì để trống/false.
+// Bật SSL khi POSTGRES_SSL=true (Aiven bắt buộc SSL), local thì để trống/false
 function buildSsl() {
   if (process.env.POSTGRES_SSL !== 'true') return false;
 
@@ -20,17 +20,11 @@ function buildSsl() {
   return { ca: fs.readFileSync(resolvedCaPath, 'utf-8'), rejectUnauthorized: true };
 }
 
-const connectionConfig = process.env.DATABASE_URL
-  ? { connectionString: process.env.DATABASE_URL }
-  : {
-      host: process.env.POSTGRES_HOST,
-      port: Number(process.env.POSTGRES_PORT),
-      database: process.env.POSTGRES_DB,
-      user: process.env.POSTGRES_USER,
-      password: process.env.POSTGRES_PASSWORD,
-    };
-
 export const pool = new Pool({
-  ...connectionConfig,
-  ssl: buildSsl(),
+  host:     process.env.POSTGRES_HOST,
+  port:     Number(process.env.POSTGRES_PORT),
+  database: process.env.POSTGRES_DB,
+  user:     process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  ssl:      buildSsl(),
 });
