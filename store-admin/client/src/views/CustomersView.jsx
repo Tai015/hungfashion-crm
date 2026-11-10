@@ -100,6 +100,7 @@ function CustomerModal({ customer, onClose, onSaved }) {
   ), document.body);
 }
 
+const TIERS = ['New', 'Regular', 'Silver', 'Gold', 'VIP'];
 const TIER_COLOR = { New:'#64748b', Regular:'#0ea5e9', Silver:'#94a3b8', Gold:'#f59e0b', VIP:'#a855f7' };
 
 function CustomerInteractionHistory({ customerId }) {
