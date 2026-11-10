@@ -245,3 +245,89 @@ test('đăng nhập và đăng xuất vẫn thành công khi ghi auth outbox b�
     await db.query('DROP SEQUENCE IF EXISTS e2e_auth_outbox_failures');
   }
 });
+
+test('token cũ bị từ chối sau logout và logout lần hai không gây HTTP 500', async ({ request }) => {
+  const login = await request.post('/api/auth/login', {
+    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+  });
+  expect(login.status()).toBe(200);
+  const { token } = await login.json();
+  const authorization = { Authorization: `Bearer ${token}` };
+
+  const beforeLogout = await request.get('/api/orders/mine', { headers: authorization });
+  expect(beforeLogout.status()).toBe(200);
+
+  const logout = await request.post('/api/auth/logout', { headers: authorization });
+  expect(logout.status()).toBe(200);
+
+  const afterLogout = await request.get('/api/orders/mine', { headers: authorization });
+  expect(afterLogout.status()).toBe(401);
+
+  const secondLogout = await request.post('/api/auth/logout', { headers: authorization });
+  expect(secondLogout.status()).toBe(401);
+  expect(secondLogout.status()).not.toBe(500);
+});
+
+test('logout một phiên không thu hồi phiên khác của cùng tài khoản', async ({ request }) => {
+  const firstLogin = await request.post('/api/auth/login', {
+    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+  });
+  expect(firstLogin.status()).toBe(200);
+  const firstToken = (await firstLogin.json()).token;
+
+  const secondLogin = await request.post('/api/auth/login', {
+    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+  });
+  expect(secondLogin.status()).toBe(200);
+  const secondToken = (await secondLogin.json()).token;
+  expect(secondToken).not.toBe(firstToken);
+
+  const firstSessionRequest = await request.get('/api/orders/mine', {
+    headers: { Authorization: `Bearer ${firstToken}` },
+  });
+  const secondSessionRequest = await request.get('/api/orders/mine', {
+    headers: { Authorization: `Bearer ${secondToken}` },
+  });
+  expect(firstSessionRequest.status()).toBe(200);
+  expect(secondSessionRequest.status()).toBe(200);
+
+  const logoutFirstSession = await request.post('/api/auth/logout', {
+    headers: { Authorization: `Bearer ${firstToken}` },
+  });
+  expect(logoutFirstSession.status()).toBe(200);
+
+  const revokedSessionRequest = await request.get('/api/orders/mine', {
+    headers: { Authorization: `Bearer ${firstToken}` },
+  });
+  expect(revokedSessionRequest.status()).toBe(401);
+
+  const stillActiveSessionRequest = await request.get('/api/orders/mine', {
+    headers: { Authorization: `Bearer ${secondToken}` },
+  });
+  expect(stillActiveSessionRequest.status()).toBe(200);
+});
+
+test('token hết hạn bị từ chối ở API bảo vệ và logout', async ({ request }) => {
+  const { createHmac, randomUUID } = await import('node:crypto');
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    sub: '1',
+    jti: randomUUID(),
+    iat: now - 7200,
+    exp: now - 3600,
+  })).toString('base64url');
+  const unsignedToken = `${header}.${payload}`;
+  const signature = createHmac('sha256', process.env.JWT_SECRET)
+    .update(unsignedToken)
+    .digest('base64url');
+  const expiredToken = `${unsignedToken}.${signature}`;
+  const authorization = { Authorization: `Bearer ${expiredToken}` };
+
+  const protectedRequest = await request.get('/api/orders/mine', { headers: authorization });
+  expect(protectedRequest.status()).toBe(401);
+
+  const logout = await request.post('/api/auth/logout', { headers: authorization });
+  expect(logout.status()).toBe(401);
+});
+
