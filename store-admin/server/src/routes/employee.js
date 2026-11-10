@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
 
+export function createEmployeeRouter(database = pool) {
 const router = Router();
 
 function validateEmployeeContact({ phone, email, address }) {
@@ -21,7 +22,7 @@ router.get('/', async (req, res) => {
     const pattern = `%${String(search).trim()}%`;
     const offset = (pageNumber - 1) * pageSize;
     const [result, count] = await Promise.all([
-      pool.query(
+      database.query(
         `SELECT e.employee_id, e.account_id, e.full_name, e.gender, e.date_of_birth,
                 e.phone, e.email, e.address, e.position, e.hire_date, e.is_active,
                 a.username, r.role_name
@@ -97,7 +98,7 @@ router.put('/:id', async (req, res) => {
 
 // DELETE /api/employees/:id – chỉ cho phép xóa nhân viên đã ngừng hoạt động.
 router.delete('/:id', async (req, res) => {
-  const client = await pool.connect();
+  const client = await database.connect();
   try {
     await client.query('BEGIN');
     const { rows: employeeRows } = await client.query(
@@ -131,4 +132,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-export default router;
+return router;
+}
+
+export default createEmployeeRouter();
