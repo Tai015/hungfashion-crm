@@ -30,6 +30,10 @@ const TH       = 'px-3.5 py-2.5 text-left text-[0.72rem] font-semibold tracking-
 const TD       = 'px-3.5 py-3 border-b border-white/[0.05] text-white/78 align-middle';
 
 const fmtDate = v => v ? new Date(v).toLocaleDateString('vi-VN') : '—';
+const getLocalDate = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+};
 const fmtDT   = v => v ? new Date(v).toLocaleString('vi-VN') : '—';
 const audienceLabel = (s, interests = []) => {
   const p = [];
@@ -61,6 +65,8 @@ export default function SurveysView() {
   const [statusFilter, setStatusFilter] = useState('');
   const [title, setTitle]     = useState('');
   const [description, setDescription] = useState('');
+  const [startDate, setStartDate] = useState(getLocalDate);
+  const [endDate, setEndDate] = useState('');
   const [targeting, setTargeting] = useState(EMPTY_TARGETING);
   const [interestOptions, setInterestOptions] = useState([]);
   const [rewardOptions, setRewardOptions] = useState([]);
@@ -96,12 +102,14 @@ export default function SurveysView() {
 
   const newQ = () => ({ key: crypto.randomUUID(), question_text:'', question_type:'SingleChoice', is_required:true, options:['Rất hài lòng','Hài lòng','Bình thường','Chưa hài lòng'] });
 
-  const openCreate = () => { setEditingId(null); setTitle(''); setDescription(''); setTargeting(EMPTY_TARGETING); setQuestions([newQ()]); setError(''); setMessage(''); setDetail(null); setFormOpen(true); };
+  const openCreate = () => { setEditingId(null); setTitle(''); setDescription(''); setStartDate(getLocalDate()); setEndDate(''); setTargeting(EMPTY_TARGETING); setQuestions([newQ()]); setError(''); setMessage(''); setDetail(null); setFormOpen(true); };
   const openEdit = async id => {
     setBusy(true); setError(''); setMessage('');
     try {
       const s = await apiFetch(`/api/surveys/${id}`);
       setEditingId(id); setTitle(s.title||''); setDescription(s.description||'');
+      setStartDate(s.start_date ? String(s.start_date).slice(0,10) : getLocalDate());
+      setEndDate(s.end_date ? String(s.end_date).slice(0,10) : '');
       setTargeting({
         target_gender:s.target_gender||'', target_tier:s.target_tier||'',
         min_age:s.min_age == null ? '' : String(s.min_age),
@@ -125,6 +133,8 @@ export default function SurveysView() {
         method: editingId ? 'PATCH' : 'POST',
         body: {
           title, description,
+          start_date: startDate,
+          end_date: endDate,
           target_gender:targeting.target_gender || null,
           target_tier:targeting.target_tier || null,
           min_age:targeting.min_age === '' ? null : Number(targeting.min_age),
@@ -203,6 +213,17 @@ export default function SurveysView() {
               <Field label="Tên khảo sát *" hint="Tên ngắn gọn giúp khách hàng nhận biết nội dung.">
                 <input required maxLength={300} className={INPUT} value={title} onChange={e => setTitle(e.target.value)} placeholder="Ví dụ: Khảo sát trải nghiệm mua sắm" />
               </Field>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Ngày bắt đầu">
+                  <input type="date" className={INPUT} value={startDate} readOnly aria-readonly="true" />
+                  <small className="text-white/35 text-xs">Tự động lấy ngày hiện tại.</small>
+                </Field>
+                <Field label="Ngày kết thúc *">
+                  <input type="date" required min={startDate} className={INPUT} value={endDate}
+                    onChange={e => setEndDate(e.target.value)} />
+                  <small className="text-white/35 text-xs">Khảo sát có hiệu lực đến hết ngày đã chọn.</small>
+                </Field>
+              </div>
               <Field label={<>Mô tả <small className="text-white/30 font-normal">Không bắt buộc</small></>}>
                 <textarea maxLength={2000} rows={3} className={TEXTAREA} value={description} onChange={e => setDescription(e.target.value)} placeholder="Cho khách hàng biết mục đích và thời gian hoàn thành." />
               </Field>
