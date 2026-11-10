@@ -174,6 +174,20 @@ test('tự ghi nhận đăng nhập và đăng xuất qua outbox vào lịch s�
   expect(logoutEvent.session_id).toBe(sessionId);
   expect(logoutEvent.session_id).toBe(loginEvent.session_id);
   expect(logoutEvent.session_id).not.toBeNull();
+
+  const timeline = await db.query(
+    `SELECT interaction_type, title
+     FROM customer_interaction_timeline
+     WHERE customer_id = (
+       SELECT customer_id FROM customer WHERE account_id = $1
+     )
+       AND interaction_id IN ($2, $3)
+     ORDER BY occurred_at ASC`,
+    [user.account_id, `user-event:${loginEvent.event_id ? loginEvent.event_id : ''}`, `user-event:${logoutEvent.event_id ? logoutEvent.event_id : ''}`],
+  );
+  expect(timeline.rows).toHaveLength(2);
+  expect(timeline.rows.map(row => row.interaction_type)).toEqual(['account_access', 'account_access']);
+  expect(timeline.rows.map(row => row.title)).toEqual(['Khách hàng đăng nhập', 'Khách hàng đăng xuất']);
 });
 
 
