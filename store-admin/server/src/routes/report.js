@@ -310,8 +310,8 @@ router.get('/revenue', async (req, res) => {
   if ((from === undefined) !== (to === undefined)) {
     return res.status(400).json({ message: 'Cần truyền cả from và to để lọc theo thời gian.' });
   }
-  const fromDate = from ?? new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-  const toDate = to ?? new Date().toISOString().slice(0, 10);
+  const toDate = to ?? new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const fromDate = from ?? new Date(Date.parse(`${toDate}T00:00:00.000Z`) - 29 * 86400000).toISOString().slice(0, 10);
   const days = rangeDays(fromDate, toDate);
   if (days < 1 || days > 3660 || (groupBy === 'day' && days > 366)) {
     return res.status(400).json({ message: 'Khoảng ngày không hợp lệ. Gom theo ngày tối đa 366 ngày; khoảng dài hơn nên dùng tuần hoặc tháng.' });
