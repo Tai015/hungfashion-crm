@@ -135,7 +135,7 @@ async function ensureCustomer(client, {
 }) {
   // Seed data phải có email để có thể đối chiếu hồ sơ khách hàng.
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-  if (!normalizedEmail || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+  if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
     throw new Error(`Email seed không hợp lệ hoặc bị thiếu của khách hàng "${fullName}".`);
   }
 
@@ -145,7 +145,7 @@ async function ensureCustomer(client, {
   if (!['Male', 'Female', 'Other'].includes(normalizedGender)) {
     throw new Error(`Giới tính seed không hợp lệ của khách hàng "${fullName}".`);
   }
-  if (typeof dob !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(dob)) {
+  if (typeof dob !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
     throw new Error(`Khách hàng seed "${fullName}" phải có ngày sinh theo định dạng YYYY-MM-DD.`);
   }
   const birthDate = new Date(`${dob}T00:00:00.000Z`);
