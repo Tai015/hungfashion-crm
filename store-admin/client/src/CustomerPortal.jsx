@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, ShoppingBag, ShoppingCart, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShoppingBag, ShoppingCart, UserRound, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useModalEffects } from './hooks/useModalEffects';
 import Pagination from './components/Pagination';
