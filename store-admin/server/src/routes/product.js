@@ -149,13 +149,13 @@ router.get('/', async (req, res) => {
       [category_id, 'p.category_id', 'Danh mục'],
       [brand_id, 'p.brand_id', 'Thương hiệu'],
     ]) {
-      if (value !== undefined && (!/^\\d+$/.test(String(value)) || Number(value) < 1)) return res.status(400).json({ message: `${label} không hợp lệ.` });
-      if (value !== undefined) { params.push(Number(value)); conditions.push(`${column} = ${params.length}`); }
+      if (value !== undefined && (!/^\d+$/.test(String(value)) || Number(value) < 1)) return res.status(400).json({ message: `${label} không hợp lệ.` });
+      if (value !== undefined) { params.push(Number(value)); conditions.push(`${column} = $${params.length}`); }
     }
     if (supplier_id !== undefined) {
-      if (!/^\\d+$/.test(String(supplier_id)) || Number(supplier_id) < 1) return res.status(400).json({ message: 'Nhà cung cấp không hợp lệ.' });
+      if (!/^\d+$/.test(String(supplier_id)) || Number(supplier_id) < 1) return res.status(400).json({ message: 'Nhà cung cấp không hợp lệ.' });
       params.push(Number(supplier_id));
-      conditions.push(`EXISTS (SELECT 1 FROM product_supplier ps WHERE ps.product_id=p.product_id AND ps.supplier_id=${params.length})`);
+      conditions.push(`EXISTS (SELECT 1 FROM product_supplier ps WHERE ps.product_id=p.product_id AND ps.supplier_id=$${params.length})`);
     }
     for (const [value, operator, label] of [
       [min_price, '>=', 'Giá tối thiểu'],
