@@ -211,13 +211,21 @@ jobs:
             (NULL, 'payment_completed', 'legacy-fixture', 'success', NOW());
           SQL
 
+          # Add a product with no variants before the upgrade to verify migration 025 backfills it.
+          psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO category (category_name) VALUES ('Legacy no-variant category');
+          INSERT INTO product (category_id, product_name, import_price, selling_price)
+          SELECT category_id, 'Legacy no-variant product', 10000, 20000
+          FROM category WHERE category_name = 'Legacy no-variant category';
+          SQL
+
           # Simulate the old customer column before migration 022, even though schema.sql is the current baseline.
           psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -c "ALTER TABLE customer ALTER COLUMN gender DROP NOT NULL; ALTER TABLE customer ALTER COLUMN gender DROP DEFAULT;"
           psql -h localhost -U postgres -d store_admin_legacy_test -v ON_ERROR_STOP=1 -c "INSERT INTO customer (full_name, email, gender) VALUES ('Legacy gender fixture', 'legacy-gender@hungfashion.test', NULL)"
 
           echo "Prepared a database at migration 017 with valid UUID, legacy text, NULL event IDs and a customer with NULL gender."
 
-      - name: Upgrade existing database through migrations 018-024
+      - name: Upgrade existing database through migrations 018-025
         working-directory: store-admin
         run: npm run db:migrate --workspace server
 
