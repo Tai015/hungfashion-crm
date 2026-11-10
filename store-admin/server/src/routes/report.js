@@ -547,9 +547,9 @@ router.get('/audit-logs', async (req, res) => {
     addFilter("COALESCE(c.full_name, e.full_name, a.username, '')", req.query.user);
     if (from !== undefined) {
       values.push(from);
-      conditions.push(`ue.occurred_at >= (${values.length}::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`);
+      conditions.push(`ue.occurred_at >= ($${values.length}::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`);
       values.push(to);
-      conditions.push(`ue.occurred_at < ((${values.length}::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`);
+      conditions.push(`ue.occurred_at < (($${values.length}::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`);
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const joins = `FROM user_events ue
