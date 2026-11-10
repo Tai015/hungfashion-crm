@@ -264,31 +264,6 @@ router.get('/assign/customers', async (req, res) => {
     return res.status(500).json({ message: 'Không thể tải danh sách khách hàng để phân bổ.' });
   }
 });
-// POST /api/promotions/assign – gán mã cho khách hàng');
-      params.push(`%${escapedSearch}%`);
-      conditions.push(`(full_name ILIKE $1 OR phone ILIKE $1 OR email ILIKE $1)`);
-    }
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-    const limitParam = params.length + 1;
-    const offsetParam = params.length + 2;
-    const [customers, count] = await Promise.all([
-      pool.query(
-        `SELECT customer_id, full_name, phone, email
-         FROM customer
-         ${where}
-         ORDER BY full_name, customer_id
-         LIMIT ${limitParam} OFFSET ${offsetParam}`,
-        [...params, limit, (page - 1) * limit],
-      ),
-      pool.query(`SELECT COUNT(*)::int AS total FROM customer ${where}`, params),
-    ]);
-    return res.json({ data: customers.rows, total: count.rows[0].total, page, limit });
-  } catch (error) {
-    console.error('[promotions] customer assignment search failed:', error.message);
-    return res.status(500).json({ message: 'Không thể tải danh sách khách hàng để phân bổ.' });
-  }
-});
-
 // POST /api/promotions/assign – gán mã cho khách hàng
 router.post('/assign', async (req, res) => {
   try {
