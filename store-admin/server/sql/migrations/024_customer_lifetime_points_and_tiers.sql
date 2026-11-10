@@ -52,22 +52,11 @@ WITH order_earnings AS (
   WHERE customer_id IS NOT NULL
   GROUP BY customer_id
 ),
-ledger_earnings AS (
-  SELECT customer_id,
-         GREATEST(0, COALESCE(SUM(points_delta) FILTER (
-           WHERE transaction_type IN ('OpeningBalance', 'Earned', 'EarnReversed')
-         ), 0))::INTEGER AS points
-  FROM loyalty_point_transaction
-  GROUP BY customer_id
-),
 reconstructed AS (
   SELECT c.customer_id,
-         GREATEST(COALESCE(c.points_balance, 0),
-                  COALESCE(o.points, 0),
-                  COALESCE(l.points, 0))::INTEGER AS lifetime_points
+         GREATEST(COALESCE(c.points_balance, 0), COALESCE(o.points, 0))::INTEGER AS lifetime_points
   FROM customer c
   LEFT JOIN order_earnings o USING (customer_id)
-  LEFT JOIN ledger_earnings l USING (customer_id)
 )
 UPDATE customer c
 SET lifetime_points = r.lifetime_points,

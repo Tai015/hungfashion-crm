@@ -243,11 +243,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Hạng thành viên được tự động xác định từ lifetime_points.
-router.patch('/:id/tier', (_req, res) => res.status(409).json({
-  message: 'Hạng thành viên được tự động xác định theo tổng điểm tích lũy trọn đời; không thể cập nhật thủ công.',
-}));
-
 // PATCH /api/customers/:id/account-status – khóa/mở khóa tài khoản khách hàng
 router.patch('/:id/account-status', async (req, res) => {
   const { status } = req.body || {};
