@@ -29,9 +29,9 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
   const isEdit = Boolean(product);
   const [form, setForm] = useState(product ? {
     product_name: product.product_name||'', category_id: product.category_id||'',
-    supplier_id: product.supplier_id||'', import_price: product.import_price||'',
+    supplier_ids: product.supplier_ids||[], import_price: product.import_price||'',
     selling_price: product.selling_price||'', description: product.description||'',
-  } : { product_name:'', category_id:'', supplier_id:'', import_price:'', selling_price:'', description:'' });
+  } : { product_name:'', category_id:'', supplier_ids:[], import_price:'', selling_price:'', description:'' });
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
   const [variants, setVariants] = useState([]);
@@ -51,6 +51,7 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
     apiFetch(`/api/products/${product.product_id}`)
       .then(detail => {
         if (cancelled) return;
+        setForm(current => ({ ...current, supplier_ids: detail.supplier_ids || [] }));
         setVariants((detail.variants || []).map(variant => ({
           variant_id: variant.variant_id,
           is_default: Boolean(variant.is_default),
@@ -95,7 +96,7 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
         import_price:Number(form.import_price),
         selling_price:Number(form.selling_price),
         category_id:Number(form.category_id)||null,
-        supplier_id:Number(form.supplier_id)||null,
+        supplier_ids:form.supplier_ids.map(Number),
         variants: variants.map(variant => ({
           ...(variant.variant_id ? { variant_id: variant.variant_id } : {}),
           is_default: Boolean(variant.is_default),
@@ -136,10 +137,10 @@ function ProductModal({ product, categories, suppliers, sizes, colors, onClose, 
               </select>
             </Field>
             <Field label="Nhà cung cấp">
-              <select className={SELECT} value={form.supplier_id} onChange={e => setForm({...form, supplier_id:e.target.value})}>
-                <option value="">-- Chọn nhà cung cấp --</option>
+              <select multiple className={SELECT + ' min-h-[88px] py-2'} value={form.supplier_ids.map(String)} onChange={e => setForm({...form, supplier_ids:Array.from(e.target.selectedOptions, option => Number(option.value))})}>
                 {suppliers.map(s => <option key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</option>)}
               </select>
+              <span className="text-[11px] text-white/40">Có thể chọn nhiều nhà cung cấp; nhà cung cấp thực tế được ghi riêng trên từng phiếu nhập kho.</span>
             </Field>
             <Field label="Giá nhập (đ)"><input type="number" min="0" placeholder="0" className={INPUT} value={form.import_price} onChange={e => setForm({...form, import_price:e.target.value})} /></Field>
             <Field label="Giá bán (đ)"><input type="number" min="0" placeholder="0" className={INPUT} value={form.selling_price} onChange={e => setForm({...form, selling_price:e.target.value})} /></Field>
