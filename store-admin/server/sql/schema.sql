@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS customer (
   customer_id   SERIAL        PRIMARY KEY,
   account_id    INT           UNIQUE REFERENCES account(account_id) ON DELETE SET NULL,
   full_name     VARCHAR(150)  NOT NULL,
-  gender        gender_type,
+  gender        gender_type  DEFAULT 'Other',
   date_of_birth DATE,
   phone         VARCHAR(20),
   email         VARCHAR(150)  NOT NULL,
