@@ -264,7 +264,7 @@ function FeedbackSurveyTab({ from, to }) {
     ...feedbackRows.map(row => ['Phản hồi gần đây', `${row.customer_name || 'Khách hàng'} · ${row.product_name || row.feedback_type}`, Number(row.rating) || '', row.status, row.created_at ? new Date(row.created_at).toISOString() : '']),
     ...(results.data?.questions || []).flatMap(question => [
       ...(question.options || []).map(option => ['Kết quả khảo sát', `${question.question_text} · ${option.option_text}`, Number(option.vote_count) || 0, '', '']),
-      ...(question.text_answers || []).map((answer, index) => ['Câu trả lời tự luận', `${question.question_text} · Câu trả lời ${index + 1}: ${answer}`, 1, '', '']),
+      ...(question.text_answers || []).map((answer, index) => ['Câu trả lời tự luận', `${question.question_text} · Câu trả lời ${index + 1}: ${answer.answer_text}`, Number(answer.count) || 0, '', '']),
     ]),
   ];
   return <>
@@ -284,7 +284,7 @@ function FeedbackSurveyTab({ from, to }) {
           <p className="reports-subtle">Có {formatCount(Number(question.answered_count) || 0)} người đã trả lời câu hỏi này.</p>
           {question.question_type === 'Text'
             ? question.text_answers?.length
-              ? <ul className="reports-survey-text-answers">{question.text_answers.map((answer, index) => <li key={index}>{answer}</li>)}</ul>
+              ? <ul className="reports-survey-text-answers">{question.text_answers.map((answer, index) => <li key={index}>{answer.answer_text} <span className="reports-subtle">({formatCount(Number(answer.count) || 0)} lượt)</span></li>)}</ul>
               : <p className="reports-empty">Chưa có câu trả lời tự luận.</p>
             : <SurveyOptionsChart options={question.options || []} answeredCount={question.answered_count} />}
         </div>)}
