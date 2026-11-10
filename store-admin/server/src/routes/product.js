@@ -296,10 +296,49 @@ router.post('/', receiveProductImage, parseProductImage, async (req, res) => {
 // PUT/PATCH /api/products/:id – cập nhật sản phẩm (PATCH là alias cho PUT)
 async function updateProduct(req, res) {
   let uploadedImage;
+  let client;
+  let transactionStarted = false;
   try {
-    const { category_id, supplier_id, product_name, description, import_price, selling_price, image_url } = productRequestData(req);
+    const data = productRequestData(req);
+    const { category_id, supplier_id, product_name, description, import_price, selling_price, image_url, variants } = data;
+    if (variants !== undefined && !Array.isArray(variants)) {
+      return res.status(400).json({ message: 'Danh sách biến thể không hợp lệ.' });
+    }
+    if (Array.isArray(variants)) {
+      const seenSkus = new Set();
+      const seenPairs = new Set();
+      let defaultCount = 0;
+      for (const variant of variants) {
+        const sku = typeof variant?.sku === 'string' ? variant.sku.trim() : '';
+        const quantity = Number(variant?.quantity);
+        if (!sku || sku.length > 100 || !Number.isInteger(quantity) || quantity < 0) {
+          return res.status(400).json({ message: 'Mã SKU hoặc số lượng biến thể không hợp lệ.' });
+        }
+        if (seenSkus.has(sku.toLowerCase())) return res.status(409).json({ message: 'Mã SKU bị trùng trong danh sách biến thể.' });
+        seenSkus.add(sku.toLowerCase());
+        if (variant.is_default) {
+          defaultCount += 1;
+          if (variant.size_id != null || variant.color_id != null) {
+            return res.status(400).json({ message: 'Biến thể mặc định không được có kích cỡ hoặc màu.' });
+          }
+        } else {
+          const sizeId = Number(variant.size_id), colorId = Number(variant.color_id);
+          if (!Number.isInteger(sizeId) || sizeId < 1 || !Number.isInteger(colorId) || colorId < 1) {
+            return res.status(400).json({ message: 'Vui lòng chọn kích cỡ và màu cho từng biến thể.' });
+          }
+          const pair = `${sizeId}:${colorId}`;
+          if (seenPairs.has(pair)) return res.status(409).json({ message: 'Tổ hợp kích cỡ và màu bị trùng.' });
+          seenPairs.add(pair);
+        }
+      }
+      if (defaultCount > 1) return res.status(400).json({ message: 'Mỗi sản phẩm chỉ được có một biến thể mặc định.' });
+      if (variants.length === 0) return res.status(400).json({ message: 'Sản phẩm phải có ít nhất một biến thể.' });
+    }
     if (req.file) uploadedImage = await storeProductImage(req.file.buffer, req.file.mimetype);
-    const { rows } = await pool.query(
+    client = await pool.connect();
+    await client.query('BEGIN');
+    transactionStarted = true;
+    const { rows } = await client.query(
       `UPDATE product
        SET category_id=$1, supplier_id=$2, product_name=$3, description=$4,
            import_price=$5, selling_price=$6, image_url=COALESCE($7, image_url), updated_at=NOW()
@@ -307,18 +346,82 @@ async function updateProduct(req, res) {
       [category_id||null, supplier_id||null, product_name, description, import_price, selling_price, uploadedImage?.url || image_url || null, req.params.id]
     );
     if (!rows.length) {
+      await client.query('ROLLBACK');
+      transactionStarted = false;
       await cleanupProductImage(uploadedImage);
       return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
     }
+    if (Array.isArray(variants)) {
+      const { rows: existingRows } = await client.query(
+        'SELECT variant_id, is_default, quantity FROM product_variant WHERE product_id=$1 AND is_active=TRUE FOR UPDATE',
+        [req.params.id]
+      );
+      const existingIds = new Set(existingRows.map(row => Number(row.variant_id)));
+      const submittedIds = new Set();
+      for (const variant of variants) {
+        if (variant.variant_id != null) {
+          const id = Number(variant.variant_id);
+          if (!Number.isInteger(id) || !existingIds.has(id) || submittedIds.has(id)) {
+            const error = new Error('Danh sách biến thể chứa mã không hợp lệ.');
+            error.status = 400;
+            throw error;
+          }
+          submittedIds.add(id);
+          const { rows: updated } = await client.query(
+            `UPDATE product_variant
+             SET size_id=$1, color_id=$2, sku=$3, quantity=$4, is_default=$5
+             WHERE variant_id=$6 AND product_id=$7 AND is_active=TRUE
+             RETURNING variant_id`,
+            [variant.is_default ? null : Number(variant.size_id), variant.is_default ? null : Number(variant.color_id),
+             variant.sku.trim(), Number(variant.quantity), Boolean(variant.is_default), id, req.params.id]
+          );
+          if (!updated.length) throw new Error('Không thể cập nhật biến thể.');
+        } else {
+          await client.query(
+            `INSERT INTO product_variant (product_id, size_id, color_id, sku, quantity, is_default, is_active)
+             VALUES ($1,$2,$3,$4,$5,$6,TRUE)`,
+            [req.params.id, variant.is_default ? null : Number(variant.size_id), variant.is_default ? null : Number(variant.color_id),
+             variant.sku.trim(), Number(variant.quantity), Boolean(variant.is_default)]
+          );
+        }
+      }
+      const removed = existingRows.filter(row => !submittedIds.has(Number(row.variant_id)));
+      // New rows have no ID in the submitted payload; only omitted existing IDs are retired.
+      for (const variant of removed) {
+        if (Number(variant.quantity) > 0) {
+          const error = new Error('Không thể ngừng biến thể còn tồn kho. Hãy xử lý tồn kho về 0 trước.');
+          error.status = 409;
+          throw error;
+        }
+        await client.query(
+          'UPDATE product_variant SET is_active=FALSE WHERE variant_id=$1 AND product_id=$2',
+          [variant.variant_id, req.params.id]
+        );
+      }
+      const { rows: activeRows } = await client.query(
+        'SELECT variant_id FROM product_variant WHERE product_id=$1 AND is_active=TRUE',
+        [req.params.id]
+      );
+      if (activeRows.length === 0) {
+        const error = new Error('Sản phẩm phải có ít nhất một biến thể đang hoạt động.');
+        error.status = 400;
+        throw error;
+      }
+    }
+    await client.query('COMMIT');
+    transactionStarted = false;
     res.json(rows[0]);
   } catch (err) {
+    if (transactionStarted) await client?.query('ROLLBACK').catch(() => {});
     await cleanupProductImage(uploadedImage);
     console.error('[products] update failed:', err);
     const storageFailed = req.file && !uploadedImage;
     const cloudinaryMode = String(process.env.MEDIA_STORAGE || '').trim().toLowerCase() === 'cloudinary';
-    res.status(storageFailed && cloudinaryMode ? 502 : 500).json({
+    res.status(storageFailed && cloudinaryMode ? 502 : err.status || 500).json({
       message: storageFailed ? `Không thể lưu ảnh${cloudinaryMode ? ' lên Cloudinary' : ''}. Vui lòng thử lại.` : err.message,
     });
+  } finally {
+    client?.release();
   }
 }
 router.put('/:id', receiveProductImage, parseProductImage, updateProduct);
