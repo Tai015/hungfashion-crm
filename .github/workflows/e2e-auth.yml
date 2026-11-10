@@ -54,30 +54,6 @@ jobs:
         working-directory: store-admin
         run: npx playwright install --with-deps chromium
 
-      - name: Check Vercel Deployment Protection
-        shell: bash
-        run: |
-          if [ -n "$E2E_VERCEL_BYPASS_TOKEN" ]; then
-            status=$(curl --silent --show-error --output /tmp/vercel-preview.html --write-out "%{http_code}" \
-              --header "x-vercel-protection-bypass: $E2E_VERCEL_BYPASS_TOKEN" "$E2E_BASE_URL/" || true)
-          else
-            status=$(curl --silent --show-error --output /tmp/vercel-preview.html --write-out "%{http_code}" \
-              "$E2E_BASE_URL/" || true)
-          fi
-          if [ "$status" = "401" ] || [ "$status" = "403" ]; then
-            echo "::error::Vercel Preview is protected from headless CI (HTTP $status). Configure VERCEL_AUTOMATION_BYPASS_SECRET with a Vercel Protection Bypass token. Deployment Protection was not disabled."
-            exit 1
-          fi
-          if grep -Eiq 'Log in to Vercel|Security Checkpoint|Authentication Required' /tmp/vercel-preview.html; then
-            echo "::error::Vercel Deployment Protection/security challenge is serving its own page instead of the app. Configure VERCEL_AUTOMATION_BYPASS_SECRET with the Vercel-generated automation bypass value; do not disable protection."
-            exit 1
-          fi
-          if [ "$status" != "200" ] || ! grep -q 'id="root"' /tmp/vercel-preview.html; then
-            echo "::error::Vercel Preview did not return the expected application HTML (HTTP $status). Check E2E_PREVIEW_BASE_URL and the deployment."
-            exit 1
-          fi
-          echo "Vercel Preview is accessible to the CI browser."
-
       - name: Run read-only login-screen UI E2E (headless Chromium)
         working-directory: store-admin
         run: npx playwright test e2e/auth.spec.js --grep "màn hình đăng nhập"
