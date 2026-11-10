@@ -1,5 +1,24 @@
 import { defineConfig } from '@playwright/test';
 
+const configuredBaseUrl = process.env.E2E_BASE_URL?.trim();
+
+if (!configuredBaseUrl) {
+  throw new Error(
+    'Thiếu E2E_BASE_URL. Hãy chọn Local/Render trong Electron Launcher hoặc đặt E2E_BASE_URL trước khi chạy Playwright.',
+  );
+}
+
+let baseURL;
+try {
+  const parsedUrl = new URL(configuredBaseUrl);
+  if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+    throw new Error('Chỉ chấp nhận HTTP hoặc HTTPS.');
+  }
+  baseURL = parsedUrl.href.replace(/\/+$/, '');
+} catch (error) {
+  throw new Error(`E2E_BASE_URL không hợp lệ ("${configuredBaseUrl}"): ${error.message}`);
+}
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 180_000,
@@ -10,7 +29,7 @@ export default defineConfig({
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
   ],
   use: {
-    baseURL: process.env.E2E_BASE_URL || 'https://hungfashion-crm.onrender.com',
+    baseURL,
     browserName: 'chromium',
     headless: process.env.E2E_HEADED !== '1',
     navigationTimeout: 150_000,
