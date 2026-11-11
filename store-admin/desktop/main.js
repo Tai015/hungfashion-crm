@@ -305,6 +305,18 @@ async function openLocal(target = 'employee') {
     if (!apiHost || !Number.isInteger(apiPort) || apiPort < 1 || apiPort > 65535) {
       throw new Error('Cấu hình LOCAL_HOST hoặc PORT không hợp lệ trong server/.env.');
     }
+
+    // CI-only path: Playwright starts disposable PostgreSQL/Kafka and the local
+    // API/Vite processes itself, then exercises this real Electron launcher button.
+    // Normal desktop use always follows the Docker startup path below.
+    if (process.env.E2E_ELECTRON_TEST_MODE === 'true') {
+      if (target !== 'employee') throw new Error('Electron E2E mode only supports the employee login flow.');
+      await Promise.all([waitForWeb(localBaseUrl), waitForApi(apiHost, apiPort, false)]);
+      openEmployeeWindow(targetUrl);
+      report('Electron E2E: đã mở cửa sổ đăng nhập nhân viên.');
+      return { ok: true };
+    }
+
     await runCommand('docker', ['compose', '--env-file', envFile, 'up', '-d', '--remove-orphans', 'postgres', 'kafka'], projectDir);
     await Promise.all([
       waitForPort(apiHost, Number(environment.POSTGRES_PORT)),
