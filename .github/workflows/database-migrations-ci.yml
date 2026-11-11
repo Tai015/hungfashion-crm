@@ -110,14 +110,31 @@ jobs:
           FROM survey s CROSS JOIN customer c
           WHERE s.title = 'Timeline CI survey'
             AND c.full_name = 'Timeline CI customer';
+
+          INSERT INTO order_confirmation_email (order_id, customer_id, recipient_email)
+          SELECT o.order_id, c.customer_id, c.email
+          FROM "order" o JOIN customer c USING (customer_id)
+          WHERE c.full_name = 'Timeline CI customer';
+          INSERT INTO order_confirmation_email_attempt
+            (email_id, order_id, customer_id, recipient_email, status, provider_message_id)
+          SELECT e.email_id, e.order_id, e.customer_id, e.recipient_email, 'sent', 'resend-ci-message'
+          FROM order_confirmation_email e
+          JOIN customer c USING (customer_id)
+          WHERE c.full_name = 'Timeline CI customer';
           SQL
 
           timeline_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer'")"
-          test "$timeline_count" = "3"
+          test "$timeline_count" = "4"
           order_event_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer' AND t.interaction_type = 'order'")"
           test "$order_event_count" = "1"
           survey_event_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer' AND t.interaction_type = 'survey_invitation'")"
           test "$survey_event_count" = "1"
+          email_event_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer' AND t.interaction_type = 'email'")"
+          test "$email_event_count" = "1"
+          email_sent_column="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='order' AND column_name='confirmation_email_sent_at'")"
+          test "$email_sent_column" = "1"
+          email_queue_unique="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM pg_indexes WHERE schemaname='public' AND tablename='order_confirmation_email' AND indexdef LIKE '%UNIQUE%order_id%'")"
+          test "$email_queue_unique" = "1"
 
           default_gender="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT gender::text FROM customer WHERE email = 'timeline-ci@hungfashion.test'")"
           test "$default_gender" = "Other"
@@ -155,7 +172,7 @@ jobs:
         run: |
           set -euo pipefail
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "26"
+          test "$applied_count" = "27"
           echo "Verified: rerunning migrations does not create duplicate migration records."
 
   legacy-database-upgrade:
@@ -264,10 +281,10 @@ jobs:
           test "$null_event_count" = "1"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "026"
+          test "$latest_version" = "027"
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "26"
+          test "$applied_count" = "27"
 
           legacy_gender="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT gender::text FROM customer WHERE email = 'legacy-gender@hungfashion.test'")"
           test "$legacy_gender" = "Other"
