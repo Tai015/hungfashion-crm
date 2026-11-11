@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   buildOrderConfirmationEmail,
+  buildOrderStatusEmail,
   enqueueOrderConfirmationEmail,
   escapeHtml,
   isValidEmail,
@@ -69,7 +70,7 @@ test('queues one confirmation per order with a stable recipient and conflict pro
   assert.equal(queued, true);
   assert.equal(calls.length, 1);
   assert.match(calls[0].sql, /ON CONFLICT \(order_id\) DO NOTHING/);
-  assert.deepEqual(calls[0].params, [42, 7, 'customer@example.com', JSON.stringify({ subject: 'Test', html: '<p>Test</p>', text: 'Test' })]);
+  assert.deepEqual(calls[0].params, [42, 7, 'customer@example.com', JSON.stringify({ subject: 'Test', html: '<p>Test</p>', text: 'Test' }), 'order_confirmation']);
 });
 
 test('skips customers without a valid email and does not touch the queue', async () => {
@@ -82,4 +83,33 @@ test('skips customers without a valid email and does not touch the queue', async
     orderId: 44, customerId: 8, recipientEmail: 'invalid',
   }), false);
   assert.equal(queryCount, 0);
+});
+
+test('builds Vietnamese lifecycle emails for cancellation, delivery, and payment', () => {
+  const order = {
+    order_id: 123,
+    customer_name: 'Nguyễn Văn An',
+    ordered_at: '2026-11-11T03:00:00.000Z',
+    total_amount: 1250000,
+  };
+  const details = [{ product_name: 'Áo thun', quantity: 2, subtotal: 1250000 }];
+  const cases = [
+    ['order_cancelled', /hủy đơn hàng #123/i, /Đơn hàng đã được hủy/],
+    ['order_delivered', /đã được giao/i, /Đơn hàng đã được giao/],
+    ['payment_paid', /Đã nhận thanh toán/i, /Thanh toán thành công/],
+  ];
+  for (const [eventType, subjectPattern, textPattern] of cases) {
+    const email = buildOrderStatusEmail({ order, details, eventType });
+    assert.match(email.subject, subjectPattern);
+    assert.match(email.text, textPattern);
+    assert.match(email.text, /Nguyễn Văn An/);
+    assert.match(email.text, /Áo thun x 2/);
+    assert.doesNotMatch(email.text, /<[^>]+>/);
+  }
+});
+
+test('rejects unsupported lifecycle email event types', () => {
+  assert.throws(() => buildOrderStatusEmail({
+    order: { order_id: 1 }, details: [], eventType: 'unknown',
+  }), /không hợp lệ/);
 });
