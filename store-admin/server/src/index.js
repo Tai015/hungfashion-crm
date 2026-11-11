@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { createKafkaClient } from './kafka.js';
 import { logger } from './logger.js';
 import { createRequestLoggingMiddleware } from './request-logging.js';
+import { createBusinessAuditMiddleware } from './business-audit.js';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -57,6 +58,7 @@ const eventRateLimits = new Map();
 
 app.use(cors({ exposedHeaders: ['X-Request-Id'] }));
 app.use(express.json({ limit: '100kb' }));
+app.use(createBusinessAuditMiddleware());
 app.use(demoPaymentRouter);
 
 // ── Health check ──────────────────────────────────────────
