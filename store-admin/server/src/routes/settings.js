@@ -323,7 +323,7 @@ router.get('/catalog-products', async (req, res) => {
   }
 });
 
-router.post('/scrape', async (_req, res) => {
+router.post('/scrape', async (req, res) => {
   if (!acquireOperation(res, 'scrape')) return;
   let client;
   let transactionStarted = false;
@@ -374,7 +374,7 @@ router.post('/scrape', async (_req, res) => {
   }
 });
 
-router.post('/seed', async (_req, res) => {
+router.post('/seed', async (req, res) => {
   if (!acquireOperation(res, 'seed')) return;
   try {
     const seedScript = path.join(storeAdminDir, 'scripts', 'seed.mjs');
@@ -419,7 +419,7 @@ router.post('/seed', async (_req, res) => {
   }
 });
 
-router.get('/database/backup', async (_req, res) => {
+router.get('/database/backup', async (req, res) => {
   if (!acquireOperation(res, 'backup')) return;
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'hungfashion-backup-')).catch(error => {
     releaseOperation();
