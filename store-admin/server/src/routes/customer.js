@@ -113,6 +113,16 @@ router.get('/stats/overview', async (_req, res) => {
 // Lịch sử tương tác được tổng hợp từ VIEW, phân trang bằng cursor.
 router.use('/:id/interactions', createCustomerInteractionsRouter());
 
+// GET /api/customers/interests – danh mục sở thích có thể gán cho khách hàng
+router.get('/interests', async (_req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT interest_id, interest_name FROM interest ORDER BY interest_name');
+    res.json({ data: rows });
+  } catch {
+    res.status(500).json({ message: 'Không thể tải danh mục sở thích.' });
+  }
+});
+
 // GET /api/customers/:id
 router.get('/:id', async (req, res) => {
   try {
@@ -166,11 +176,16 @@ router.post('/', async (req, res) => {
 
     if (Array.isArray(interests)) {
       for (const interestName of [...new Set(interests)]) {
+        const { rows: interestRows } = await client.query(
+          `INSERT INTO interest (interest_name) VALUES ($1)
+           ON CONFLICT (interest_name) DO UPDATE SET interest_name = EXCLUDED.interest_name
+           RETURNING interest_id`,
+          [interestName.trim()],
+        );
         await client.query(
           `INSERT INTO customer_interest (customer_id, interest_id)
-           SELECT $1, interest_id FROM interest WHERE interest_name = $2
-           ON CONFLICT DO NOTHING`,
-          [customer.customer_id, interestName],
+           VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [customer.customer_id, interestRows[0].interest_id],
         );
       }
     }
@@ -221,11 +236,16 @@ router.put('/:id', async (req, res) => {
     await client.query(`DELETE FROM customer_interest WHERE customer_id=$1`, [req.params.id]);
     if (Array.isArray(interests)) {
       for (const interestName of [...new Set(interests)]) {
+        const { rows: interestRows } = await client.query(
+          `INSERT INTO interest (interest_name) VALUES ($1)
+           ON CONFLICT (interest_name) DO UPDATE SET interest_name = EXCLUDED.interest_name
+           RETURNING interest_id`,
+          [interestName.trim()],
+        );
         await client.query(
           `INSERT INTO customer_interest (customer_id, interest_id)
-           SELECT $1, interest_id FROM interest WHERE interest_name = $2
-           ON CONFLICT DO NOTHING`,
-          [req.params.id, interestName],
+           VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [req.params.id, interestRows[0].interest_id],
         );
       }
     }
