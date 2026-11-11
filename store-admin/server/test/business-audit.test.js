@@ -13,7 +13,7 @@ function harness({ statusCode = 200, responseBody = { customer_id: 42 } } = {}) 
     path: '/42/account-status',
     originalUrl: '/api/customers/42/account-status',
     baseUrl: '/api/customers',
-    params: { id: '42' },
+    params: {},
     body: { status: 'Blocked', password: 'never-store-this', access_token: 'secret-token' },
     user: { account_id: 7, username: 'manager', role_name: 'ADMIN' },
     requestId: 'd942f1bd-34f2-4e17-a2a7-fecb38f934a1',
