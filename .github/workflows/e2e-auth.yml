@@ -252,6 +252,12 @@ jobs:
           E2E_ELECTRON_TEST_MODE: "true"
         run: xvfb-run -a npx playwright test e2e/electron-auth.spec.js
 
+      - name: Run Electron CRUD and order workflows (Xvfb)
+        working-directory: store-admin
+        env:
+          E2E_ELECTRON_TEST_MODE: "true"
+        run: xvfb-run -a npx playwright test e2e/electron-crud.spec.js
+
       - name: Run authentication API E2E
         working-directory: store-admin
         run: npx playwright test e2e/auth-api-ci.spec.js
