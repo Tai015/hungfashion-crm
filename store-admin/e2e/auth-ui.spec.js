@@ -345,6 +345,20 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
         }),
       });
     }
+    if (pathname === '/api/customers/12/orders') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([{
+          order_id: 9001,
+          order_status: 'Pending',
+          total_amount: 250000,
+          order_channel: 'Website',
+          ordered_at: '2026-11-10T08:00:00.000Z',
+          item_count: 2,
+        }]),
+      });
+    }
     if (pathname === '/api/customers/12/interactions') {
       return route.fulfill({
         status: 200,
@@ -382,6 +396,8 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
   await expect(page.getByRole('heading', { name: 'Quản lý khách hàng' })).toBeVisible();
   await page.getByRole('button', { name: 'Xem lịch sử tương tác của E2E Timeline Customer' }).click();
   await expect(page.getByText('Lịch sử tương tác')).toBeVisible();
+  await expect(page.getByText('Lịch sử mua hàng')).toBeVisible();
+  await expect(page.getByText('Đơn hàng #9001')).toBeVisible();
   await expect(page.getByText('Đặt đơn hàng #9001')).toBeVisible();
   await expect(page.getByText(/250\.000/)).toBeVisible();
 });
