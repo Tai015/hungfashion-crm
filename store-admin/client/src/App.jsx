@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { apiFetch, checkRuntimeServices, subscribeToChatEvents, TOKEN_KEY, getAuthToken, clearAuthToken } from './api';
+import { apiFetch, checkRuntimeServices, subscribeToChatEvents, TOKEN_KEY, clearAuthToken } from './api';
 import AuthScreen from './AuthScreen';
 const CustomerPortal = lazy(() => import('./CustomerPortal'));
 const GuestStorefront = lazy(() => import('./CustomerPortal').then(module => ({ default: module.GuestStorefront })));
