@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   fresh-database-migrations:
-    name: Fresh PostgreSQL migration (000-033)
+    name: Fresh PostgreSQL migration (000-034)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -83,10 +83,10 @@ jobs:
           set -euo pipefail
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "33"
+          test "$applied_count" = "34"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "033"
+          test "$latest_version" = "034"
 
           view_exists="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT to_regclass('public.customer_interaction_timeline') IS NOT NULL")"
           test "$view_exists" = "t"
@@ -139,6 +139,15 @@ jobs:
           test "$survey_event_count" = "1"
           email_event_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer' AND t.interaction_type = 'email'")"
           test "$email_event_count" = "1"
+
+          email_timeline_summary="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT t.summary FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer' AND t.interaction_type = 'email'")"
+          test "$email_timeline_summary" = "Trạng thái: gửi thành công"
+
+          timeline_view_definition="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT pg_get_viewdef('public.customer_interaction_timeline'::regclass, true)")"
+          if grep -Eqi 'recipient_email|error_message' <<< "$timeline_view_definition"; then
+            echo "Customer timeline view must not expose email recipients or provider error details."
+            exit 1
+          fi
           order_status_event="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM customer_interaction_timeline t JOIN customer c USING (customer_id) WHERE c.full_name = 'Timeline CI customer' AND t.interaction_type = 'order_status' AND t.summary = 'Từ: Pending · Sang: Confirmed'")"
           test "$order_status_event" = "1"
           previous_status_column="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='previous_status'")"
