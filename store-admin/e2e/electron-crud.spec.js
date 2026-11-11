@@ -71,7 +71,8 @@ test('Electron CRUD: sản phẩm, khách hàng, nhân viên và tạo/cập nh�
     await page.getByRole('button', { name: /Thêm khách hàng/ }).click();
     await page.getByPlaceholder('Nguyễn Văn A').fill(customerName);
     await page.getByPlaceholder('email@example.com').fill(customerEmail);
-    await page.getByRole('button', { name: 'Thêm khách hàng', exact: true }).click();
+    await page.locator('form').filter({ has: page.getByPlaceholder('Nguyễn Văn A') })
+      .getByRole('button', { name: 'Thêm khách hàng', exact: true }).click();
     await expect(page.getByText(customerName, { exact: true })).toBeVisible({ timeout: 15_000 });
 
     let customerRow = page.locator('tr').filter({ hasText: customerName }).first();
