@@ -126,6 +126,9 @@ const TIER_COLOR = { New:'#64748b', Regular:'#0ea5e9', Silver:'#94a3b8', Gold:'#
 
 function CustomerInteractionHistory({ customerId }) {
   const [items, setItems] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [ordersError, setOrdersError] = useState('');
   const [nextCursor, setNextCursor] = useState(null);
   const [olderCursor, setOlderCursor] = useState(null);
   const [includeOlder, setIncludeOlder] = useState(false);
@@ -135,6 +138,12 @@ function CustomerInteractionHistory({ customerId }) {
 
   useEffect(() => {
     let active = true;
+    setOrdersLoading(true);
+    setOrdersError('');
+    apiFetch('/api/customers/' + customerId + '/orders')
+      .then(result => { if (active) setOrders(result || []); })
+      .catch(err => { if (active) setOrdersError(err.message); })
+      .finally(() => { if (active) setOrdersLoading(false); });
     setLoading(true);
     setError('');
     setItems([]);
@@ -192,7 +201,7 @@ function CustomerInteractionHistory({ customerId }) {
                 <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-violet-300/80" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                    <p className="m-0 text-sm font-medium text-white/85">{{'login':'Đăng nhập','logout':'Đăng xuất','order_created':'Tạo đơn hàng','order_cancelled':'Hủy đơn hàng','payment_completed':'Thanh toán thành công','payment_refunded':'Hoàn tiền','feedback_submitted':'Gửi phản hồi','feedback_replied':'Nhân viên phản hồi','survey_invited':'Được mời khảo sát','survey_completed':'Hoàn thành khảo sát','promotion_assigned':'Nhận ưu đãi','promotion_used':'Sử dụng ưu đãi','loyalty_points_earned':'Tích điểm','loyalty_points_redeemed':'Đổi điểm','loyalty_points_adjusted':'Điều chỉnh điểm','email':'Email xác nhận đơn hàng'}[item.interaction_type] || item.title}</p>
+                    <p className="m-0 text-sm font-medium text-white/85">{{'login':'Đăng nhập','logout':'Đăng xuất','order_created':'Tạo đơn hàng','order_cancelled':'Hủy đơn hàng','payment_completed':'Thanh toán thành công','payment_refunded':'Hoàn tiền','feedback_submitted':'Gửi phản hồi','feedback_replied':'Nhân viên phản hồi','survey_invited':'Được mời khảo sát','survey_completed':'Hoàn thành khảo sát','promotion_assigned':'Nhận ưu đãi','promotion_used':'Sử dụng ưu đãi','loyalty_points_earned':'Tích điểm','loyalty_points_redeemed':'Đổi điểm','loyalty_points_adjusted':'Điều chỉnh điểm','email':'Email xác nhận đơn hàng','order_status':'Cập nhật trạng thái đơn hàng','order':'Đơn hàng'}[item.interaction_type] || item.title}</p>
                     <time className="text-[11px] text-white/35">{dateFormatter.format(new Date(item.occurred_at))}</time>
                   </div>
                   <p className="mt-1 mb-0 text-xs leading-relaxed text-white/48">{item.summary}</p>
@@ -209,6 +218,26 @@ function CustomerInteractionHistory({ customerId }) {
         {!includeOlder && olderCursor && <button type="button" className={BTN_GHOST} disabled={loadingMore} onClick={() => loadMore(true)}>
           {loadingMore ? 'Đang tải...' : 'Xem toàn bộ lịch sử'}
         </button>}
+      </div>
+      <div className="mt-5 pt-4 border-t border-white/[0.08]">
+        <div className="mb-3 text-sm font-semibold text-white/85">Lịch sử mua hàng</div>
+        {ordersLoading ? <p className="py-3 text-sm text-white/40">Đang tải đơn hàng...</p>
+          : ordersError ? <p className="py-3 text-sm text-rose-300">{ordersError}</p>
+          : !orders.length ? <p className="py-3 text-sm text-white/40">Khách hàng chưa có đơn hàng.</p>
+          : <div className="space-y-2">
+              {orders.map(order => (
+                <div key={order.order_id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.07] bg-black/10 px-3.5 py-3">
+                  <div>
+                    <p className="m-0 text-sm font-medium text-white/85">Đơn hàng #{order.order_id}</p>
+                    <p className="mt-1 mb-0 text-xs text-white/45">{dateFormatter.format(new Date(order.ordered_at))} · {order.item_count} sản phẩm</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="m-0 text-sm font-semibold text-white/80">{Number(order.total_amount || 0).toLocaleString('vi-VN')} ₫</p>
+                    <p className="mt-1 mb-0 text-xs text-white/45">{order.order_status}</p>
+                  </div>
+                </div>
+              ))}
+            </div>}
       </div>
     </div>
   );
