@@ -12,7 +12,7 @@ function required(name) {
   return value;
 }
 
-function accountInput(role, identifier, password) {
+function accountInput(role, identifier, password, label = role.toLowerCase()) {
   if (password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
     throw new Error(`${role} E2E password must be 8-72 UTF-8 bytes.`);
   }
@@ -20,10 +20,12 @@ function accountInput(role, identifier, password) {
   const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
   return {
     role,
-    username: isEmail ? `e2e_${role.toLowerCase()}` : identifier,
+    username: isEmail ? `e2e_${label}` : identifier,
     email: isEmail ? identifier.toLowerCase() : (role === 'KHACH_HANG' ? 'e2e.customer@hungfashion.test' : null),
     password,
-    fullName: role === 'KHACH_HANG' ? 'E2E Customer (disposable DB)' : 'E2E Inventory Staff (disposable DB)',
+    fullName: role === 'KHACH_HANG'
+      ? 'E2E Customer (disposable DB)'
+      : `E2E ${label[0].toUpperCase() + label.slice(1)} (disposable DB)`,
   };
 }
 
@@ -94,15 +96,29 @@ try {
     required('E2E_CUSTOMER_IDENTIFIER'),
     required('E2E_CUSTOMER_PASSWORD'),
   );
-  const staff = accountInput(
-    'ADMIN',
-    required('E2E_STAFF_IDENTIFIER'),
-    required('E2E_STAFF_PASSWORD'),
-  );
+  const staffIdentifier = required('E2E_STAFF_IDENTIFIER');
+  const staffPassword = required('E2E_STAFF_PASSWORD');
+  const adminIdentifier = required('E2E_ADMIN_IDENTIFIER');
+  const adminPassword = required('E2E_ADMIN_PASSWORD');
+
+  const staff = accountInput('ADMIN', staffIdentifier, staffPassword, 'staff');
+  const admin = accountInput('ADMIN', adminIdentifier, adminPassword, 'admin');
 
   await seedAccount(customer);
   await seedAccount(staff);
-  console.log('Seeded dedicated E2E customer/staff accounts into disposable PostgreSQL only.');
+
+  // A shared identifier represents one login account; never insert it twice.
+  if (adminIdentifier.trim().toLowerCase() === staffIdentifier.trim().toLowerCase()) {
+    if (adminPassword !== staffPassword) {
+      throw new Error('E2E_ADMIN and E2E_STAFF use the same identifier but different passwords. Use distinct identifiers or matching passwords.');
+    }
+    console.log('E2E admin credentials match staff credentials; reusing the seeded account.');
+  } else {
+    await seedAccount(admin);
+    console.log('Seeded a separate E2E admin account.');
+  }
+
+  console.log('Seeded dedicated E2E customer/staff/admin accounts into disposable PostgreSQL only.');
 } finally {
   await pool.end();
 }
