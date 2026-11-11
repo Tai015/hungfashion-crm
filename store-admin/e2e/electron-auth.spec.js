@@ -4,10 +4,10 @@ import { test, expect } from '@playwright/test';
 import { _electron as electron } from 'playwright';
 
 test('Electron launcher mở local và đăng nhập nhân viên thật', async () => {
-  const identifier = process.env.E2E_STAFF_IDENTIFIER;
-  const password = process.env.E2E_STAFF_PASSWORD;
-  expect(identifier, 'Thiếu E2E_STAFF_IDENTIFIER').toBeTruthy();
-  expect(password, 'Thiếu E2E_STAFF_PASSWORD').toBeTruthy();
+  const identifier = process.env.E2E_ADMIN_IDENTIFIER;
+  const password = process.env.E2E_ADMIN_PASSWORD;
+  expect(identifier, 'Thiếu E2E_ADMIN_IDENTIFIER').toBeTruthy();
+  expect(password, 'Thiếu E2E_ADMIN_PASSWORD').toBeTruthy();
 
   const electronApp = await electron.launch({
     args: ['desktop/main.js', '--no-sandbox'],
