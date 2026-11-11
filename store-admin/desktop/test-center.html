@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trung tâm kiểm thử — Hung Fashion</title>
+  <link rel="stylesheet" href="test-center.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <div><span class="eyebrow">HUNG FASHION · QUALITY CONTROL</span><h1>Trung tâm kiểm thử</h1><p>Checklist kiểm thử thủ công theo chức năng đồ án. Ghi nhận kết quả và ghi chú lỗi ngay tại đây.</p></div>
+      <div class="summary"><strong id="progress">0%</strong><span id="counts">0 / 12 đạt</span><div class="bar"><i id="bar"></i></div></div>
+    </header>
+    <section class="toolbar">
+      <div class="filters" role="group" aria-label="Lọc nhóm kiểm thử">
+        <button class="filter active" data-filter="all">Tất cả</button>
+        <button class="filter" data-filter="manager">Người quản lý</button>
+        <button class="filter" data-filter="customer">Khách hàng</button>
+      </div>
+      <div class="actions"><button id="export" class="secondary">Xuất kết quả CSV</button><button id="reset" class="danger">Đặt lại checklist</button></div>
+    </section>
+    <div class="notice"><b>Lưu ý:</b> Đây là checklist kiểm thử thủ công, không tự động tạo/xóa dữ liệu. Dùng tài khoản và dữ liệu thử nghiệm; không thao tác phá hủy trên production.</div>
+    <section id="groups" class="groups" aria-live="polite"></section>
+    <footer>Trạng thái được lưu trên máy tính này trong Electron. Khi sửa lỗi, hãy chạy CI và kiểm tra lại các ca liên quan.</footer>
+  </main>
+  <script src="test-center.js"></script>
+</body>
+</html>

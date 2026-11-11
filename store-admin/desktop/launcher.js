@@ -2,7 +2,7 @@ const openLocalButton = document.querySelector('#open-local');
 const openDatabaseButton = document.querySelector('#open-database');
 const openKafkaUiButton = document.querySelector('#open-kafka-ui');
 const stopLocalButton = document.querySelector('#stop-local');
-const openDeployButton = document.querySelector('#open-deploy');
+const openDeployButton = document.querySelector('#open-deploy');\nconst openTestCenterButton = document.querySelector('#open-test-center');
 const activityLog = document.querySelector('#activity-log');
 
 function log(message) {
@@ -81,7 +81,7 @@ stopLocalButton.addEventListener('click', async () => {
   }
 });
 
-openDeployButton.addEventListener('click', async () => {
+openTestCenterButton.addEventListener('click', async () => {\n  openTestCenterButton.disabled = true;\n  try {\n    const result = await window.storeAdminLauncher.openTestCenter();\n    if (!result.ok) await showError(result.message || 'Không mở được trung tâm kiểm thử.');\n    else log('Đã mở trung tâm kiểm thử chức năng.');\n  } catch (error) {\n    log(error.message);\n    await showError(error.message);\n  } finally {\n    openTestCenterButton.disabled = false;\n  }\n});\n\nopenDeployButton.addEventListener('click', async () => {
   openDeployButton.disabled = true;
   log('Đang mở trang đã triển khai...');
   try {
