@@ -50,8 +50,8 @@ Nguyên tắc thiết kế:
 
 ### 3.1 Danh tính và CRM
 
-- `Role` 1—N `Account`; quyền chi tiết được cấu hình qua `Role Permission` N—N `Permission`.
-- `Account` có thể liên kết tối đa một `Customer` hoặc một `Employee` qua `account_id` duy nhất ở từng hồ sơ.
+- `Role` 1—N `Account`; schema có `Role Permission` N—N `Permission`. Tuy nhiên middleware xác thực hiện kiểm tra `role_name` qua `allowRoles`; chưa thấy enforcement tổng quát đọc `role_permission` ở runtime.
+- `Account` có thể liên kết một `Customer` và/hoặc một `Employee`; `account_id` unique riêng trong từng bảng hồ sơ, nhưng schema hiện chưa có constraint cấm cùng một Account xuất hiện ở cả hai bảng.
 - `Customer` N—N `Interest` qua `Customer Interest`.
 - `Customer` có thể liên quan đến nhiều `Order`, `Feedback`, `Survey Response`, `Survey Invitation`, `Conversation`, `User Promotion` và `Loyalty Point Transaction`.
 - Hồ sơ khách hàng có cơ chế xóa mềm/anonymize: giữ `customer_id` để bảo toàn liên kết lịch sử; không diễn giải thao tác xóa hồ sơ là xóa toàn bộ lịch sử giao dịch.
@@ -152,9 +152,9 @@ Các giá trị dưới đây lấy từ enum/check constraint trong schema và 
 
 ### 6.1 Mô hình quyền
 
-- Vai trò và quyền được biểu diễn bằng `role`, `permission`, `role_permission`.
+- Schema có `role`, `permission`, `role_permission`; tuy nhiên `auth.js` và các route hiện dùng kiểm tra vai trò bằng `allowRoles(...role_name)`. Chưa có bằng chứng rằng `role_permission` được đọc và áp dụng tự động cho mọi endpoint.
 - Tài khoản có trạng thái; việc xác thực thành công không thay thế kiểm tra vai trò/quyền trên từng endpoint.
-- Khách hàng chỉ được thao tác trên dữ liệu thuộc tài khoản/Customer của mình theo điều kiện endpoint.
+- Khách hàng chỉ được thao tác trên dữ liệu thuộc tài khoản/Customer của mình theo điều kiện từng endpoint; một số API CRM chỉ dành cho `ADMIN`/`QL_KHACH_HANG`, không phải API tự phục vụ của khách hàng.
 - Nhân viên và quản trị viên chỉ được thao tác trong phạm vi quyền được backend cấp. Không dựa vào việc ẩn nút hoặc ẩn URL ở giao diện làm biện pháp bảo mật.
 
 ### 6.2 Ma trận hành động mức nghiệp vụ
@@ -196,11 +196,11 @@ Ba lớp dữ liệu cần được giữ tách biệt:
 
 | Lớp | Mục tiêu | Nguồn hiện có | Giới hạn |
 |---|---|---|---|
-| Customer Interaction Timeline | Nhìn lại tương tác của một khách hàng | View `customer_interaction_timeline` tổng hợp từ user_events, transactions, orders, feedback, survey, loyalty, promotion và chat | Không phải audit đầy đủ; phụ thuộc dữ liệu nguồn và các loại sự kiện đã được đưa vào view. |
+| Customer Interaction Timeline | Nhìn lại tương tác của một khách hàng | View `customer_interaction_timeline` tổng hợp từ user_events, transactions, orders, feedback, survey, loyalty, promotion, chat và lần gửi email | Không phải audit đầy đủ; không ghi mọi lần sửa hồ sơ/trạng thái tài khoản; chat chỉ hiển thị trạng thái và số tin nhắn, không phải nội dung; sau migration 034, email chỉ hiển thị kết quả gửi, không đưa email người nhận/lỗi provider vào timeline. |
 | Transaction/Event Stream | Theo dõi sự kiện nghiệp vụ/kỹ thuật và đồng bộ | `transactions`, `user_events`, `outbox_events`; outbox dùng event_id và chống ghi trùng theo event_id | Payload/sự kiện không thay thế trạng thái chuẩn ở Order/Payment; cần đối chiếu nguồn phát và thời điểm. |
-| Business Audit Log | Truy vết hành động ghi: actor, action, object, thời điểm, outcome, request ID | Migration 033, middleware audit, endpoint audit và giao diện lịch sử hoạt động được thêm trong PR #39 | Ghi nhận request mutation và các trường thay đổi được allowlist; chưa phải snapshot before/after toàn bộ và chưa được chứng minh chống sửa ở tầng DB. |
+| Business Audit Log | Truy vết request ghi dữ liệu: actor, action, object, thời điểm, outcome, request ID | Migration 033, middleware audit, endpoint audit và giao diện lịch sử hoạt động được thêm trong PR #39 | Chỉ bắt POST/PUT/PATCH/DELETE qua Express; trường thay đổi lấy từ body theo allowlist, không phải DB diff/before-after. Không bao phủ GET, thao tác DB trực tiếp hoặc worker/background job; ghi audit chạy bất đồng bộ sau response nên có thể thất bại dù thao tác nghiệp vụ đã trả thành công. Chưa có kiểm soát chống sửa/xóa ở tầng DB. |
 
-Audit log không nên lưu password, token, cookie hoặc dữ liệu nhạy cảm. Khi điều tra lỗi, dùng Request ID để liên kết audit entry với structured application logs.
+Audit log không nên lưu password, token, cookie hoặc dữ liệu nhạy cảm. Middleware chỉ lưu các trường body thuộc allowlist; điều này không chứng minh được trạng thái DB trước/sau. Khi điều tra lỗi, dùng Request ID để liên kết audit entry với structured application logs. Các thao tác do worker thực hiện cần event/audit riêng nếu cần truy vết actor hệ thống.
 
 ## 8. Câu hỏi nghiệp vụ chuẩn và cách diễn giải
 
@@ -218,14 +218,14 @@ Audit log không nên lưu password, token, cookie hoặc dữ liệu nhạy c�
 
 Các mục sau không được xem là đã hoàn thiện chỉ vì có tên trong ontology:
 
-1. **Snapshot audit before/after:** PR #39 ghi nhận trường thay đổi được allowlist; chưa lưu snapshot đầy đủ trước/sau cho mọi thực thể.
-2. **Audit coverage:** cần rà soát từng endpoint mutation để xác nhận middleware ghi nhận đúng actor, object và outcome; các thao tác nền/worker cần correlation phù hợp.
+1. **Snapshot audit before/after:** PR #39 chỉ lưu các giá trị body được allowlist; không đọc snapshot DB trước/sau, nên không chứng minh được dữ liệu thực tế đã thay đổi như thế nào.
+2. **Audit coverage:** middleware chỉ bắt POST/PUT/PATCH/DELETE qua Express; cần rà soát endpoint và bổ sung audit/event cho worker, tác vụ nền, thao tác trực tiếp DB và các hành động quan trọng không phải HTTP mutation.
 3. **Audit integrity/retention:** chưa có bằng chứng về chính sách lưu trữ, phân quyền DB chống sửa/xóa, archive hoặc cảnh báo audit bị gián đoạn.
-4. **Customer timeline completeness:** view là tập hợp các nguồn đã chọn, không phải nhật ký toàn diện mọi thay đổi thông tin khách hàng.
+4. **Customer timeline completeness:** view không ghi mọi lần sửa hồ sơ, khóa/mở tài khoản, thay đổi phân công; chat chỉ có số tin nhắn/trạng thái, không có nội dung. Chỉ nên xem đây là timeline tương tác chọn lọc.
 5. **Promotion stacking:** schema Order hiện gắn một promotion_id; chưa mô tả được nhiều khuyến mãi cộng dồn.
 6. **Refund model:** cần kiểm tra quy trình hoàn tiền thực tế, một đơn có thể có nhiều lần thanh toán/hoàn tiền hay không; schema hiện tại có unique payment theo order.
 7. **Profit reporting:** cần xác định quy tắc giá vốn, hoàn hàng, phí vận chuyển, chiết khấu và chi phí khác trước khi gọi một chỉ số là lợi nhuận.
-8. **Permission matrix:** cần sinh ma trận cuối cùng từ permission seed + route middleware, không dựa vào tên vai trò suy đoán.
+8. **Permission matrix:** schema có `role_permission`, nhưng middleware hiện thấy kiểm tra `role_name` theo route; cần xác định `role_permission` có còn là dữ liệu cấu hình/legacy hay sẽ được tích hợp vào enforcement.
 9. **State transition contract:** cần tài liệu hóa các chuyển trạng thái được API cho phép và các tác dụng phụ (email, stock, loyalty, transaction event).
 10. **Data quality/lineage:** cần định nghĩa cách xử lý dữ liệu thiếu, duplicate event, timezone, soft-deleted customer và các bản ghi lịch sử cũ.
 
@@ -243,7 +243,7 @@ Các điểm mô hình trong tài liệu này được đối chiếu với các
 - `store-admin/server/src/domain/reporting.js` — điều kiện đơn thanh toán hợp lệ cho báo cáo.
 - `store-admin/server/src/domain/types.js` — trạng thái đơn, quy tắc điểm mặc định và ngưỡng tồn thấp.
 - `store-admin/server/src/transaction-events.js` và `outbox-writer.js` — phát/ghi sự kiện giao dịch và chống trùng event.
-- `store-admin/server/src/audit-logging.js`, `routes/report.js` và `client/src/views/AuditLogView.jsx` — audit log sau PR #39.
+- `store-admin/server/src/audit-logging.js`, `routes/report.js` và `client/src/views/AuditLogView.jsx` — audit log sau PR #39; `034_customer_timeline_email_privacy.sql` — loại bỏ email người nhận và lỗi provider khỏi timeline.
 
 ---
 **Quy tắc cập nhật tài liệu:** khi schema, migration, API hoặc permission thay đổi, cập nhật ontology cùng PR tương ứng. Nếu code và tài liệu mâu thuẫn, ghi nhận sai lệch và xác minh hành vi runtime trước khi sửa định nghĩa nghiệp vụ.
