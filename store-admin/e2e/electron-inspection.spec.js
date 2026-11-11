@@ -3,7 +3,12 @@ import { mkdir } from 'node:fs/promises';
 
 const outputDir = 'test-results/electron-inspection';
 
-test('capture real Electron launcher, employee login and test center', async () => {
+test('capture Electron launcher, employee login, admin dashboard and test center', async () => {
+  const identifier = process.env.E2E_ADMIN_IDENTIFER;
+  const password = process.env.E2E_ADMIN_PASSWORD;
+  expect(identifier, 'GitHub Secret E2E_ADMIN_IDENTIFER must be configured').toBeTruthy();
+  expect(password, 'GitHub Secret E2E_ADMIN_PASSWORD must be configured').toBeTruthy();
+
   await mkdir(outputDir, { recursive: true });
 
   const electronApp = await electron.launch({
@@ -28,9 +33,22 @@ test('capture real Electron launcher, employee login and test center', async () 
     ).toBe(true);
 
     const employeeWindow = (await electronApp.windows()).find((page) => page.url().includes('#/nhan-vien/login'));
-    await expect(employeeWindow.locator('body')).not.toBeEmpty({ timeout: 45_000 });
-    await expect(employeeWindow.locator('input').first()).toBeVisible({ timeout: 45_000 });
+    await expect(employeeWindow.locator('input[autocomplete="username"]')).toBeVisible({ timeout: 45_000 });
     await employeeWindow.screenshot({ path: `${outputDir}/electron-employee-login.png`, fullPage: true });
+
+    await employeeWindow.locator('input[autocomplete="username"]').fill(identifier);
+    await employeeWindow.locator('input[autocomplete="current-password"]').fill(password);
+    await employeeWindow.locator('form button[type="submit"]').click();
+
+    // Successful authentication redirects ADMIN accounts to the admin dashboard.
+    // Do not persist credentials or include them in diagnostics/artifacts.
+    await expect.poll(
+      () => employeeWindow.evaluate(() => window.location.hash),
+      { timeout: 60_000, message: 'Admin credentials should authenticate and redirect to the dashboard' },
+    ).toBe('#/admin/dashboard');
+    await expect(employeeWindow.locator('body')).not.toContainText('Đăng nhập vào khu vực quản lý');
+    await expect(employeeWindow.locator('body')).toContainText('Tổng quan', { timeout: 30_000 });
+    await employeeWindow.screenshot({ path: `${outputDir}/electron-admin-dashboard.png`, fullPage: true });
 
     await launcher.locator('#open-test-center').click();
     await expect.poll(
