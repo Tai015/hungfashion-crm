@@ -21,7 +21,7 @@ test.afterAll(async () => {
 
 test('khách hàng đăng nhập thành công qua API cục bộ', async ({ request }) => {
   const response = await request.post('/api/auth/login', {
-    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer', rememberMe: true },
   });
 
   expect(response.status()).toBe(200);
@@ -32,7 +32,7 @@ test('khách hàng đăng nhập thành công qua API cục bộ', async ({ requ
 
 test('nhân viên đăng nhập thành công qua API cục bộ', async ({ request }) => {
   const response = await request.post('/api/auth/login', {
-    data: { identifier: staffIdentifier, password: staffPassword, audience: 'staff' },
+    data: { identifier: staffIdentifier, password: staffPassword, audience: 'staff', rememberMe: true },
   });
 
   expect(response.status()).toBe(200);
@@ -43,7 +43,7 @@ test('nhân viên đăng nhập thành công qua API cục bộ', async ({ reque
 
 test('không cho tài khoản khách đăng nhập ở cổng nhân viên', async ({ request }) => {
   const response = await request.post('/api/auth/login', {
-    data: { identifier: customerIdentifier, password: customerPassword, audience: 'staff' },
+    data: { identifier: customerIdentifier, password: customerPassword, audience: 'staff', rememberMe: true },
   });
 
   expect(response.status()).toBe(401);
@@ -65,7 +65,7 @@ test('từ chối mật khẩu sai', async ({ request }) => {
 
 test('ghi nhận login user event qua outbox, Kafka và consumer vào PostgreSQL', async ({ request }) => {
   const login = await request.post('/api/auth/login', {
-    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer', rememberMe: true },
   });
   expect(login.status()).toBe(200);
   const { token, user } = await login.json();
@@ -117,7 +117,7 @@ test('tự ghi nhận đăng nhập và đăng xuất qua outbox vào lịch s�
   test.setTimeout(45_000);
 
   const login = await request.post('/api/auth/login', {
-    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer', rememberMe: true },
   });
   expect(login.status()).toBe(200);
   const { token, user } = await login.json();
@@ -216,7 +216,7 @@ test('đăng nhập và đăng xuất vẫn thành công khi ghi auth outbox b�
   `);
 
     const login = await request.post('/api/auth/login', {
-      data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+      data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer', rememberMe: true },
     });
     expect(login.status()).toBe(200);
     const { token, user } = await login.json();
@@ -262,7 +262,7 @@ test('đăng nhập và đăng xuất vẫn thành công khi ghi auth outbox b�
 
 test('token cũ bị từ chối sau logout và logout lần hai không gây HTTP 500', async ({ request }) => {
   const login = await request.post('/api/auth/login', {
-    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer', rememberMe: true },
   });
   expect(login.status()).toBe(200);
   const { token } = await login.json();
@@ -284,13 +284,13 @@ test('token cũ bị từ chối sau logout và logout lần hai không gây HTT
 
 test('logout một phiên không thu hồi phiên khác của cùng tài khoản', async ({ request }) => {
   const firstLogin = await request.post('/api/auth/login', {
-    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer', rememberMe: true },
   });
   expect(firstLogin.status()).toBe(200);
   const firstToken = (await firstLogin.json()).token;
 
   const secondLogin = await request.post('/api/auth/login', {
-    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer' },
+    data: { identifier: customerIdentifier, password: customerPassword, audience: 'customer', rememberMe: true },
   });
   expect(secondLogin.status()).toBe(200);
   const secondToken = (await secondLogin.json()).token;
