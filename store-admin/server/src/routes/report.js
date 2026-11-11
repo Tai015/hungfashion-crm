@@ -504,7 +504,7 @@ router.get('/interests', async (req, res) => {
   }
 });
 
-// GET /api/reports/audit-logs – nhật ký hoạt động người dùng (dành cho Admin)
+// GET /api/reports/audit-logs – nhật ký kiểm toán nghiệp vụ (dành cho Admin)
 router.get('/audit-logs', async (req, res) => {
   if (req.user.role_name !== 'ADMIN') {
     return res.status(403).json({ message: 'Bạn không có quyền xem mục này.' });
@@ -513,68 +513,57 @@ router.get('/audit-logs', async (req, res) => {
   if ((from !== undefined && !isDateOnly(from)) || (to !== undefined && !isDateOnly(to))) {
     return res.status(400).json({ message: 'Ngày bắt đầu hoặc kết thúc không hợp lệ (định dạng YYYY-MM-DD).' });
   }
-  if ((from === undefined) !== (to === undefined)) {
-    return res.status(400).json({ message: 'Cần truyền cả from và to để lọc theo thời gian.' });
+  if ((from === undefined) !== (to === undefined)
+    || (from !== undefined && (rangeDays(from, to) < 1 || rangeDays(from, to) > 3660))) {
+    return res.status(400).json({ message: 'Khoảng ngày nhật ký không hợp lệ.' });
   }
-  if (from !== undefined && (rangeDays(from, to) < 1 || rangeDays(from, to) > 3660)) {
-    return res.status(400).json({ message: 'Khoảng ngày nhật ký phải từ 1 đến 3660 ngày.' });
-  }
-  const filterLimits = { event: 100, route: 150, user: 150 };
-  for (const [key, maxLength] of Object.entries(filterLimits)) {
-    const value = req.query[key];
-    if (value !== undefined && (typeof value !== 'string' || value.trim().length > maxLength)) {
-      return res.status(400).json({ message: `Bộ lọc ${key} không hợp lệ hoặc vượt quá ${maxLength} ký tự.` });
+  const limits = { event: 100, route: 100, user: 150 };
+  for (const [key, max] of Object.entries(limits)) {
+    if (req.query[key] !== undefined
+      && (typeof req.query[key] !== 'string' || req.query[key].trim().length > max)) {
+      return res.status(400).json({ message: `Bộ lọc ${key} không hợp lệ.` });
     }
   }
+  const page = clampInt(req.query.page, { fallback: 1, min: 1, max: 1000000 });
+  const limit = clampInt(req.query.limit, { fallback: 20, min: 1, max: 100 });
+  if (page === null || limit === null) {
+    return res.status(400).json({ message: 'Tham số phân trang không hợp lệ.' });
+  }
+  const conditions = [];
+  const values = [];
+  const filter = (sql, value) => {
+    if (typeof value !== 'string' || !value.trim()) return;
+    values.push(`%${value.trim()}%`);
+    conditions.push(`${sql} ILIKE $${values.length}`);
+  };
+  filter('action', req.query.event);
+  filter('entity_type', req.query.route);
+  filter("COALESCE(actor_username, '')", req.query.user);
+  if (from !== undefined) {
+    values.push(from);
+    conditions.push(`occurred_at >= ($${values.length}::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`);
+    values.push(to);
+    conditions.push(`occurred_at < (($${values.length}::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`);
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const offset = (page - 1) * limit;
   try {
-    const page = clampInt(req.query.page, { fallback: 1, min: 1, max: 1000000 });
-    const limit = clampInt(req.query.limit, { fallback: 20, min: 1, max: 100 });
-    if (page === null || limit === null) {
-      return res.status(400).json({ message: 'Tham số phân trang không hợp lệ.' });
-    }
-    const offset = (page - 1) * limit;
-    const conditions = [];
-    const values = [];
-    const addFilter = (column, value) => {
-      if (typeof value !== 'string' || !value.trim()) return;
-      values.push(`%${value.trim()}%`);
-      conditions.push(`${column} ILIKE $${values.length}`);
-    };
-    addFilter('ue.event_type', req.query.event);
-    addFilter('ue.page', req.query.route);
-    addFilter("COALESCE(c.full_name, e.full_name, a.username, '')", req.query.user);
-    if (from !== undefined) {
-      values.push(from);
-      conditions.push(`ue.occurred_at >= ($${values.length}::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`);
-      values.push(to);
-      conditions.push(`ue.occurred_at < (($${values.length}::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`);
-    }
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-    const joins = `FROM user_events ue
-       LEFT JOIN account a ON a.account_id::text = ue.user_id
-       LEFT JOIN customer c ON c.account_id = a.account_id
-       LEFT JOIN employee e ON e.account_id = a.account_id
-       LEFT JOIN role r ON r.role_id = a.role_id`;
-    const listValues = [...values, limit, offset];
-
-    const [{ rows }, { rows: countRows }] = await Promise.all([pool.query(
-      `SELECT ue.*, a.username, COALESCE(c.full_name, e.full_name, a.username) AS full_name,
-              r.role_name
-       ${joins}
-       ${where}
-       ORDER BY ue.occurred_at DESC
-       LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
-      listValues,
-    ), pool.query(`SELECT COUNT(*)::int AS total ${joins} ${where}`, values)]);
-
-    res.json({
-      data: rows,
-      total: countRows[0].total,
-      page,
-      limit
-    });
+    const [{ rows }, { rows: countRows }] = await Promise.all([
+      pool.query(
+        `SELECT audit_id AS event_id, occurred_at, actor_username AS username,
+                actor_role AS role_name, action AS event_type, entity_type,
+                entity_id, request_path AS page, request_method, status_code,
+                outcome, request_id, changes, error_message, source
+         FROM business_audit_logs ${where}
+         ORDER BY occurred_at DESC, audit_id DESC
+         LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+        [...values, limit, offset],
+      ),
+      pool.query(`SELECT COUNT(*)::int AS total FROM business_audit_logs ${where}`, values),
+    ]);
+    return res.json({ data: rows, total: countRows[0].total, page, limit });
   } catch (err) {
-    return fail(res, err, 'audit-logs', 'Không thể tải nhật ký hoạt động.');
+    return fail(res, err, 'audit-logs', 'Không thể tải nhật ký kiểm toán.');
   }
 });
 
