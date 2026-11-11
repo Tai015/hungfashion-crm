@@ -159,6 +159,11 @@ test('đăng nhập khách hàng bằng tài khoản cũ và dùng cookie phiên
   await page.route('**/api/**', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({}),
   }));
+  await page.route('**/api/auth/me', route => route.fulfill({
+    status: 401,
+    contentType: 'application/json',
+    body: JSON.stringify({ message: 'Vui lòng đăng nhập để tiếp tục.' }),
+  }));
   await page.route('**/api/auth/login', route => {
     const submitted = route.request().postDataJSON();
     expect(submitted.audience).toBe('customer');
@@ -272,6 +277,13 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
     const { pathname } = new URL(route.request().url());
     // The broad matcher also matches Vite modules under /src/api/; let those load normally.
     if (!pathname.startsWith('/api/')) return route.continue();
+    if (pathname === '/api/auth/me') {
+      return route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Vui lòng đăng nhập để tiếp tục.' }),
+      });
+    }
     if (pathname === '/api/auth/login') {
       return route.fulfill({
         status: 200,
