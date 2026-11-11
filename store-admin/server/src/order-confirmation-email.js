@@ -146,14 +146,14 @@ export function buildOrderStatusEmail({ order, details = [], eventType }) {
 }
 
 export async function enqueueOrderConfirmationEmail(client, {
-  orderId, customerId, recipientEmail, payload,
+  orderId, customerId, recipientEmail, payload, eventType = 'order_confirmation',
 }) {
   if (!customerId || !isValidEmail(recipientEmail)) return false;
   await client.query(
     `INSERT INTO order_confirmation_email
-       (order_id, customer_id, recipient_email, payload, status, next_attempt_at)
-     VALUES ($1, $2, $3, $4::jsonb, 'queued', NOW() + INTERVAL '15 seconds')
-     ON CONFLICT (order_id) DO NOTHING`,
+       (order_id, customer_id, recipient_email, payload, event_type, status, next_attempt_at)
+     VALUES ($1, $2, $3, $4::jsonb, $5, 'queued', NOW() + INTERVAL '15 seconds')
+     ON CONFLICT (order_id, event_type) DO NOTHING`,
     [orderId, customerId, recipientEmail.trim().toLowerCase(), JSON.stringify(payload), eventType],
   );
   return true;
