@@ -68,7 +68,7 @@ export function createCustomerInteractionsRouter(database = pool) {
     }
 
     const params = [customerId];
-    const conditions = ['customer_id = $1'];
+    const conditions = ['customer_id = $1', 'EXISTS (SELECT 1 FROM customer c WHERE c.customer_id = $1 AND c.deleted_at IS NULL)'];
     if (!includeOlder) conditions.push(`occurred_at >= NOW() - INTERVAL '${DEFAULT_RANGE_MONTHS} months'`);
     if (cursor) {
       params.push(cursor.occurredAt, cursor.interactionId);
