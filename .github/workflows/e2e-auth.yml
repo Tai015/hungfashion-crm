@@ -17,6 +17,28 @@ permissions:
   contents: read
 
 jobs:
+  electron-source-check:
+    name: Electron source syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check Electron JavaScript syntax
+        working-directory: store-admin
+        shell: bash
+        run: |
+          for file in desktop/main.js desktop/preload.js desktop/launcher.js desktop/test-center.js; do
+            echo "Checking $file"
+            node --check "$file"
+          done
+
   auth-ui-e2e:
     name: UI E2E (Vercel Preview)
     runs-on: ubuntu-latest
