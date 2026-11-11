@@ -253,6 +253,6 @@ test('hiển thị đồng hồ đếm ngược và khóa nút khi API giới h�
 
 test('trình duyệt thường bị chặn khỏi trang đăng nhập nhân viên', async ({ page }) => {
   await prepareAuthPage(page, '/#/nhan-vien/login');
-  await expect(page.getByRole('heading', { name: 'Khu vực dành riêng cho ứng dụng Electron' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy trang' })).toBeVisible();
   await expect(page.getByLabel('Tên đăng nhập hoặc email')).toHaveCount(0);
 });
