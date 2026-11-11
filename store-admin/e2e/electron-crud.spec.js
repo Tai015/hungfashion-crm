@@ -85,14 +85,14 @@ test('Electron CRUD: sản phẩm, khách hàng, nhân viên và tạo/cập nh�
     await confirmDanger();
     await expect(page.getByText(`${customerName} Edited`, { exact: true })).toHaveCount(0, { timeout: 15_000 });
 
-    // PRODUCT: create and edit a product; its default variant will be stocked
-    // only in the isolated CI PostgreSQL database for the order workflow below.
-    await navigate('Sản phẩm');
-    await expect(page.getByRole('heading', { name: 'Quản lý sản phẩm' })).toBeVisible();
+    // PRODUCT: seed its category before the view loads its category list.
     const categoryResult = await db.query(
       'INSERT INTO category (category_name, description) VALUES ($1, $2) RETURNING category_id',
       [`E2E Category ${suffix}`, 'Disposable category for Electron E2E'],
     );
+    // Create and edit a product; stock is added only in isolated CI PostgreSQL.
+    await navigate('Sản phẩm');
+    await expect(page.getByRole('heading', { name: 'Quản lý sản phẩm' })).toBeVisible();
     await page.getByRole('button', { name: 'Thêm sản phẩm', exact: true }).click();
     await page.getByPlaceholder('Áo thun...').fill(productName);
     const productForm = page.locator('form').filter({ has: page.getByPlaceholder('Áo thun...') });
