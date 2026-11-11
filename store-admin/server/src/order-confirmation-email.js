@@ -82,7 +82,7 @@ export function buildOrderConfirmationEmail({ order, details }) {
     `Phương thức thanh toán: ${order.payment_method || 'Chưa xác định'}`,
     order.shipping_address ? `Địa chỉ nhận hàng: ${order.shipping_address}` : '',
     'Đây là email tự động, vui lòng không trả lời.',
-  ].filter(Boolean).join('\\n');
+  ].filter(Boolean).join('\n');
   return {
     subject: `Hung Fashion – Xác nhận đơn hàng #${order.order_id}`,
     html,
