@@ -155,12 +155,22 @@ function openEmployeeWindow(url) {
   }
 
   if (employeeWindow && !employeeWindow.isDestroyed()) {
-    employeeWindow.show();
-    employeeWindow.focus();
-    if (employeeWindow.webContents.getURL() !== target.href) {
-      employeeWindow.loadURL(target.href);
+    let currentOrigin;
+    try {
+      currentOrigin = new URL(employeeWindow.webContents.getURL()).origin;
+    } catch {}
+
+    if (currentOrigin === target.origin) {
+      employeeWindow.show();
+      employeeWindow.focus();
+      if (employeeWindow.webContents.getURL() !== target.href) {
+        employeeWindow.loadURL(target.href);
+      }
+      return employeeWindow;
     }
-    return employeeWindow;
+
+    employeeWindow.close();
+    employeeWindow = undefined;
   }
 
   employeeWindow = new BrowserWindow({
