@@ -35,7 +35,7 @@ function entityFor(pathname) {
   return aliases[segment] || segment.replace(/s$/, '') || 'system';
 }
 
-function entityIdFor(entityType, params, body, responseBody) {
+function entityIdFor(entityType, params, body, responseBody, pathname) {
   const keys = ENTITY_ID_KEYS[entityType] || ['id'];
   for (const source of [params, responseBody, body]) {
     for (const key of keys) {
@@ -43,6 +43,10 @@ function entityIdFor(entityType, params, body, responseBody) {
       if (value !== undefined && value !== null && String(value).length <= 120) return String(value);
     }
   }
+  const segments = String(pathname || '').split('/').filter(Boolean);
+  const candidate = segments[2];
+  if (candidate && !['mine', 'roles', 'stats', 'report', 'all', 'claim', 'validate'].includes(candidate)
+    && /^[a-zA-Z0-9_-]{1,120}$/.test(candidate)) return candidate;
   return null;
 }
 
@@ -69,7 +73,7 @@ export function createBusinessAuditMiddleware({ database = pool, auditLogger = l
       const entityType = entityFor(pathname);
       const action = `${entityType}.${({ POST: 'create', PUT: 'update', PATCH: 'update', DELETE: 'delete' })[req.method]}`;
       const response = responseBody && typeof responseBody === 'object' ? responseBody : {};
-      const entityId = entityIdFor(entityType, req.params, requestBody, response);
+      const entityId = entityIdFor(entityType, req.params, requestBody, response, pathname);
       const actor = req.user || {};
       const changes = {
         submitted: requestBody,
