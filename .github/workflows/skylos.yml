@@ -53,7 +53,7 @@ jobs:
           cache-dependency-path: store-admin/package-lock.json
 
       - name: Install Skylos
-        run: python -I -m pip install "skylos==4.47.1"
+        run: python -I -m pip install "skylos==4.47.2"
 
       - name: Install Hung Fashion dependencies
         run: npm ci --prefix store-admin
