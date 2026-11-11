@@ -16,14 +16,14 @@
 * { box-sizing: border-box; }
 
 body {
-  min-width: 520px;
+  min-width: 320px;
   min-height: 100vh;
   margin: 0;
   background: radial-gradient(ellipse at 100% 0%, #e5eadf 0, transparent 42%), #f4f4ef;
 }
 
 button, input { font: inherit; }
-.shell { max-width: 620px; min-height: 100vh; margin: 0 auto; padding: 30px 38px 26px; display: flex; flex-direction: column; }
+.shell { width: 100%; max-width: 620px; min-height: 100vh; margin: 0 auto; padding: 30px clamp(18px, 5.5vw, 38px) 26px; display: flex; flex-direction: column; }
 .masthead { display: flex; align-items: center; gap: 13px; padding-bottom: 25px; border-bottom: 1px solid var(--line); }
 .mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 10px; background: var(--green); color: white; font-size: 22px; font-weight: 800; }
 .masthead-copy { flex: 1; }
@@ -35,7 +35,7 @@ h1 { margin: 2px 0 0; font-size: 19px; line-height: 1.25; font-weight: 800; }
 .section-index { color: var(--green); font-weight: 500; }
 h2 { margin: 9px 0 6px; font-size: 20px; line-height: 1.35; }
 .local-section p, .remote-section p { max-width: 440px; margin: 0; color: #63685e; font-size: 13px; line-height: 1.65; }
-.actions { display: flex; align-items: center; gap: 9px; margin-top: 18px; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
 .button { min-height: 40px; border: 1px solid transparent; border-radius: 5px; padding: 0 14px; cursor: pointer; font-size: 12px; font-weight: 700; transition: background .16s ease, border-color .16s ease; }
 .button:focus-visible, input:focus-visible { outline: 2px solid #5d956f; outline-offset: 2px; }
 .button-primary { display: inline-flex; align-items: center; gap: 9px; color: #fff; background: var(--green); }
@@ -45,7 +45,9 @@ h2 { margin: 9px 0 6px; font-size: 20px; line-height: 1.35; }
 .button-secondary:hover, .button-outline:hover { background: #e9ece4; }
 .requirements { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--muted); font-size: 11px; }
 .status-dot, .activity-led { width: 7px; height: 7px; border-radius: 50%; background: #b9853f; }
-.test-section { padding: 22px 0; border-bottom: 1px solid var(--line); }\n.test-section .button { margin-top: 13px; }\n.remote-section { padding-top: 23px; }
+.test-section { padding: 22px 0; border-bottom: 1px solid var(--line); }
+.test-section .button { margin-top: 13px; }
+.remote-section { padding-top: 23px; }
 .remote-section form { margin-top: 15px; }
 label { display: block; margin-bottom: 7px; color: #50554d; font-size: 11px; font-weight: 700; }
 .url-row { display: flex; gap: 8px; }

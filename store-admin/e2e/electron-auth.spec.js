@@ -1,11 +1,14 @@
+import { mkdir } from 'node:fs/promises';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { test, expect } from '@playwright/test';
 import { _electron as electron } from 'playwright';
 
 test('Electron launcher mở local và đăng nhập nhân viên thật', async () => {
-  const identifier = process.env.E2E_STAFF_IDENTIFIER;
-  const password = process.env.E2E_STAFF_PASSWORD;
-  expect(identifier, 'Thiếu E2E_STAFF_IDENTIFIER').toBeTruthy();
-  expect(password, 'Thiếu E2E_STAFF_PASSWORD').toBeTruthy();
+  const identifier = process.env.E2E_ADMIN_IDENTIFIER;
+  const password = process.env.E2E_ADMIN_PASSWORD;
+  expect(identifier, 'Thiếu E2E_ADMIN_IDENTIFIER').toBeTruthy();
+  expect(password, 'Thiếu E2E_ADMIN_PASSWORD').toBeTruthy();
 
   const electronApp = await electron.launch({
     args: ['desktop/main.js', '--no-sandbox'],
@@ -17,6 +20,9 @@ test('Electron launcher mở local và đăng nhập nhân viên thật', async 
 
   try {
     const launcherPage = await electronApp.firstWindow();
+    await electronApp.evaluate(({ BrowserWindow }) => {
+      for (const window of BrowserWindow.getAllWindows()) window.maximize();
+    });
     await expect(launcherPage.locator('#open-local')).toBeVisible();
 
     // Click the same "Mở bản local" control that a user clicks in the desktop app.
@@ -35,6 +41,14 @@ test('Electron launcher mở local và đăng nhập nhân viên thật', async 
     await expect(employeePage.getByRole('heading', { name: 'Đăng nhập' })).toBeVisible();
     expect(await employeePage.evaluate(() => window.storeAdminLauncher?.isElectronApp)).toBe(true);
 
+    // Keep real Electron screenshots separate from test fixtures and credentials.
+    const screenshotDir = path.resolve(
+      process.env.E2E_SCREENSHOT_DIR || 'artifacts/electron-screenshots',
+    );
+    await mkdir(screenshotDir, { recursive: true });
+    // Capture the X11 desktop root so the screenshot includes the real Electron window frame.
+    execFileSync('import', ['-window', 'root', path.join(screenshotDir, '01-employee-admin-login.png')]);
+
     await employeePage.getByLabel('Tên đăng nhập hoặc email').fill(identifier);
     await employeePage.locator('input[type="password"]').fill(password);
     await employeePage.getByRole('button', { name: 'Đăng nhập' }).click();
@@ -42,6 +56,9 @@ test('Electron launcher mở local và đăng nhập nhân viên thật', async 
     await expect(employeePage.getByRole('heading', { name: 'Đăng nhập' })).toHaveCount(0, {
       timeout: 20_000,
     });
+    await expect.poll(() => employeePage.url(), { timeout: 20_000 }).toContain('#/admin/dashboard');
+    await expect(employeePage.locator('.dashboard-welcome h1')).toBeVisible({ timeout: 20_000 });
+    execFileSync('import', ['-window', 'root', path.join(screenshotDir, '02-admin-dashboard.png')]);
   } finally {
     await electronApp.close();
   }
