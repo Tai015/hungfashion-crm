@@ -244,7 +244,7 @@ export default function CustomersView({ userRole }) {
   const deleteCustomer = async customer => {
     const confirmed = await confirmDestructiveAction({
       title: 'Xóa hồ sơ khách hàng?',
-      text: `Chỉ xóa được hồ sơ không có tài khoản đăng nhập và không có đơn hàng, phản hồi, khảo sát hoặc lịch sử liên quan. Hồ sơ ${customer.full_name} sẽ được kiểm tra trước khi xóa.`,
+      text: `Hồ sơ ${customer.full_name} sẽ được ẩn danh hóa và tài khoản đăng nhập (nếu có) sẽ bị khóa, thu hồi các phiên đang hoạt động. Đơn hàng, phản hồi và lịch sử giao dịch được giữ lại để bảo toàn dữ liệu. Thao tác này không thể hoàn tác.`,
       confirmText: 'Xóa hồ sơ',
     });
     if (!confirmed) return;
