@@ -69,7 +69,7 @@ test('queues one confirmation per order with a stable recipient and conflict pro
   });
   assert.equal(queued, true);
   assert.equal(calls.length, 1);
-  assert.match(calls[0].sql, /ON CONFLICT \(order_id\) DO NOTHING/);
+  assert.match(calls[0].sql, /ON CONFLICT \\(order_id, event_type\\) DO NOTHING/);
   assert.deepEqual(calls[0].params, [42, 7, 'customer@example.com', JSON.stringify({ subject: 'Test', html: '<p>Test</p>', text: 'Test' }), 'order_confirmation']);
 });
 
