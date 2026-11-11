@@ -1,6 +1,12 @@
 name: Remote website inspection (Playwright)
 
 on:
+  push:
+    branches: [feat/playwright-remote-site-inspector]
+    paths:
+      - "store-admin/e2e/remote-site-inspection.spec.js"
+      - "store-admin/playwright.remote-inspection.config.js"
+      - ".github/workflows/remote-site-inspection.yml"
   pull_request:
     branches: [main]
     paths:
