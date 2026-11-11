@@ -51,7 +51,7 @@ export default function AuthScreen({ onAuthenticated }) {
     try {
       const isLogin = mode === 'login';
       const result = isLogin
-        ? await apiFetch('/api/auth/login', { method: 'POST', body: { identifier, password, audience } })
+        ? await apiFetch('/api/auth/login', { method: 'POST', body: { identifier, password, audience, rememberMe } })
         : await apiFetch('/api/auth/register', { method: 'POST', body: { username, email, password, full_name: fullName, date_of_birth: dateOfBirth || null, interests } });
 
       await showSuccessAlert(

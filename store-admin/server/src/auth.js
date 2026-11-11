@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { pool } from './db.js';
 
-const TOKEN_LIFETIME_SECONDS = 60 * 60 * 8;
+const DEFAULT_TOKEN_LIFETIME_SECONDS = 30 * 60;
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -19,14 +19,14 @@ function base64url(value) {
   return Buffer.from(value).toString('base64url');
 }
 
-export function createAccessToken(accountId, sessionId) {
+export function createAccessToken(accountId, sessionId, lifetimeSeconds = DEFAULT_TOKEN_LIFETIME_SECONDS) {
   const now = Math.floor(Date.now() / 1000);
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = base64url(JSON.stringify({
     sub: String(accountId),
     jti: sessionId,
     iat: now,
-    exp: now + TOKEN_LIFETIME_SECONDS,
+    exp: now + lifetimeSeconds,
   }));
   const unsigned = `${header}.${payload}`;
   const signature = createHmac('sha256', jwtSecret()).update(unsigned).digest('base64url');
@@ -62,14 +62,27 @@ function verifyAccessToken(token) {
   }
 }
 
+function readSessionCookie(req) {
+  const cookieHeader = req.get('cookie') || '';
+  const cookie = cookieHeader.split(';').map((part) => part.trim())
+    .find((part) => part.startsWith('hung-fashion-session='));
+  if (!cookie) return null;
+  try {
+    return decodeURIComponent(cookie.slice('hung-fashion-session='.length));
+  } catch {
+    return null;
+  }
+}
+
 export async function requireAuth(req, res, next) {
   const authorization = req.get('authorization') || '';
   const match = /^Bearer ([^\s]+)$/.exec(authorization);
-  if (!match) return res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' });
+  const sessionToken = match?.[1] || readSessionCookie(req);
+  if (!sessionToken) return res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' });
 
   let token;
   try {
-    token = verifyAccessToken(match[1]);
+    token = verifyAccessToken(sessionToken);
   } catch (error) {
     return res.status(503).json({ message: error.message });
   }

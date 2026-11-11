@@ -5,10 +5,9 @@ export function getAuthToken() {
 }
 
 export function saveAuthToken(token, rememberMe) {
-  const persistentStorage = rememberMe ? window.localStorage : window.sessionStorage;
-  const temporaryStorage = rememberMe ? window.sessionStorage : window.localStorage;
-  temporaryStorage.removeItem(TOKEN_KEY);
-  persistentStorage.setItem(TOKEN_KEY, token);
+  clearAuthToken();
+  // Phiên tạm được giữ bằng cookie HttpOnly do máy chủ cấp; không lưu token JS.
+  if (rememberMe && token) window.localStorage.setItem(TOKEN_KEY, token);
 }
 
 export function clearAuthToken() {
@@ -183,7 +182,7 @@ export async function apiFetch(url, options = {}) {
     ? null
     : await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && url !== '/api/auth/me') {
       clearAuthToken();
       window.dispatchEvent(new CustomEvent('auth:expired', {
         detail: { code: result?.code, message: result?.message },

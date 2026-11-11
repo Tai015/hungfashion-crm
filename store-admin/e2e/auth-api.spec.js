@@ -105,8 +105,11 @@ test('API + PostgreSQL thật: đăng ký mới, từ chối trùng tài khoản
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await dismissSuccess(page);
   await expect(page).toHaveURL(/#\/khach-hang\/catalog$/);
-  await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).not.toBeNull();
+  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
   expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
+  await expect.poll(async () => (await page.context().cookies()).some(cookie =>
+    cookie.name === 'hung-fashion-session' && cookie.httpOnly,
+  )).toBe(true);
 });
 
 

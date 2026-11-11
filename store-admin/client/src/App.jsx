@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { apiFetch, checkRuntimeServices, subscribeToChatEvents, TOKEN_KEY, getAuthToken, clearAuthToken } from './api';
+import { apiFetch, checkRuntimeServices, subscribeToChatEvents, TOKEN_KEY, clearAuthToken } from './api';
 import AuthScreen from './AuthScreen';
 const CustomerPortal = lazy(() => import('./CustomerPortal'));
 const GuestStorefront = lazy(() => import('./CustomerPortal').then(module => ({ default: module.GuestStorefront })));
@@ -144,7 +144,6 @@ function App() {
   }, [user?.account_id, user?.role]);
 
   useEffect(() => {
-    const token = getAuthToken();
     let active = true;
     const expire = event => {
       pageViewTracked.current = null;
@@ -159,13 +158,12 @@ function App() {
     };
     window.addEventListener('auth:expired', expire);
     window.addEventListener('storage', handleStorage);
-    if (!token) setAuthLoading(false);
-    else {
-      apiFetch('/api/auth/me')
-        .then(currentUser => { if (active) setUser(currentUser); })
-        .catch(() => { if (active) setUser(null); })
-        .finally(() => { if (active) setAuthLoading(false); });
-    }
+    // Cookie phiên tạm là HttpOnly nên không đọc được bằng JavaScript.
+    // Luôn hỏi /me: trình duyệt tự gửi cookie nếu phiên hiện tại còn hiệu lực.
+    apiFetch('/api/auth/me')
+      .then(currentUser => { if (active) setUser(currentUser); })
+      .catch(() => { if (active) setUser(null); })
+      .finally(() => { if (active) setAuthLoading(false); });
     return () => {
       active = false;
       window.removeEventListener('auth:expired', expire);

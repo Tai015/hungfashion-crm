@@ -26,6 +26,11 @@ async function prepareAuthPage(page, hash) {
     contentType: 'application/json',
     body: JSON.stringify({ ok: true }),
   }));
+  await page.route('**/api/auth/me', route => route.fulfill({
+    status: 401,
+    contentType: 'application/json',
+    body: JSON.stringify({ message: 'Vui lòng đăng nhập để tiếp tục.' }),
+  }));
   await page.goto(hash);
   await expect(page.getByRole('heading', { name: /Đăng nhập|Tạo tài khoản/ })).toBeVisible();
 }
@@ -92,8 +97,8 @@ test('khách hàng đăng ký tài khoản mới rồi đăng nhập bằng chí
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: { 'set-cookie': 'hung-fashion-session=new-customer-login-session; Path=/; HttpOnly; SameSite=Lax' },
       body: JSON.stringify({
-        token: 'new-customer-login-token',
         user: { account_id: 101, username: account.username, full_name: account.full_name, role: 'KHACH_HANG' },
       }),
     });
@@ -115,8 +120,11 @@ test('khách hàng đăng ký tài khoản mới rồi đăng nhập bằng chí
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await dismissSuccessToast(page);
   await expect(page).toHaveURL(/#\/khach-hang\/catalog$/);
-  await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBe('new-customer-login-token');
+  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
   expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
+  await expect.poll(async () => (await page.context().cookies()).some(cookie =>
+    cookie.name === 'hung-fashion-session' && cookie.value === 'new-customer-login-session' && cookie.httpOnly,
+  )).toBe(true);
 });
 
 test('khách hàng đăng ký bằng tài khoản cũ phải nhận lỗi trùng username/email', async ({ page }) => {
@@ -150,9 +158,14 @@ test('khách hàng đăng ký bằng tài khoản cũ phải nhận lỗi trùng
   expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
 });
 
-test('đăng nhập khách hàng bằng tài khoản cũ và lưu token trong sessionStorage mặc định', async ({ page }) => {
+test('đăng nhập khách hàng bằng tài khoản cũ và dùng cookie phiên khi không duy trì đăng nhập', async ({ page }) => {
   await page.route('**/api/**', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({}),
+  }));
+  await page.route('**/api/auth/me', route => route.fulfill({
+    status: 401,
+    contentType: 'application/json',
+    body: JSON.stringify({ message: 'Vui lòng đăng nhập để tiếp tục.' }),
   }));
   await page.route('**/api/auth/login', route => {
     const submitted = route.request().postDataJSON();
@@ -162,8 +175,8 @@ test('đăng nhập khách hàng bằng tài khoản cũ và lưu token trong se
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: { 'set-cookie': 'hung-fashion-session=existing-customer-session; Path=/; HttpOnly; SameSite=Lax' },
       body: JSON.stringify({
-        token: 'existing-customer-token',
         user: { account_id: 201, username: EXISTING_CUSTOMER.username, full_name: 'Existing Customer', role: 'KHACH_HANG' },
       }),
     });
@@ -173,8 +186,11 @@ test('đăng nhập khách hàng bằng tài khoản cũ và lưu token trong se
   }));
 
   await login(page, '/#/khach-hang/login', EXISTING_CUSTOMER, 'customer');
-  await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBe('existing-customer-token');
   expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
+  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
+  await expect.poll(async () => (await page.context().cookies()).some(cookie =>
+    cookie.name === 'hung-fashion-session' && cookie.value === 'existing-customer-session',
+  )).toBe(true);
 });
 
 test('đăng nhập nhân viên bằng tài khoản cũ và lưu token localStorage khi bật duy trì đăng nhập', async ({ page }) => {
@@ -264,12 +280,19 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
     const { pathname } = new URL(route.request().url());
     // The broad matcher also matches Vite modules under /src/api/; let those load normally.
     if (!pathname.startsWith('/api/')) return route.continue();
+    if (pathname === '/api/auth/me') {
+      return route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Vui lòng đăng nhập để tiếp tục.' }),
+      });
+    }
     if (pathname === '/api/auth/login') {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
+        headers: { 'set-cookie': 'hung-fashion-session=timeline-admin-session; Path=/; HttpOnly; SameSite=Lax' },
         body: JSON.stringify({
-          token: 'timeline-admin-token',
           user: { account_id: 1, username: 'timeline-admin', full_name: 'Timeline Admin', role: 'ADMIN' },
         }),
       });
