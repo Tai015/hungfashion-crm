@@ -50,7 +50,7 @@ jobs:
 
       - name: Verify E2E admin secrets are configured
         env:
-          E2E_ADMIN_IDENTIFER: ${{ secrets.E2E_ADMIN_IDENTIFER }}
+          E2E_ADMIN_IDENTIFER: ${{ (secrets.E2E_ADMIN_IDENTIFER || secrets.E2E_ADMIN_IDENTIFIER) }}
           E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
         run: |
           test -n "$E2E_ADMIN_IDENTIFER"
@@ -60,7 +60,7 @@ jobs:
         working-directory: store-admin
         env:
           ELECTRON_DISABLE_SANDBOX: "1"
-          E2E_ADMIN_IDENTIFER: ${{ secrets.E2E_ADMIN_IDENTIFER }}
+          E2E_ADMIN_IDENTIFER: ${{ (secrets.E2E_ADMIN_IDENTIFER || secrets.E2E_ADMIN_IDENTIFIER) }}
           E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
         run: xvfb-run -a npx playwright test --config=playwright.electron-inspection.config.js
 
