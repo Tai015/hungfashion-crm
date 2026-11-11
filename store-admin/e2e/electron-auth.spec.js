@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { test, expect } from '@playwright/test';
 import { _electron as electron } from 'playwright';
 
@@ -19,6 +20,9 @@ test('Electron launcher mở local và đăng nhập nhân viên thật', async 
 
   try {
     const launcherPage = await electronApp.firstWindow();
+    await electronApp.evaluate(({ BrowserWindow }) => {
+      for (const window of BrowserWindow.getAllWindows()) window.maximize();
+    });
     await expect(launcherPage.locator('#open-local')).toBeVisible();
 
     // Click the same "Mở bản local" control that a user clicks in the desktop app.
@@ -42,10 +46,8 @@ test('Electron launcher mở local và đăng nhập nhân viên thật', async 
       process.env.E2E_SCREENSHOT_DIR || 'artifacts/electron-screenshots',
     );
     await mkdir(screenshotDir, { recursive: true });
-    await employeePage.screenshot({
-      path: path.join(screenshotDir, '01-employee-admin-login.png'),
-      fullPage: true,
-    });
+    // Capture the X11 desktop root so the screenshot includes the real Electron window frame.
+    execFileSync('import', ['-window', 'root', path.join(screenshotDir, '01-employee-admin-login.png')]);
 
     await employeePage.getByLabel('Tên đăng nhập hoặc email').fill(identifier);
     await employeePage.locator('input[type="password"]').fill(password);
@@ -56,10 +58,7 @@ test('Electron launcher mở local và đăng nhập nhân viên thật', async 
     });
     await expect.poll(() => employeePage.url(), { timeout: 20_000 }).toContain('#/admin/dashboard');
     await expect(employeePage.locator('.dashboard-welcome h1')).toBeVisible({ timeout: 20_000 });
-    await employeePage.screenshot({
-      path: path.join(screenshotDir, '02-admin-dashboard.png'),
-      fullPage: true,
-    });
+    execFileSync('import', ['-window', 'root', path.join(screenshotDir, '02-admin-dashboard.png')]);
   } finally {
     await electronApp.close();
   }
