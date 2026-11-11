@@ -26,6 +26,11 @@ async function prepareAuthPage(page, hash) {
     contentType: 'application/json',
     body: JSON.stringify({ ok: true }),
   }));
+  await page.route('**/api/auth/me', route => route.fulfill({
+    status: 401,
+    contentType: 'application/json',
+    body: JSON.stringify({ message: 'Vui lòng đăng nhập để tiếp tục.' }),
+  }));
   await page.goto(hash);
   await expect(page.getByRole('heading', { name: /Đăng nhập|Tạo tài khoản/ })).toBeVisible();
 }
@@ -150,7 +155,7 @@ test('khách hàng đăng ký bằng tài khoản cũ phải nhận lỗi trùng
   expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
 });
 
-test('đăng nhập khách hàng bằng tài khoản cũ và lưu token trong sessionStorage mặc định', async ({ page }) => {
+test('đăng nhập khách hàng bằng tài khoản cũ và dùng cookie phiên khi không duy trì đăng nhập', async ({ page }) => {
   await page.route('**/api/**', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({}),
   }));
@@ -162,8 +167,8 @@ test('đăng nhập khách hàng bằng tài khoản cũ và lưu token trong se
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: { 'set-cookie': 'hung-fashion-session=existing-customer-session; Path=/; HttpOnly; SameSite=Lax' },
       body: JSON.stringify({
-        token: 'existing-customer-token',
         user: { account_id: 201, username: EXISTING_CUSTOMER.username, full_name: 'Existing Customer', role: 'KHACH_HANG' },
       }),
     });
@@ -173,8 +178,11 @@ test('đăng nhập khách hàng bằng tài khoản cũ và lưu token trong se
   }));
 
   await login(page, '/#/khach-hang/login', EXISTING_CUSTOMER, 'customer');
-  await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBe('existing-customer-token');
   expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
+  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
+  await expect.poll(async () => (await page.context().cookies()).some(cookie =>
+    cookie.name === 'hung-fashion-session' && cookie.value === 'existing-customer-session',
+  )).toBe(true);
 });
 
 test('đăng nhập nhân viên bằng tài khoản cũ và lưu token localStorage khi bật duy trì đăng nhập', async ({ page }) => {
@@ -268,8 +276,8 @@ test('nhân viên mở được lịch sử tương tác của khách hàng tron
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
+        headers: { 'set-cookie': 'hung-fashion-session=timeline-admin-session; Path=/; HttpOnly; SameSite=Lax' },
         body: JSON.stringify({
-          token: 'timeline-admin-token',
           user: { account_id: 1, username: 'timeline-admin', full_name: 'Timeline Admin', role: 'ADMIN' },
         }),
       });
