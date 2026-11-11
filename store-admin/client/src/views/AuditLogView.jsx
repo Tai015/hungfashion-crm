@@ -53,7 +53,7 @@ export default function AuditLogView() {
           <h1 className="m-0 mt-1 text-[clamp(1.5rem,2.5vw,2rem)] font-bold tracking-tight">Nhật ký hoạt động</h1>
         </div>
         <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 border border-indigo-500/30 rounded-full bg-indigo-500/10 text-indigo-300 text-[0.78rem] font-semibold">
-          <Activity size={13}/> Kafka Streams
+          <Activity size={13}/> Audit Log
         </span>
       </div>
 
@@ -61,15 +61,15 @@ export default function AuditLogView() {
       <div className={PANEL}>
         <div className="flex items-center justify-between gap-4">
           <h2 className="flex items-center gap-2.5 m-0 text-[1.05rem] font-semibold">
-            Lịch sử tương tác người dùng
+            Kiểm toán thao tác nghiệp vụ
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/25 text-orange-500 text-xs font-semibold">{total.toLocaleString('vi-VN')}</span>
           </h2>
           <div className="flex items-center gap-3">
-            <small className="text-white/30 text-xs">Dữ liệu thời gian thực đồng bộ qua Kafka</small>
+            <small className="text-white/30 text-xs">Theo dõi thao tác thay đổi dữ liệu và kết quả xử lý</small>
             <FilterPopover title="Lọc nhật ký" activeCount={activeFilterCount} onClear={clearFilters}>
-              <label className="flex flex-col gap-1.5 text-xs text-white/65">Sự kiện<input className="h-9 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-white outline-none focus:border-orange-400/50" placeholder="Ví dụ: page_view" value={filters.event} onChange={e => { setFilters(current => ({ ...current, event: e.target.value })); setPage(1); }}/></label>
-              <label className="flex flex-col gap-1.5 text-xs text-white/65">Trang<input className="h-9 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-white outline-none focus:border-orange-400/50" placeholder="Ví dụ: /admin/orders" value={filters.route} onChange={e => { setFilters(current => ({ ...current, route: e.target.value })); setPage(1); }}/></label>
-              <label className="flex flex-col gap-1.5 text-xs text-white/65">Người dùng<input className="h-9 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-white outline-none focus:border-orange-400/50" placeholder="Tên hoặc tên đăng nhập" value={filters.user} onChange={e => { setFilters(current => ({ ...current, user: e.target.value })); setPage(1); }}/></label>
+              <label className="flex flex-col gap-1.5 text-xs text-white/65">Sự kiện<input className="h-9 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-white outline-none focus:border-orange-400/50" placeholder="Ví dụ: customer.update" value={filters.event} onChange={e => { setFilters(current => ({ ...current, event: e.target.value })); setPage(1); }}/></label>
+              <label className="flex flex-col gap-1.5 text-xs text-white/65">Trang<input className="h-9 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-white outline-none focus:border-orange-400/50" placeholder="Ví dụ: customer, order" value={filters.route} onChange={e => { setFilters(current => ({ ...current, route: e.target.value })); setPage(1); }}/></label>
+              <label className="flex flex-col gap-1.5 text-xs text-white/65">Người dùng<input className="h-9 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm text-white outline-none focus:border-orange-400/50" placeholder="Tên tài khoản thực hiện" value={filters.user} onChange={e => { setFilters(current => ({ ...current, user: e.target.value })); setPage(1); }}/></label>
             </FilterPopover>
           </div>
         </div>
@@ -79,7 +79,7 @@ export default function AuditLogView() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  {['Thời gian','Người dùng','Sự kiện','Trang','Chi tiết','Nguồn'].map(h => <th key={h} className={TH}>{h}</th>)}
+                  {['Thời gian','Người thực hiện','Hành động','Đối tượng','Kết quả','Request ID'].map(h => <th key={h} className={TH}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -88,21 +88,21 @@ export default function AuditLogView() {
                     <td className={`${TD} text-white/50 text-[0.8rem] tabular-nums whitespace-nowrap`}>{fmtDT(log.occurred_at)}</td>
                     <td className={TD}>
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold text-[#f5f0eb] text-[0.86rem]">{log.full_name || 'Không ghi nhận danh tính'}</span>
-                        <small className="text-white/30 text-[0.72rem]">{log.username ? `${log.username}${log.role_name ? ` · ${log.role_name}` : ''}` : 'Sự kiện cũ chưa lưu tài khoản'}</small>
+                        <span className="font-semibold text-[#f5f0eb] text-[0.86rem]">{log.username || 'Tác nhân hệ thống / chưa xác thực'}</span>
+                        <small className="text-white/30 text-[0.72rem]">{log.role_name || 'Không xác định vai trò'}</small>
                       </div>
                     </td>
                     <td className={TD}>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/[0.08] text-indigo-300/70 text-[0.78rem] font-medium">{log.event_type}</span>
                     </td>
                     <td className={TD}>
-                      <code className="px-2 py-0.5 rounded-md border border-white/[0.08] bg-white/[0.07] text-white/60 text-[0.78rem] font-mono">{log.page}</code>
+                      <code className="px-2 py-0.5 rounded-md border border-white/[0.08] bg-white/[0.07] text-white/60 text-[0.78rem] font-mono">{log.entity_type}</code>
                     </td>
                     <td className={TD}>
-                      <span className="text-white/40 text-[0.78rem]">{log.action}{log.section ? ` · ${log.section}` : ''}</span>
+                      <span className="text-white/40 text-[0.78rem]">{log.entity_type}{log.entity_id ? ` #${log.entity_id}` : ''} · {log.request_method}</span>
                     </td>
                     <td className={TD}>
-                      <span className="text-[0.7rem] font-bold tracking-[0.06em] uppercase px-2 py-0.5 rounded-md bg-indigo-500/[0.08] text-indigo-400/70">{log.source}</span>
+                      <span className={`text-[0.7rem] font-bold tracking-[0.06em] uppercase px-2 py-0.5 rounded-md ${log.outcome === 'success' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300'}`}>{log.outcome === 'success' ? 'Thành công' : 'Thất bại'} · {log.status_code}</span>
                     </td>
                   </tr>
                 ))}
