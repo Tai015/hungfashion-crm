@@ -1,3 +1,5 @@
+import { mkdir } from 'node:fs/promises';
+import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { _electron as electron } from 'playwright';
 
@@ -35,12 +37,28 @@ test('Electron launcher mở local và đăng nhập nhân viên thật', async 
     await expect(employeePage.getByRole('heading', { name: 'Đăng nhập' })).toBeVisible();
     expect(await employeePage.evaluate(() => window.storeAdminLauncher?.isElectronApp)).toBe(true);
 
+    // Keep real Electron screenshots separate from test fixtures and credentials.
+    const screenshotDir = path.resolve(
+      process.env.E2E_SCREENSHOT_DIR || 'artifacts/electron-screenshots',
+    );
+    await mkdir(screenshotDir, { recursive: true });
+    await employeePage.screenshot({
+      path: path.join(screenshotDir, '01-employee-admin-login.png'),
+      fullPage: true,
+    });
+
     await employeePage.getByLabel('Tên đăng nhập hoặc email').fill(identifier);
     await employeePage.locator('input[type="password"]').fill(password);
     await employeePage.getByRole('button', { name: 'Đăng nhập' }).click();
 
     await expect(employeePage.getByRole('heading', { name: 'Đăng nhập' })).toHaveCount(0, {
       timeout: 20_000,
+    });
+    await expect(employeePage).toHaveURL(/#\\/admin\\/dashboard$/, { timeout: 20_000 });
+    await employeePage.waitForLoadState('domcontentloaded');
+    await employeePage.screenshot({
+      path: path.join(screenshotDir, '02-admin-dashboard.png'),
+      fullPage: true,
     });
   } finally {
     await electronApp.close();
