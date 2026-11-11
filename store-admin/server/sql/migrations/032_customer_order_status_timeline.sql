@@ -22,6 +22,23 @@ WHERE ue.event_type IN ('login', 'logout')
 UNION ALL
 
 SELECT
+  'user-navigation:' || ue.id::text AS interaction_id,
+  c.customer_id,
+  'navigation'::text AS interaction_type,
+  CASE WHEN ue.event_type = 'page_view' THEN 'Khách hàng truy cập trang'
+       ELSE 'Khách hàng chuyển mục' END AS title,
+  'Vị trí: ' || COALESCE(NULLIF(ue.section, ''), NULLIF(ue.page, ''), 'Không rõ')
+    || CASE WHEN ue.page IS NOT NULL AND ue.section IS NOT NULL
+      THEN ' · Trang: ' || ue.page ELSE '' END AS summary,
+  ue.occurred_at
+FROM user_events ue
+JOIN account a ON a.account_id::text = ue.user_id
+JOIN customer c ON c.account_id = a.account_id
+WHERE ue.event_type IN ('page_view', 'navigation_click')
+
+UNION ALL
+
+SELECT
   'customer-profile:' || c.customer_id::text AS interaction_id,
   c.customer_id,
   'customer_profile'::text AS interaction_type,
