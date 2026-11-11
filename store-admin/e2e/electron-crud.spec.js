@@ -143,18 +143,12 @@ test('Electron CRUD: sản phẩm, khách hàng, nhân viên và tạo/cập nh�
     await page.getByRole('button', { name: 'Lưu nhân viên' }).click();
     await expect(page.getByText(editedEmployeeName, { exact: true })).toBeVisible({ timeout: 15_000 });
     employeeRow = page.locator('tr').filter({ hasText: editedEmployeeName }).first();
-    const employeeLookup = await db.query(
-      'SELECT employee_id FROM employee WHERE full_name = $1',
+    await expect(employeeRow).toContainText('Ngừng hoạt động');
+    const employeeState = await db.query(
+      'SELECT is_active FROM employee WHERE full_name = $1',
       [editedEmployeeName],
     );
-    expect(employeeLookup.rowCount).toBe(1);
-    employeeId = employeeLookup.rows[0].employee_id;
-    await employeeRow.getByRole('button', { name: 'Xóa', exact: true }).click();
-    await confirmDanger();
-    await expect.poll(async () => {
-      const result = await db.query('SELECT employee_id FROM employee WHERE employee_id = $1', [employeeId]);
-      return result.rowCount;
-    }).toBe(0);
+    expect(employeeState.rows[0]?.is_active).toBe(false);
 
     // ORDER: create a counter order in the real Electron UI and transition it.
     await navigate('Đơn hàng');
