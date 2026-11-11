@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { pool } from './db.js';
 
-const TOKEN_LIFETIME_SECONDS = 60 * 60 * 8;
+const DEFAULT_TOKEN_LIFETIME_SECONDS = 30 * 60;
 
 function jwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -19,14 +19,14 @@ function base64url(value) {
   return Buffer.from(value).toString('base64url');
 }
 
-export function createAccessToken(accountId, sessionId) {
+export function createAccessToken(accountId, sessionId, lifetimeSeconds = DEFAULT_TOKEN_LIFETIME_SECONDS) {
   const now = Math.floor(Date.now() / 1000);
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = base64url(JSON.stringify({
     sub: String(accountId),
     jti: sessionId,
     iat: now,
-    exp: now + TOKEN_LIFETIME_SECONDS,
+    exp: now + lifetimeSeconds,
   }));
   const unsigned = `${header}.${payload}`;
   const signature = createHmac('sha256', jwtSecret()).update(unsigned).digest('base64url');
