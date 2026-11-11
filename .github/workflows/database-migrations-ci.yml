@@ -91,6 +91,9 @@ jobs:
           view_exists="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT to_regclass('public.customer_interaction_timeline') IS NOT NULL")"
           test "$view_exists" = "t"
 
+          audit_table_exists="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT to_regclass('public.audit_logs') IS NOT NULL")"
+          test "$audit_table_exists" = "t"
+
           event_id_type="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='event_id'")"
           test "$event_id_type" = "uuid"
 
