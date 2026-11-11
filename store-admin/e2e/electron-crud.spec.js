@@ -89,9 +89,14 @@ test('Electron CRUD: sản phẩm, khách hàng, nhân viên và tạo/cập nh�
     // only in the isolated CI PostgreSQL database for the order workflow below.
     await navigate('Sản phẩm');
     await expect(page.getByRole('heading', { name: 'Quản lý sản phẩm' })).toBeVisible();
+    const categoryResult = await db.query(
+      'INSERT INTO category (category_name, description) VALUES ($1, $2) RETURNING category_id',
+      [`E2E Category ${suffix}`, 'Disposable category for Electron E2E'],
+    );
     await page.getByRole('button', { name: 'Thêm sản phẩm', exact: true }).click();
     await page.getByPlaceholder('Áo thun...').fill(productName);
     const productForm = page.locator('form').filter({ has: page.getByPlaceholder('Áo thun...') });
+    await productForm.locator('select').nth(0).selectOption(String(categoryResult.rows[0].category_id));
     await productForm.locator('input[type="number"]').nth(0).fill('10000');
     await productForm.locator('input[type="number"]').nth(1).fill('25000');
     await productForm.getByRole('button', { name: 'Thêm sản phẩm', exact: true }).click();
