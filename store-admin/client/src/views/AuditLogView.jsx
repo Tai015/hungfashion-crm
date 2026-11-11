@@ -96,13 +96,13 @@ export default function AuditLogView() {
                       <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/[0.08] text-indigo-300/70 text-[0.78rem] font-medium">{log.event_type}</span>
                     </td>
                     <td className={TD}>
-                      <code className="px-2 py-0.5 rounded-md border border-white/[0.08] bg-white/[0.07] text-white/60 text-[0.78rem] font-mono">{log.entity_type}</code>
-                    </td>
-                    <td className={TD}>
-                      <span className="text-white/40 text-[0.78rem]">{log.entity_type}{log.entity_id ? ` #${log.entity_id}` : ''} · {log.request_method}</span>
+                      <code className="px-2 py-0.5 rounded-md border border-white/[0.08] bg-white/[0.07] text-white/60 text-[0.78rem] font-mono">{log.entity_type}{log.entity_id ? ` #${log.entity_id}` : ''}</code>
                     </td>
                     <td className={TD}>
                       <span className={`text-[0.7rem] font-bold tracking-[0.06em] uppercase px-2 py-0.5 rounded-md ${log.outcome === 'success' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300'}`}>{log.outcome === 'success' ? 'Thành công' : 'Thất bại'} · {log.status_code}</span>
+                    </td>
+                    <td className={TD}>
+                      <code className="text-[0.68rem] text-white/40 font-mono">{log.request_id || '—'}</code>
                     </td>
                   </tr>
                 ))}
