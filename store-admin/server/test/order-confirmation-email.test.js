@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   buildOrderConfirmationEmail,
+  enqueueOrderConfirmationEmail,
   escapeHtml,
   isValidEmail,
 } from '../src/order-confirmation-email.js';
@@ -49,4 +50,35 @@ test('builds a Vietnamese order confirmation with item details and safe HTML', (
   assert.match(email.html, /200\.000/);
   assert.match(email.text, /Đơn hàng #123/);
   assert.match(email.text, /Áo thun/);
+});
+
+test('queues one confirmation per order with a stable recipient and conflict protection', async () => {
+  const calls = [];
+  const client = {
+    async query(sql, params) {
+      calls.push({ sql, params });
+      return { rows: [], rowCount: 1 };
+    },
+  };
+  const queued = await enqueueOrderConfirmationEmail(client, {
+    orderId: 42,
+    customerId: 7,
+    recipientEmail: ' Customer@Example.com ',
+  });
+  assert.equal(queued, true);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].sql, /ON CONFLICT \(order_id\) DO NOTHING/);
+  assert.deepEqual(calls[0].params, [42, 7, 'customer@example.com']);
+});
+
+test('skips customers without a valid email and does not touch the queue', async () => {
+  let queryCount = 0;
+  const client = { async query() { queryCount += 1; return { rows: [] }; } };
+  assert.equal(await enqueueOrderConfirmationEmail(client, {
+    orderId: 43, customerId: 8, recipientEmail: null,
+  }), false);
+  assert.equal(await enqueueOrderConfirmationEmail(client, {
+    orderId: 44, customerId: 8, recipientEmail: 'invalid',
+  }), false);
+  assert.equal(queryCount, 0);
 });
