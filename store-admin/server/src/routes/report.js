@@ -537,7 +537,7 @@ router.get('/audit-logs', async (req, res) => {
     conditions.push(`${sql} ILIKE $${values.length}`);
   };
   filter('action', req.query.event);
-  filter('entity_type', req.query.route);
+  filter('object_type', req.query.route);
   filter("COALESCE(actor_username, '')", req.query.user);
   if (from !== undefined) {
     values.push(from);
