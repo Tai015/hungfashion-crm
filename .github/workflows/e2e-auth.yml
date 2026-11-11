@@ -186,6 +186,27 @@ jobs:
           test -n "$E2E_STAFF_IDENTIFIER" || { echo "::error::Missing E2E_STAFF_IDENTIFIER GitHub Secret"; exit 1; }
           test -n "$E2E_STAFF_PASSWORD" || { echo "::error::Missing E2E_STAFF_PASSWORD GitHub Secret"; exit 1; }
 
+      - name: Configure isolated local environment for Electron E2E
+        working-directory: store-admin
+        shell: bash
+        run: |
+          cat > server/.env <<'ENV'
+          PORT=5000
+          LOCAL_HOST=127.0.0.1
+          LOCAL_URL=http://localhost:5173
+          POSTGRES_HOST=127.0.0.1
+          POSTGRES_PORT=5432
+          POSTGRES_DB=hungfashion_e2e
+          POSTGRES_USER=postgres
+          POSTGRES_PASSWORD=ci-only-not-production-password
+          POSTGRES_SSL=false
+          JWT_SECRET=ci-only-jwt-secret-not-used-outside-disposable-database-2026
+          KAFKA_BROKER=localhost:9092
+          AUTH_RATE_LIMIT_WINDOW_MS=300000
+          AUTH_LOGIN_RATE_LIMIT_MAX=10
+          AUTH_REGISTER_RATE_LIMIT_MAX=10
+          ENV
+
       - name: Apply schema and migrations to temporary PostgreSQL
         working-directory: store-admin
         run: npm run db:migrate --workspace server
@@ -208,6 +229,28 @@ jobs:
           echo "::error::Local API did not become ready."
           cat /tmp/hungfashion-api.log
           exit 1
+
+      - name: Start local Vite frontend for Electron
+        working-directory: store-admin
+        shell: bash
+        run: |
+          nohup npm run dev --workspace client > /tmp/hungfashion-vite.log 2>&1 &
+          for attempt in {1..60}; do
+            if curl --fail --silent http://localhost:5173/ > /dev/null; then
+              echo "Local Vite frontend is ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Local Vite frontend did not become ready."
+          cat /tmp/hungfashion-vite.log
+          exit 1
+
+      - name: Run real Electron staff login E2E (Xvfb)
+        working-directory: store-admin
+        env:
+          E2E_ELECTRON_TEST_MODE: "true"
+        run: xvfb-run -a npx playwright test e2e/electron-auth.spec.js
 
       - name: Run authentication API E2E
         working-directory: store-admin
