@@ -17,6 +17,7 @@ import { kafkaMetrics } from './kafka-metrics.js';
 import { startOutboxRelay } from './outbox-relay.js';
 import { writeOutboxEvent } from './outbox-writer.js';
 import { persistTransactionEvent } from './transaction-events.js';
+import { startOrderConfirmationEmailWorker } from './order-confirmation-email.js';
 import { allowRoles, requireAuth } from './auth.js';
 import authRouter       from './routes/auth.js';
 import accountRouter   from './routes/account.js';
@@ -472,6 +473,8 @@ async function startServer() {
   };
   if (listenHost) app.listen(PORT, listenHost, onListening);
   else app.listen(PORT, onListening);
+
+  startOrderConfirmationEmailWorker();
 
   startOutboxRelay().catch((err) => {
     console.error('Outbox relay stopped unexpectedly:', err);
