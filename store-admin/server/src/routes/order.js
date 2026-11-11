@@ -728,18 +728,30 @@ router.post('/', async (req, res) => {
       );
     }
 
-    if (customer_id) {
-      const { rows: [customerEmail] } = await client.query(
-        'SELECT email FROM customer WHERE customer_id=$1',
-        [customer_id],
-      );
-      if (isValidEmail(customerEmail?.email)) {
-        await enqueueOrderConfirmationEmail(client, {
-          orderId: order.order_id,
-          customerId: customer_id,
-          recipientEmail: customerEmail.email,
-        });
+    await client.query('SAVEPOINT order_confirmation_email_enqueue');
+    try {
+      if (customer_id) {
+        const { rows: [customerEmail] } = await client.query(
+          'SELECT email FROM customer WHERE customer_id=$1',
+          [customer_id],
+        );
+        if (isValidEmail(customerEmail?.email)) {
+          await enqueueOrderConfirmationEmail(client, {
+            orderId: order.order_id,
+            customerId: customer_id,
+            recipientEmail: customerEmail.email,
+          });
+        }
       }
+      await client.query('RELEASE SAVEPOINT order_confirmation_email_enqueue');
+    } catch (emailQueueError) {
+      await client.query('ROLLBACK TO SAVEPOINT order_confirmation_email_enqueue');
+      await client.query('RELEASE SAVEPOINT order_confirmation_email_enqueue');
+      console.error('[orders] could not queue confirmation email; order will still commit:', {
+        orderId: order.order_id,
+        code: emailQueueError.code,
+        message: emailQueueError.message,
+      });
     }
 
     await enqueueTransactionEvent(client, {
