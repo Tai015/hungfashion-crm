@@ -8,6 +8,7 @@ const dotenv = require('dotenv');
 const desktopDir = __dirname;
 const projectDir = path.resolve(desktopDir, '..');
 let launcherWindow;
+let testCenterWindow;
 let devProcess;
 
 function report(message) {
@@ -326,6 +327,32 @@ function createLauncherWindow() {
   launcherWindow.on('closed', () => { launcherWindow = undefined; });
 }
 
+function openTestCenter() {
+  if (!testCenterWindow || testCenterWindow.isDestroyed()) {
+    testCenterWindow = new BrowserWindow({
+      width: 1080,
+      height: 820,
+      minWidth: 760,
+      minHeight: 620,
+      title: 'Store Admin — Trung tâm kiểm thử',
+      backgroundColor: '#f4f4ef',
+      parent: launcherWindow && !launcherWindow.isDestroyed() ? launcherWindow : undefined,
+      webPreferences: {
+        preload: path.join(desktopDir, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    });
+    testCenterWindow.loadFile(path.join(desktopDir, 'test-center.html'));
+    testCenterWindow.on('closed', () => { testCenterWindow = undefined; });
+  } else {
+    testCenterWindow.show();
+    testCenterWindow.focus();
+  }
+  return { ok: true };
+}
+
 function showLauncherWindow() {
   if (!launcherWindow || launcherWindow.isDestroyed()) createLauncherWindow();
   else launcherWindow.show();
@@ -347,6 +374,7 @@ async function openDeployUrl(url) {
 }
 
 ipcMain.handle('launcher:open-local', () => openLocal());
+ipcMain.handle('launcher:open-test-center', openTestCenter);
 ipcMain.handle('launcher:open-database', () => openLocal('database'));
 ipcMain.handle('launcher:open-kafka-ui', openKafkaUi);
 ipcMain.handle('launcher:open-deploy', async () => {
