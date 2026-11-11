@@ -91,15 +91,15 @@ export function buildOrderConfirmationEmail({ order, details }) {
 }
 
 export async function enqueueOrderConfirmationEmail(client, {
-  orderId, customerId, recipientEmail,
+  orderId, customerId, recipientEmail, payload,
 }) {
   if (!customerId || !isValidEmail(recipientEmail)) return false;
   await client.query(
     `INSERT INTO order_confirmation_email
-       (order_id, customer_id, recipient_email, status, next_attempt_at)
-     VALUES ($1, $2, $3, 'queued', NOW() + INTERVAL '15 seconds')
+       (order_id, customer_id, recipient_email, payload, status, next_attempt_at)
+     VALUES ($1, $2, $3, $4::jsonb, 'queued', NOW() + INTERVAL '15 seconds')
      ON CONFLICT (order_id) DO NOTHING`,
-    [orderId, customerId, recipientEmail.trim().toLowerCase()],
+    [orderId, customerId, recipientEmail.trim().toLowerCase(), JSON.stringify(payload)],
   );
   return true;
 }
@@ -109,7 +109,7 @@ async function claimNextEmail() {
   try {
     await client.query('BEGIN');
     const { rows: [job] } = await client.query(
-      `SELECT email_id, order_id, customer_id, recipient_email, attempts
+      `SELECT email_id, order_id, customer_id, recipient_email, payload, attempts
        FROM order_confirmation_email
        WHERE attempts < $1
          AND (
@@ -142,32 +142,6 @@ async function claimNextEmail() {
   }
 }
 
-async function loadOrderEmailData(orderId) {
-  const [{ rows: [order] }, { rows: details }] = await Promise.all([
-    pool.query(
-      `SELECT o.order_id, o.ordered_at, o.subtotal, o.discount_amt, o.total_amount,
-              o.shipping_address, c.full_name AS customer_name,
-              p.method AS payment_method, p.status AS payment_status
-       FROM "order" o
-       LEFT JOIN customer c ON c.customer_id=o.customer_id
-       LEFT JOIN payment p ON p.order_id=o.order_id
-       WHERE o.order_id=$1`,
-      [orderId],
-    ),
-    pool.query(
-      `SELECT pr.product_name, pv.sku, od.quantity,
-              od.unit_price, od.subtotal
-       FROM order_detail od
-       JOIN product_variant pv ON pv.variant_id=od.variant_id
-       JOIN product pr ON pr.product_id=pv.product_id
-       WHERE od.order_id=$1
-       ORDER BY od.detail_id`,
-      [orderId],
-    ),
-  ]);
-  if (!order) throw new Error('Không tìm thấy đơn hàng để gửi email xác nhận.');
-  return { order, details };
-}
 
 async function saveAttempt(job, { status, errorMessage = null, providerMessageId = null }) {
   const client = await pool.connect();
@@ -211,8 +185,7 @@ async function saveAttempt(job, { status, errorMessage = null, providerMessageId
 
 async function sendClaimedEmail(job, { fetchImpl, apiKey, mailFrom }) {
   try {
-    const { order, details } = await loadOrderEmailData(job.order_id);
-    const message = buildOrderConfirmationEmail({ order, details });
+    const message = job.payload;
     const response = await fetchImpl(RESEND_ENDPOINT, {
       method: 'POST',
       headers: {
