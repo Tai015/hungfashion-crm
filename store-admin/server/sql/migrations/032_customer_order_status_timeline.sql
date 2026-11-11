@@ -1,44 +1,6 @@
--- Extend the CRM timeline with explicit order status transitions.
--- Rebuild the view so existing installations receive the new event source.
--- Customer interaction history: read-only timeline over existing business data.
--- No backfill and no dedicated interaction table; the migration only adds indexes and a view.
-
-CREATE INDEX IF NOT EXISTS order_customer_ordered_at_idx
-  ON "order" (customer_id, ordered_at DESC, order_id DESC)
-  WHERE customer_id IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS user_events_user_occurred_idx
-  ON user_events (user_id, occurred_at DESC, id DESC)
-  WHERE event_type IN ('login', 'logout')
-     OR action IN ('login_success', 'logout_success');
-
-CREATE INDEX IF NOT EXISTS transactions_customer_occurred_at_idx
-  ON transactions (customer_id, occurred_at DESC, id DESC)
-  WHERE customer_id IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS feedback_customer_created_at_idx
-  ON feedback (customer_id, created_at DESC, feedback_id DESC)
-  WHERE customer_id IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS survey_response_customer_submitted_at_idx
-  ON survey_response (customer_id, submitted_at DESC, response_id DESC)
-  WHERE customer_id IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS survey_invitation_customer_invited_at_idx
-  ON survey_invitation (customer_id, invited_at DESC, invitation_id DESC);
-
-CREATE INDEX IF NOT EXISTS user_promotion_customer_assigned_at_idx
-  ON user_promotion (customer_id, assigned_at DESC, user_promo_id DESC);
-
-CREATE INDEX IF NOT EXISTS user_promotion_customer_used_at_idx
-  ON user_promotion (customer_id, used_at DESC, user_promo_id DESC)
-  WHERE used_at IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS conversation_customer_updated_at_idx
-  ON conversation (customer_id, updated_at DESC, conversation_id DESC);
-
-CREATE INDEX IF NOT EXISTS chat_message_conversation_sent_at_idx
-  ON chat_message (conversation_id, sent_at DESC, message_id DESC);
+-- Rebuild the complete CRM timeline while retaining email attempts and adding status changes.
+ALTER TABLE transactions
+  ADD COLUMN IF NOT EXISTS previous_status TEXT;
 
 CREATE OR REPLACE VIEW customer_interaction_timeline AS
 SELECT
@@ -215,34 +177,34 @@ SELECT
   c.updated_at AS occurred_at
 FROM conversation c
 LEFT JOIN chat_message m ON m.conversation_id = c.conversation_id
-GROUP BY c.conversation_id, c.customer_id, c.status, c.updated_at;
-
-
--- Manual rollback reference (do not execute during normal migration):
--- DROP VIEW IF EXISTS customer_interaction_timeline;
--- DROP INDEX IF EXISTS chat_message_conversation_sent_at_idx;
--- DROP INDEX IF EXISTS conversation_customer_updated_at_idx;
--- DROP INDEX IF EXISTS user_promotion_customer_used_at_idx;
--- DROP INDEX IF EXISTS user_promotion_customer_assigned_at_idx;
--- DROP INDEX IF EXISTS survey_invitation_customer_invited_at_idx;
--- DROP INDEX IF EXISTS survey_response_customer_submitted_at_idx;
--- DROP INDEX IF EXISTS feedback_customer_created_at_idx;
--- DROP INDEX IF EXISTS transactions_customer_occurred_at_idx;
--- DROP INDEX IF EXISTS user_events_user_occurred_idx;
--- DROP INDEX IF EXISTS order_customer_ordered_at_idx
-
+GROUP BY c.conversation_id, c.customer_id, c.status, c.updated_at
 UNION ALL
-
 SELECT
-  'order-status:' || t.id::text AS interaction_id,
+  'order-status:' || t.id::text,
   t.customer_id,
-  'order_status'::text AS interaction_type,
-  'Đơn hàng #' || t.order_id::text || ' thay đổi trạng thái' AS title,
+  'order_status'::text,
+  'Đơn hàng #' || t.order_id::text || ' thay đổi trạng thái',
   'Từ: ' || COALESCE(t.previous_status, 'Không rõ')
-    || ' · Sang: ' || COALESCE(t.status, 'Không rõ') AS summary,
+    || ' · Sang: ' || COALESCE(t.status, 'Không rõ'),
   t.occurred_at
 FROM transactions t
 WHERE t.customer_id IS NOT NULL
   AND t.event_type = 'order_status_changed'
   AND t.previous_status IS NOT NULL
-  AND t.status IS DISTINCT FROM t.previous_status;
+  AND t.status IS DISTINCT FROM t.previous_status
+
+UNION ALL
+SELECT
+  'order-email-attempt:' || a.attempt_id::text,
+  a.customer_id,
+  'email'::text,
+  CASE WHEN a.status='sent'
+    THEN 'Đã gửi email xác nhận đơn hàng #' || COALESCE(a.order_id::text,'—')
+    ELSE 'Gửi email xác nhận đơn hàng thất bại #' || COALESCE(a.order_id::text,'—') END,
+  'Người nhận: ' || a.recipient_email
+    || CASE WHEN a.status='failed' AND a.error_message IS NOT NULL
+      THEN ' · Lỗi: ' || LEFT(a.error_message,300)
+      ELSE ' · Gửi thành công' END,
+  a.attempted_at
+FROM order_confirmation_email_attempt a
+WHERE a.customer_id IS NOT NULL;
