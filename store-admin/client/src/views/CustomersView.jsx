@@ -45,6 +45,7 @@ function CustomerModal({ customer, onClose, onSaved }) {
     ? { full_name:customer.full_name||'', phone:customer.phone||'', email:customer.email||'', address:customer.address||'', gender:customer.gender||'Other', date_of_birth:customer.date_of_birth ? String(customer.date_of_birth).slice(0,10) : '' }
     : EMPTY);
   const [interestText, setInterestText] = useState('');
+  const [detailsLoading, setDetailsLoading] = useState(Boolean(customer));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   useSweetAlertMessages({ error });
@@ -57,7 +58,8 @@ function CustomerModal({ customer, onClose, onSaved }) {
         setForm(current => ({ ...current, address:details.address || '' }));
         setInterestText((details.interests || []).join(', '));
       })
-      .catch(err => { if (active) setError(err.message); });
+      .catch(err => { if (active) setError(err.message); })
+      .finally(() => { if (active) setDetailsLoading(false); });
     return () => { active = false; };
   }, [customer?.customer_id, isEdit]);
   const save = async e => {
@@ -111,7 +113,7 @@ function CustomerModal({ customer, onClose, onSaved }) {
           </div>
           <div className="flex justify-end gap-2.5 pt-3 border-t border-white/[0.08]">
             <button type="button" className={BTN_GHOST} onClick={onClose}>Hủy</button>
-            <button type="submit" className={`${BTN_PRIMARY} admin-primary-action`} disabled={busy}>{busy ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : <><UserPlus size={14}/> Thêm khách hàng</>}</button>
+            <button type="submit" className={`${BTN_PRIMARY} admin-primary-action`} disabled={busy || detailsLoading}>{detailsLoading ? 'Đang tải...' : busy ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : <><UserPlus size={14}/> Thêm khách hàng</>}</button>
           </div>
         </form>
       </motion.div>
