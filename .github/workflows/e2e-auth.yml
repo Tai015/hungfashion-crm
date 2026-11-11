@@ -248,11 +248,14 @@ jobs:
           cat /tmp/hungfashion-vite.log
           exit 1
 
+      - name: Install desktop screenshot tools
+        run: sudo apt-get update && sudo apt-get install -y imagemagick openbox xdotool
+
       - name: Run real Electron staff login E2E (Xvfb)
         working-directory: store-admin
         env:
           E2E_ELECTRON_TEST_MODE: "true"
-        run: xvfb-run -a npx playwright test e2e/electron-auth.spec.js
+        run: xvfb-run -a bash -lc "openbox >/tmp/openbox.log 2>&1 & sleep 2; npx playwright test e2e/electron-auth.spec.js"
 
       - name: Run Electron CRUD and order workflows (Xvfb)
         working-directory: store-admin
