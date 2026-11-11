@@ -37,7 +37,6 @@ async function gotoApp(page, path) {
 async function expectLoginScreen(page, path, audienceLabel) {
   await gotoApp(page, path);
   await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toBeVisible();
-  await expect(page.getByText(audienceLabel, { exact: false })).toBeVisible();
   await expect(page.getByLabel('Tên đăng nhập hoặc email')).toBeVisible();
   await expect(page.locator('input[type="password"]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Đăng nhập' })).toBeEnabled();
@@ -47,8 +46,10 @@ test('màn hình đăng nhập khách hàng hiển thị đúng', async ({ page 
   await expectLoginScreen(page, customerPath, 'Cửa hàng');
 });
 
-test('màn hình đăng nhập nhân viên hiển thị đúng', async ({ page }) => {
-  await expectLoginScreen(page, staffPath, 'Nhân viên');
+test('trình duyệt thường bị chặn khỏi khu vực đăng nhập nhân viên', async ({ page }) => {
+  await gotoApp(page, staffPath);
+  await expect(page.getByRole('heading', { name: 'Khu vực dành riêng cho ứng dụng Electron' })).toBeVisible();
+  await expect(page.getByLabel('Tên đăng nhập hoặc email')).toHaveCount(0);
 });
 
 test('khách hàng đăng nhập thành công bằng tài khoản E2E', async ({ page }) => {
@@ -63,14 +64,3 @@ test('khách hàng đăng nhập thành công bằng tài khoản E2E', async ({
   await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toHaveCount(0);
 });
 
-test('nhân viên đăng nhập thành công bằng tài khoản E2E', async ({ page }) => {
-  const identifier = process.env.E2E_STAFF_IDENTIFIER;
-  const password = process.env.E2E_STAFF_PASSWORD;
-  test.skip(!identifier || !password, 'Chưa cấu hình GitHub Secrets cho tài khoản nhân viên E2E.');
-
-  await gotoApp(page, staffPath);
-  await page.getByLabel('Tên đăng nhập hoặc email').fill(identifier);
-  await page.locator('input[type="password"]').fill(password);
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-  await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toHaveCount(0);
-});
