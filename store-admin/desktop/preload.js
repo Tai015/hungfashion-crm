@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('storeAdminLauncher', {
   openLocal: () => ipcRenderer.invoke('launcher:open-local'),
+  openTestCenter: () => ipcRenderer.invoke('launcher:open-test-center'),
   openDatabase: () => ipcRenderer.invoke('launcher:open-database'),
   openKafkaUi: () => ipcRenderer.invoke('launcher:open-kafka-ui'),
   openDeploy: () => ipcRenderer.invoke('launcher:open-deploy'),
