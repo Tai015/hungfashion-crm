@@ -95,7 +95,7 @@ try {
     required('E2E_CUSTOMER_PASSWORD'),
   );
   const staff = accountInput(
-    'QL_KHO',
+    'ADMIN',
     required('E2E_STAFF_IDENTIFIER'),
     required('E2E_STAFF_PASSWORD'),
   );
