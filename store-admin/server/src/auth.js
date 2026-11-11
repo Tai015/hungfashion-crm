@@ -62,14 +62,27 @@ function verifyAccessToken(token) {
   }
 }
 
+function readSessionCookie(req) {
+  const cookieHeader = req.get('cookie') || '';
+  const cookie = cookieHeader.split(';').map((part) => part.trim())
+    .find((part) => part.startsWith('hung-fashion-session='));
+  if (!cookie) return null;
+  try {
+    return decodeURIComponent(cookie.slice('hung-fashion-session='.length));
+  } catch {
+    return null;
+  }
+}
+
 export async function requireAuth(req, res, next) {
   const authorization = req.get('authorization') || '';
   const match = /^Bearer ([^\s]+)$/.exec(authorization);
-  if (!match) return res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' });
+  const sessionToken = match?.[1] || readSessionCookie(req);
+  if (!sessionToken) return res.status(401).json({ message: 'Vui lòng đăng nhập để tiếp tục.' });
 
   let token;
   try {
-    token = verifyAccessToken(match[1]);
+    token = verifyAccessToken(sessionToken);
   } catch (error) {
     return res.status(503).json({ message: error.message });
   }
