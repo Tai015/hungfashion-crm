@@ -159,13 +159,12 @@ function App() {
     };
     window.addEventListener('auth:expired', expire);
     window.addEventListener('storage', handleStorage);
-    if (!token) setAuthLoading(false);
-    else {
-      apiFetch('/api/auth/me')
-        .then(currentUser => { if (active) setUser(currentUser); })
-        .catch(() => { if (active) setUser(null); })
-        .finally(() => { if (active) setAuthLoading(false); });
-    }
+    // Cookie phiên tạm là HttpOnly nên không đọc được bằng JavaScript.
+    // Luôn hỏi /me: trình duyệt tự gửi cookie nếu phiên hiện tại còn hiệu lực.
+    apiFetch('/api/auth/me')
+      .then(currentUser => { if (active) setUser(currentUser); })
+      .catch(() => { if (active) setUser(null); })
+      .finally(() => { if (active) setAuthLoading(false); });
     return () => {
       active = false;
       window.removeEventListener('auth:expired', expire);
