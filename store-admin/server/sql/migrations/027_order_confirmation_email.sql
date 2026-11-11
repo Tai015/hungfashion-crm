@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS order_confirmation_email (
   order_id INTEGER NOT NULL UNIQUE REFERENCES "order"(order_id) ON DELETE CASCADE,
   customer_id INTEGER REFERENCES customer(customer_id) ON DELETE SET NULL,
   recipient_email VARCHAR(254) NOT NULL,
+  payload JSONB NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'queued'
     CHECK (status IN ('queued', 'sending', 'sent', 'failed')),
   attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
