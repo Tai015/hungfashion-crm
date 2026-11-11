@@ -11,6 +11,7 @@ import {
 import { pool } from '../db.js';
 import { enqueueTransactionEvent } from '../transaction-events.js';
 import { buildOrderConfirmationEmail, buildOrderStatusEmail, enqueueOrderConfirmationEmail, isValidEmail } from '../order-confirmation-email.js';
+import { logger } from '../logger.js';
 
 const router = Router();
 const CUSTOMER_PAYMENT_METHODS = new Set(['Cash', 'BankTransfer']);
@@ -167,7 +168,7 @@ async function expirePendingBankTransfers() {
 
 const bankTransferExpiryTimer = setInterval(() => {
   expirePendingBankTransfers().catch((error) => {
-    console.error('Không thể xử lý đơn chuyển khoản hết hạn:', error.message);
+    logger.error({ err: error }, 'Pending bank transfer expiry job failed');
   });
 }, 30_000);
 bankTransferExpiryTimer.unref?.();
@@ -329,7 +330,7 @@ router.post('/mine/:id/demo-payment-token', async (req, res) => {
     });
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('Could not issue a demo payment token:', error.message);
+    logger.error({ err: error, requestId: req.requestId }, 'Could not issue a demo payment token');
     return res.status(500).json({ message: 'Không thể tạo lại mã QR demo.' });
   } finally {
     client.release();
@@ -842,11 +843,12 @@ router.post('/', async (req, res) => {
     if (err.code === '22P02' || err.code === '23514' || err.code === '22007') {
       return res.status(400).json({ message: 'Thông tin đơn hàng không hợp lệ.' });
     }
-    console.error('[orders] create failed:', {
-      code: err.code,
-      message: err.message,
+    logger.error({
+      requestId: req.requestId,
+      err,
+      databaseCode: err.code,
       constraint: err.constraint,
-    });
+    }, 'Order creation failed');
     return res.status(500).json({ message: 'Không thể tạo đơn hàng.' });
   } finally {
     client.release();

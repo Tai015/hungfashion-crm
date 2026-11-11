@@ -8,6 +8,7 @@ import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { Router } from 'express';
 import { pool } from '../db.js';
+import { logger } from '../logger.js';
 
 const router = Router();
 const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -322,7 +323,7 @@ router.get('/catalog-products', async (req, res) => {
   }
 });
 
-router.post('/scrape', async (_req, res) => {
+router.post('/scrape', async (req, res) => {
   if (!acquireOperation(res, 'scrape')) return;
   let client;
   let transactionStarted = false;
@@ -363,7 +364,7 @@ router.post('/scrape', async (_req, res) => {
   } catch (error) {
     if (transactionStarted) {
       await client.query('ROLLBACK').catch(rollbackError => {
-        console.error('Could not roll back the fashion scrape transaction:', rollbackError);
+        logger.error({ err: rollbackError, requestId: req.requestId }, 'Could not roll back fashion scrape transaction');
       });
     }
     res.status(500).json({ message: error.message });
@@ -373,7 +374,7 @@ router.post('/scrape', async (_req, res) => {
   }
 });
 
-router.post('/seed', async (_req, res) => {
+router.post('/seed', async (req, res) => {
   if (!acquireOperation(res, 'seed')) return;
   try {
     const seedScript = path.join(storeAdminDir, 'scripts', 'seed.mjs');
@@ -411,14 +412,14 @@ router.post('/seed', async (_req, res) => {
     updateOperationProgress('seed', 13, 13, 'Dữ liệu mẫu đã được cập nhật');
     res.json({ success: true, message: 'Đã tạo/cập nhật dữ liệu mẫu thành công.' });
   } catch (error) {
-    console.error('Demo data seed failed:', error);
+    logger.error({ err: error, requestId: req.requestId }, 'Demo data seed failed');
     res.status(500).json({ message: `Không thể tạo dữ liệu mẫu: ${error.message}` });
   } finally {
     releaseOperation();
   }
 });
 
-router.get('/database/backup', async (_req, res) => {
+router.get('/database/backup', async (req, res) => {
   if (!acquireOperation(res, 'backup')) return;
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'hungfashion-backup-')).catch(error => {
     releaseOperation();
@@ -454,7 +455,7 @@ router.get('/database/backup', async (_req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="hungfashion-${timestamp}.dump"`);
     await pipeline(createReadStream(backupPath), res);
   } catch (error) {
-    console.error('Database backup failed:', error);
+    logger.error({ err: error, requestId: req.requestId }, 'Database backup failed');
     if (!res.headersSent) {
       res.status(500).json({ message: error.message });
     } else if (!res.destroyed) {
@@ -464,7 +465,7 @@ router.get('/database/backup', async (_req, res) => {
     try {
       await rm(temporaryDirectory, { recursive: true, force: true });
     } catch (cleanupError) {
-      console.error('Could not remove the temporary database backup:', cleanupError);
+      logger.error({ err: cleanupError, requestId: req.requestId }, 'Could not remove temporary database backup');
     } finally {
       releaseOperation();
     }
@@ -543,13 +544,13 @@ router.post('/database/restore', async (req, res) => {
     ], { env: postgresEnvironment(), timeoutMs: 300_000 });
     res.json({ success: true, message: `Database "${databaseName}" restored successfully.` });
   } catch (error) {
-    console.error('Database restore failed:', error);
+    logger.error({ err: error, requestId: req.requestId }, 'Database restore failed');
     res.status(400).json({ message: error.message });
   } finally {
     try {
       await rm(temporaryDirectory, { recursive: true, force: true });
     } catch (cleanupError) {
-      console.error('Could not remove the temporary database restore file:', cleanupError);
+      logger.error({ err: cleanupError, requestId: req.requestId }, 'Could not remove temporary database restore file');
     } finally {
       releaseOperation();
     }

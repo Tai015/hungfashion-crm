@@ -11,6 +11,8 @@ on:
       - "store-admin/server/src/routes/order.js"
       - "store-admin/server/src/routes/demo-payment.js"
       - "store-admin/server/src/index.js"
+      - "store-admin/server/src/logger.js"
+      - "store-admin/server/src/request-logging.js"
       - "store-admin/server/sql/migrations/**"
       - "store-admin/server/test/**"
       - "store-admin/server/package.json"

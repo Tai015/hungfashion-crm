@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
+import { logger } from '../logger.js';
 
 const router = Router();
 
@@ -173,7 +174,7 @@ router.post('/claim', async (req, res) => {
     return res.status(201).json({ message: `Đã thêm mã ${promotions[0].code} vào ví ưu đãi.` });
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('[promotions] customer claim failed:', error);
+    logger.error({ err: error, requestId: req.requestId }, 'Customer promotion claim failed');
     return res.status(500).json({ message: 'Không thể thêm mã vào ví ưu đãi lúc này.' });
   } finally {
     client.release();

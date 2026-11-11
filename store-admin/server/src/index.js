@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createKafkaClient } from './kafka.js';
+import { logger } from './logger.js';
+import { createRequestLoggingMiddleware } from './request-logging.js';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -46,13 +48,14 @@ if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0) {
   throw new Error('TRUST_PROXY_HOPS must be a non-negative integer.');
 }
 app.set('trust proxy', trustProxyHops);
+app.use(createRequestLoggingMiddleware());
 const databaseBrowserEnabled = process.env.ENABLE_DATABASE_BROWSER === 'true';
 const eventRateLimitWindowMs = Number(process.env.EVENT_RATE_LIMIT_WINDOW_MS || 1000);
 const eventRateLimitMax = Number(process.env.EVENT_RATE_LIMIT_MAX || 1200);
 const outboxMaxBacklog = Number(process.env.OUTBOX_MAX_BACKLOG || 10000);
 const eventRateLimits = new Map();
 
-app.use(cors());
+app.use(cors({ exposedHeaders: ['X-Request-Id'] }));
 app.use(express.json({ limit: '100kb' }));
 app.use(demoPaymentRouter);
 
@@ -147,7 +150,8 @@ app.get('/api/database/tables', requireDatabaseBrowser, async (_req, res) => {
     `);
     res.json({ tables: rows });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error({ err, requestId: _req.requestId }, 'Database table listing failed');
+    res.status(500).json({ message: 'Không thể tải danh sách bảng.', requestId: _req.requestId });
   }
 });
 
@@ -190,7 +194,8 @@ app.get('/api/database/tables/:tableName/rows', requireDatabaseBrowser, async (r
       offset,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error({ err, requestId: req.requestId }, 'Database table rows query failed');
+    res.status(500).json({ message: 'Không thể tải dữ liệu bảng.', requestId: req.requestId });
   }
 });
 
@@ -205,13 +210,13 @@ setInterval(() => {
   const now = Date.now();
   for (const [role, metrics] of Object.entries(kafkaMetrics)) {
     const intervalSeconds = (now - metrics.windowStartedAt) / 1000;
-    console.log(JSON.stringify({
+    logger.info({
       type: 'kafka_pipeline_metrics', role,
       intervalSeconds: Number(intervalSeconds.toFixed(1)),
       messages: metrics.windowMessages, failures: metrics.windowFailures,
       totalMessages: metrics.total, totalFailures: metrics.failed,
       messagesPerSecond: Number((metrics.windowMessages / intervalSeconds).toFixed(2)),
-    }));
+    }, 'Kafka pipeline metrics');
     metrics.windowMessages = 0;
     metrics.windowFailures = 0;
     metrics.windowStartedAt = now;
@@ -255,7 +260,7 @@ async function ensureKafkaTopics() {
     for (const topic of topics) {
       if (!existing.includes(topic.topic)) {
         await admin.createTopics({ topics: [topic], waitForLeaders: true });
-        console.log(`Created Kafka topic: ${topic.topic}`);
+        logger.info({ topic: topic.topic }, 'Created Kafka topic');
       }
     }
   } finally {
@@ -370,7 +375,8 @@ app.post('/api/events/user', requireAuth, validateEvent, async (req, res) => {
   try {
     await enqueueEvent('user-events', req, res);
   } catch (err) {
-    res.status(500).json({ message: `Could not queue event: ${err.message}` });
+    logger.error({ err, requestId: req.requestId, topic: 'user-events' }, 'Could not queue user event');
+    res.status(500).json({ message: 'Could not queue event.', requestId: req.requestId });
   }
 });
 
@@ -378,7 +384,8 @@ app.post('/api/events/transaction', requireAuth, validateEvent, async (req, res)
   try {
     await enqueueEvent('transaction-events', req, res);
   } catch (err) {
-    res.status(500).json({ message: `Could not queue event: ${err.message}` });
+    logger.error({ err, requestId: req.requestId, topic: 'transaction-events' }, 'Could not queue transaction event');
+    res.status(500).json({ message: 'Could not queue event.', requestId: req.requestId });
   }
 });
 
@@ -395,7 +402,8 @@ app.get('/api/events/outbox-status', async (_req, res) => {
       oldestPendingAgeSeconds: status.oldest_pending_age_seconds,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error({ err, requestId: _req.requestId }, 'Outbox status query failed');
+    res.status(500).json({ message: 'Không thể tải trạng thái Outbox.', requestId: _req.requestId });
   }
 });
 
@@ -414,7 +422,7 @@ const shouldServeClient = serveClientSetting === 'false'
   : process.env.NODE_ENV === 'production' || hasClientBuild;
 
 if (!hasClientBuild) {
-  console.warn(`⚠️ Frontend build not found at ${clientIndex}; Express will serve API routes only.`);
+  logger.warn({ clientBuildPath: clientIndex }, 'Frontend build not found; Express will serve API routes only');
 } else if (shouldServeClient) {
   app.use(express.static(clientDist, { index: false, maxAge: '1h' }));
 }
@@ -437,6 +445,19 @@ if (shouldServeClient && hasClientBuild) {
   });
 }
 
+// Centralized fallback for parser errors and failures not handled by a route.
+app.use((err, req, res, next) => {
+  logger.error({ err, requestId: req.requestId }, 'Unhandled HTTP request error');
+  if (res.headersSent) return next(err);
+  const statusCode = Number.isInteger(err.status) && err.status >= 400 && err.status < 600
+    ? err.status
+    : 500;
+  return res.status(statusCode).json({
+    message: statusCode >= 500 ? 'Đã xảy ra lỗi máy chủ.' : err.message,
+    requestId: req.requestId,
+  });
+});
+
 // ── Khởi động server ──────────────────────────────────────
 async function waitForDatabase() {
   let lastError;
@@ -455,7 +476,7 @@ async function waitForDatabase() {
 async function connectDatabase() {
   await waitForDatabase();
   await runMigrations();
-  console.log('✅ Connected to PostgreSQL');
+  logger.info('Connected to PostgreSQL');
 }
 
 async function startServer() {
@@ -465,11 +486,11 @@ async function startServer() {
   // 2. Khởi động Express ngay — không chờ Kafka
   const listenHost = process.env.DEMO_PAYMENT === 'true' ? '0.0.0.0' : null;
   const onListening = () => {
-    console.log(`🚀 Hung Fashion API running at http://localhost:${PORT}`);
-    if (listenHost) console.log(`   Demo payment enabled; listening on ${listenHost}:${PORT} for LAN/tunnel access.`);
-    console.log(`   Routes: /api/accounts | /api/customers | /api/products`);
-    console.log(`           /api/inventory | /api/orders | /api/promotions`);
-    console.log(`           /api/feedbacks | /api/surveys | /api/reports`);
+    logger.info({ port: PORT }, 'Hung Fashion API listening');
+    if (listenHost) logger.info({ host: listenHost, port: PORT }, 'Demo payment listening for LAN/tunnel access');
+    logger.info('Routes registered: accounts, customers, products');
+    logger.info('Routes registered: inventory, orders, promotions');
+    logger.info('Routes registered: feedbacks, surveys, reports');
   };
   if (listenHost) app.listen(PORT, listenHost, onListening);
   else app.listen(PORT, onListening);
@@ -477,7 +498,7 @@ async function startServer() {
   startOrderConfirmationEmailWorker();
 
   startOutboxRelay().catch((err) => {
-    console.error('Outbox relay stopped unexpectedly:', err);
+    logger.error({ err }, 'Outbox relay stopped unexpectedly');
   });
 
   // 3. Kafka kết nối nền — không block web server
@@ -493,20 +514,20 @@ async function connectKafka() {
       await ensureKafkaTopics();
       await consumeEvents();
       kafkaReady = true;   // ← bật flag: từ giờ dùng Kafka thay vì DB fallback
-      console.log('✅ Kafka connected');
+      logger.info('Kafka connected');
       break;
     } catch (err) {
-      console.warn(`⚠️  Kafka attempt ${attempt} failed: ${err.message}`);
+      logger.warn({ err, attempt }, 'Kafka connection attempt failed');
       kafkaReady = false;
       await consumer.disconnect().catch(() => {});
       const retryDelayMs = Math.min(3000 * attempt, 30_000);
-      console.warn(`Kafka will retry in ${retryDelayMs}ms.`);
+      logger.warn({ retryDelayMs }, 'Kafka connection will retry');
       await new Promise(r => setTimeout(r, retryDelayMs));
     }
   }
 }
 
 startServer().catch((err) => {
-  console.error('Server startup failed:', err);
+  logger.fatal({ err }, 'Server startup failed');
   process.exit(1);
 });
