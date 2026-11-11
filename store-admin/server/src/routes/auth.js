@@ -249,7 +249,7 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
   }
   const { identifier, password, audience } = req.body || {};
   const rememberMe = req.body?.rememberMe === true;
-  const sessionLifetimeSeconds = rememberMe ? 8 * 60 * 60 : 30 * 60;
+  const sessionLifetimeSeconds = 8 * 60 * 60;
   if (!['customer', 'staff'].includes(audience)) {
     return res.status(400).json({ message: 'Vui lòng chọn đúng trang đăng nhập khách hàng hoặc nội bộ.' });
   }
@@ -326,10 +326,20 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
     }
     const user = await loadUser(account.account_id);
     if (!user) return res.status(401).json({ message: 'Tài khoản không còn tồn tại.' });
-    return res.json({
-      token: createAccessToken(account.account_id, sessionId, sessionLifetimeSeconds),
-      user: publicUser(user),
+    const token = createAccessToken(account.account_id, sessionId, sessionLifetimeSeconds);
+    if (rememberMe) {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.json({ token, user: publicUser(user) });
+    }
+    const secure = req.secure || req.get('x-forwarded-proto') === 'https';
+    res.cookie('hung-fashion-session', token, {
+      httpOnly: true,
+      secure,
+      sameSite: 'lax',
+      path: '/',
     });
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ user: publicUser(user) });
   } catch (error) {
     if (error.message.includes('JWT_SECRET')) return res.status(503).json({ message: error.message });
     return res.status(500).json({ message: 'Không thể đăng nhập lúc này.' });
@@ -353,6 +363,12 @@ router.post('/logout', requireAuth, async (req, res) => {
       });
     }
     await client.query('COMMIT');
+    res.clearCookie('hung-fashion-session', {
+      httpOnly: true,
+      secure: req.secure || req.get('x-forwarded-proto') === 'https',
+      sameSite: 'lax',
+      path: '/',
+    });
     return res.json({ message: 'Đã đăng xuất.' });
   } catch {
     await client.query('ROLLBACK').catch(() => {});
