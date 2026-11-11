@@ -7,11 +7,6 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
-    inputs:
-      deploy_url:
-        description: "URL frontend đã triển khai (để mở trang nhân viên trong Electron). Có thể để trống nếu đã đặt repository variable HUNG_FASHION_DEPLOY_URL."
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -25,8 +20,6 @@ jobs:
     name: Build and verify Windows x64 Electron app
     runs-on: windows-latest
     timeout-minutes: 30
-    env:
-      DEPLOY_URL: ${{ github.event.inputs.deploy_url || vars.HUNG_FASHION_DEPLOY_URL || 'https://taitechshop.store' }}
     steps:
       - name: Checkout exact release tag or selected ref
         uses: actions/checkout@v4
@@ -43,26 +36,6 @@ jobs:
       - name: Install locked dependencies
         working-directory: store-admin
         run: npm ci
-
-      - name: Validate deployment URL and prepare Electron configuration
-        working-directory: store-admin
-        shell: pwsh
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:DEPLOY_URL)) {
-            throw "Missing deployment URL. Set repository variable HUNG_FASHION_DEPLOY_URL or provide deploy_url when running workflow_dispatch."
-          }
-          $parsed = $null
-          if (-not [Uri]::TryCreate($env:DEPLOY_URL, [UriKind]::Absolute, [ref]$parsed)) {
-            throw "DEPLOY_URL is not a valid absolute URL."
-          }
-          if ($parsed.Scheme -notin @("http", "https")) {
-            throw "DEPLOY_URL must use http or https."
-          }
-          @("DEPLOY_URL=$env:DEPLOY_URL") | Set-Content -Path server/.env -Encoding utf8
-          npm run desktop:config
-          if (-not (Test-Path desktop/deploy-config.json)) {
-            throw "desktop/deploy-config.json was not generated."
-          }
 
       - name: Build Windows x64 ZIP and NSIS installer
         working-directory: store-admin
