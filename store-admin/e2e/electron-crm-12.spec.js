@@ -194,7 +194,7 @@ test('Electron CRM: hoàn tất 12 chức năng quản lý và khách hàng bằ
     const response = await api(customerToken, 'POST', `/api/surveys/${surveyId}/respond`, {
       answers: [{ question_id: question.rows[0].question_id, option_id: question.rows[0].option_id }],
     });
-    expect(response.status, JSON.stringify(response.data)).toBe(200);
+    expect(response.status, JSON.stringify(response.data)).toBe(201);
     const surveyResponseDb = await db.query(
       'SELECT response_id FROM survey_response WHERE survey_id=$1 AND customer_id=$2',
       [surveyId, customerId],
@@ -227,7 +227,16 @@ test('Electron CRM: hoàn tất 12 chức năng quản lý và khách hàng bằ
     // M01/M02 and C01/C02 are already exercised by electron-crud.spec.js and auth-api-ci.spec.js.
     expect(results.sort()).toEqual(['C03', 'C04', 'C05', 'M03', 'M04', 'M05', 'M06', 'M07'].sort());
   } finally {
-    if (surveyId) await db.query('DELETE FROM survey WHERE survey_id=$1', [surveyId]).catch(() => {});
+    // survey_answer references survey_question without ON DELETE CASCADE.
+    // Remove dependent answers before deleting the survey and its questions.
+    if (surveyId) {
+      await db.query(
+        `DELETE FROM survey_answer
+         WHERE question_id IN (SELECT question_id FROM survey_question WHERE survey_id=$1)`,
+        [surveyId],
+      ).catch(() => {});
+      await db.query('DELETE FROM survey WHERE survey_id=$1', [surveyId]).catch(() => {});
+    }
     if (feedbackId) await db.query('DELETE FROM feedback WHERE feedback_id=$1', [feedbackId]).catch(() => {});
     if (seededProductId) await db.query('DELETE FROM product WHERE product_id=$1', [seededProductId]).catch(() => {});
     if (seededCategoryId) await db.query('DELETE FROM category WHERE category_id=$1', [seededCategoryId]).catch(() => {});
