@@ -89,7 +89,7 @@ router.get('/stats/overview', async (_req, res) => {
            END AS age_group
            FROM (
              SELECT date_of_birth, EXTRACT(YEAR FROM AGE(date_of_birth))::int AS age
-             FROM customer
+             FROM customer WHERE deleted_at IS NULL
            ) all_customers
          ), total AS (
            SELECT COUNT(*)::numeric AS customer_count FROM customer WHERE deleted_at IS NULL
@@ -255,12 +255,12 @@ router.patch('/:id/account-status', async (req, res) => {
       `UPDATE account a
        SET status=$1, updated_at=NOW()
        FROM customer c
-       WHERE c.customer_id=$2 AND c.account_id=a.account_id
+       WHERE c.customer_id=$2 AND c.account_id=a.account_id AND c.deleted_at IS NULL
        RETURNING c.customer_id, a.account_id, a.status AS account_status`,
       [status, req.params.id],
     );
     if (!rows.length) {
-      const { rowCount } = await pool.query('SELECT 1 FROM customer WHERE customer_id=$1', [req.params.id]);
+      const { rowCount } = await pool.query('SELECT 1 FROM customer WHERE customer_id=$1 AND deleted_at IS NULL', [req.params.id]);
       if (!rowCount) return res.status(404).json({ message: 'Không tìm thấy khách hàng.' });
       return res.status(409).json({ message: 'Hồ sơ này chưa liên kết tài khoản đăng nhập nên không thể khóa/mở khóa.' });
     }
@@ -334,6 +334,7 @@ router.get('/:id/orders', async (req, res) => {
        FROM "order" o
        LEFT JOIN order_detail od ON od.order_id = o.order_id
        WHERE o.customer_id = $1
+         AND EXISTS (SELECT 1 FROM customer c WHERE c.customer_id=o.customer_id AND c.deleted_at IS NULL)
        GROUP BY o.order_id
        ORDER BY o.ordered_at DESC`,
       [req.params.id]
