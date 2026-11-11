@@ -1,0 +1,76 @@
+name: Skylos PR review
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "store-admin/**"
+      - "skylos.toml"
+      - ".github/workflows/skylos.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  skylos-review:
+    name: Skylos static analysis and Done review (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: skylos-ci-only-password
+          POSTGRES_DB: hungfashion_skylos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hungfashion_skylos_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:skylos-ci-only-password@127.0.0.1:5432/hungfashion_skylos_test
+    steps:
+      - name: Checkout PR with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install Skylos
+        run: python -I -m pip install "skylos==4.47.1"
+
+      - name: Install Hung Fashion dependencies
+        run: npm ci --prefix store-admin
+
+      - name: Analyze code (advisory during initial rollout)
+        continue-on-error: true
+        run: skylos . -a
+
+      - name: Check whether the PR is finished (advisory during initial rollout)
+        continue-on-error: true
+        run: skylos done --base "origin/${GITHUB_BASE_REF:-main}"
+
+      - name: Upload Skylos receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skylos-review-receipts
+          path: .skylos/receipts/
+          if-no-files-found: ignore
+          retention-days: 14
