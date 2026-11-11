@@ -211,16 +211,8 @@ router.post('/register', registerIpLimiter, async (req, res) => {
         [customer.customer_id, name],
       );
     }
-    const sessionId = randomUUID();
-    await client.query(
-      `INSERT INTO account_sessions (session_id, account_id, expires_at, ip_address)
-       VALUES ($1, $2, NOW() + INTERVAL '8 hours', $3::inet)`,
-      [sessionId, account.account_id, req.ip || req.socket.remoteAddress],
-    );
-    const token = createAccessToken(account.account_id, sessionId);
     await client.query('COMMIT');
     return res.status(201).json({
-      token,
       user: publicUser({
         account_id: account.account_id,
         username: username.trim(),
@@ -256,6 +248,8 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
     return res.status(503).json({ message: error.message });
   }
   const { identifier, password, audience } = req.body || {};
+  const rememberMe = req.body?.rememberMe === true;
+  const sessionLifetimeSeconds = rememberMe ? 8 * 60 * 60 : 30 * 60;
   if (!['customer', 'staff'].includes(audience)) {
     return res.status(400).json({ message: 'Vui lòng chọn đúng trang đăng nhập khách hàng hoặc nội bộ.' });
   }
@@ -314,8 +308,8 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
       await client.query('UPDATE account SET last_login = NOW(), updated_at = NOW() WHERE account_id = $1', [account.account_id]);
       await client.query(
         `INSERT INTO account_sessions (session_id, account_id, expires_at, ip_address)
-         VALUES ($1, $2, NOW() + INTERVAL '8 hours', $3::inet)`,
-        [sessionId, account.account_id, clientIp],
+         VALUES ($1, $2, NOW() + ($4 * INTERVAL '1 second'), $3::inet)`,
+        [sessionId, account.account_id, clientIp, sessionLifetimeSeconds],
       );
       await enqueueAuthEventBestEffort(client, {
         accountId: account.account_id,
@@ -332,7 +326,10 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
     }
     const user = await loadUser(account.account_id);
     if (!user) return res.status(401).json({ message: 'Tài khoản không còn tồn tại.' });
-    return res.json({ token: createAccessToken(account.account_id, sessionId), user: publicUser(user) });
+    return res.json({
+      token: createAccessToken(account.account_id, sessionId, sessionLifetimeSeconds),
+      user: publicUser(user),
+    });
   } catch (error) {
     if (error.message.includes('JWT_SECRET')) return res.status(503).json({ message: error.message });
     return res.status(500).json({ message: 'Không thể đăng nhập lúc này.' });
