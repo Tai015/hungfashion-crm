@@ -14,7 +14,7 @@
     "start": "npm run start --workspace server",
     "desktop": "electron desktop/main.js",
     "desktop:config": "node scripts/prepare-desktop-config.mjs",
-    "package:win": "npm run desktop:config && electron-builder --win nsis --x64",
+    "package:win": "npm run desktop:config && electron-builder --win nsis zip --x64",
     "benchmark:kafka": "node scripts/kafka-load-test.mjs",
     "db:backup": "node scripts/backup-db.mjs",
     "db:restore": "node scripts/restore-db.mjs",
