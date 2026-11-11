@@ -11,3 +11,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS order_confirmation_email_order_event_uidx
 CREATE INDEX IF NOT EXISTS order_confirmation_email_event_queue_idx
   ON order_confirmation_email (status, next_attempt_at, email_id)
   WHERE status IN ('queued', 'failed', 'sending');
+
+ALTER TABLE order_confirmation_email_attempt
+  ADD COLUMN IF NOT EXISTS event_type VARCHAR(40) NOT NULL DEFAULT 'order_confirmation';
