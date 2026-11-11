@@ -172,7 +172,7 @@ jobs:
         run: |
           set -euo pipefail
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "28"
+          test "$applied_count" = "29"
           echo "Verified: rerunning migrations does not create duplicate migration records."
 
   legacy-database-upgrade:
@@ -312,10 +312,10 @@ jobs:
           test "$null_event_count" = "1"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "028"
+          test "$latest_version" = "029"
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "28"
+          test "$applied_count" = "29"
 
           legacy_gender="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT gender::text FROM customer WHERE email = 'legacy-gender@hungfashion.test'")"
           test "$legacy_gender" = "Other"
