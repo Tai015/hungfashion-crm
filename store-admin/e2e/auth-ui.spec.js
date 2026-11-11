@@ -97,8 +97,8 @@ test('khách hàng đăng ký tài khoản mới rồi đăng nhập bằng chí
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: { 'set-cookie': 'hung-fashion-session=new-customer-login-session; Path=/; HttpOnly; SameSite=Lax' },
       body: JSON.stringify({
-        token: 'new-customer-login-token',
         user: { account_id: 101, username: account.username, full_name: account.full_name, role: 'KHACH_HANG' },
       }),
     });
@@ -120,8 +120,11 @@ test('khách hàng đăng ký tài khoản mới rồi đăng nhập bằng chí
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
   await dismissSuccessToast(page);
   await expect(page).toHaveURL(/#\/khach-hang\/catalog$/);
-  await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBe('new-customer-login-token');
+  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
   expect(await page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBeNull();
+  await expect.poll(async () => (await page.context().cookies()).some(cookie =>
+    cookie.name === 'hung-fashion-session' && cookie.value === 'new-customer-login-session' && cookie.httpOnly,
+  )).toBe(true);
 });
 
 test('khách hàng đăng ký bằng tài khoản cũ phải nhận lỗi trùng username/email', async ({ page }) => {
