@@ -55,7 +55,7 @@ test('Electron launcher mở local và đăng nhập nhân viên thật', async 
       timeout: 20_000,
     });
     await expect.poll(() => employeePage.url(), { timeout: 20_000 }).toContain('#/admin/dashboard');
-    await employeePage.waitForLoadState('domcontentloaded');
+    await expect(employeePage.locator('.dashboard-welcome h1')).toBeVisible({ timeout: 20_000 });
     await employeePage.screenshot({
       path: path.join(screenshotDir, '02-admin-dashboard.png'),
       fullPage: true,
