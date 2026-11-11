@@ -112,6 +112,7 @@ async function claimNextEmail() {
       `SELECT email_id, order_id, customer_id, recipient_email, payload, attempts
        FROM order_confirmation_email
        WHERE attempts < $1
+         AND payload IS NOT NULL
          AND (
            (status IN ('queued', 'failed') AND next_attempt_at <= NOW())
            OR (status = 'sending' AND updated_at < NOW() - INTERVAL '${CLAIM_STALE_AFTER}')
