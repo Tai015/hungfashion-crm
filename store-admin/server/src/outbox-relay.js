@@ -1,4 +1,5 @@
 import { createKafkaClient } from './kafka.js';
+import { logger } from './logger.js';
 import { pool } from './db.js';
 import { kafkaMetrics } from './kafka-metrics.js';
 import { publishOutboxMessages } from './outbox-publisher.js';
@@ -97,7 +98,7 @@ export async function startOutboxRelay() {
       if (!connected) {
         await producer.connect();
         connected = true;
-        console.log('✅ Kafka outbox relay connected');
+        logger.info('Kafka outbox relay connected');
       }
 
       if (Date.now() - lastCleanupAt >= retentionCleanupIntervalMs) {
@@ -112,7 +113,7 @@ export async function startOutboxRelay() {
       kafkaMetrics.producer.failed += 1;
       kafkaMetrics.producer.windowFailures += 1;
       connected = false;
-      console.error(`⚠️  Outbox relay failed; retrying in ${retryDelayMs}ms: ${error.message}`);
+      logger.error({ err: error, retryDelayMs }, 'Outbox relay failed; retry scheduled');
       await delay(retryDelayMs);
       retryDelayMs = Math.min(retryDelayMs * 2, retryCeilingMs);
     }
