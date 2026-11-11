@@ -90,6 +90,61 @@ export function buildOrderConfirmationEmail({ order, details }) {
   };
 }
 
+export function buildOrderStatusEmail({ order, details = [], eventType }) {
+  const messages = {
+    order_cancelled: {
+      subject: `Thông báo hủy đơn hàng #${order.order_id} – Hung Fashion`,
+      heading: 'Đơn hàng đã được hủy',
+      intro: 'Đơn hàng của bạn đã được hủy thành công theo yêu cầu hoặc theo quy trình xử lý của cửa hàng.',
+    },
+    order_delivered: {
+      subject: `Đơn hàng #${order.order_id} đã được giao – Hung Fashion`,
+      heading: 'Đơn hàng đã được giao',
+      intro: 'Đơn hàng của bạn đã được cập nhật là đã giao hàng. Cảm ơn bạn đã tin tưởng và mua sắm tại Hung Fashion.',
+    },
+    payment_paid: {
+      subject: `Đã nhận thanh toán cho đơn hàng #${order.order_id} – Hung Fashion`,
+      heading: 'Thanh toán thành công',
+      intro: 'Hung Fashion đã ghi nhận khoản thanh toán cho đơn hàng của bạn.',
+    },
+  };
+  const message = messages[eventType];
+  if (!message) throw new Error(`Loại email trạng thái không hợp lệ: ${eventType}`);
+  const customerName = escapeHtml(order.customer_name || 'Quý khách');
+  const orderId = escapeHtml(order.order_id);
+  const date = new Date(order.ordered_at).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const itemLines = details.map(item =>
+    `- ${item.product_name} x ${Number(item.quantity)}: ${formatMoney(item.subtotal)}`);
+  const htmlItems = details.map(item =>
+    `<li>${escapeHtml(item.product_name)} × ${Number(item.quantity)} – ${formatMoney(item.subtotal)}</li>`).join('');
+  const html = `
+    <div style="margin:0 auto;max-width:640px;padding:24px;font-family:Arial,sans-serif;color:#222">
+      <h2 style="color:#7c3aed">Hung Fashion</h2>
+      <p>Xin chào ${customerName},</p>
+      <h3>${message.heading}</h3>
+      <p>${message.intro}</p>
+      <p><strong>Mã đơn hàng: #${orderId}</strong></p>
+      <p>Thời gian đặt hàng: ${escapeHtml(date)}</p>
+      ${htmlItems ? `<h4>Thông tin sản phẩm</h4><ul>${htmlItems}</ul>` : ''}
+      <p><strong>Tổng giá trị đơn hàng: ${formatMoney(order.total_amount)}</strong></p>
+      <p>Nếu cần hỗ trợ, vui lòng liên hệ cửa hàng và cung cấp mã đơn hàng #${orderId}.</p>
+      <p style="color:#777;font-size:12px">Đây là thư tự động từ Hung Fashion. Vui lòng không trả lời thư này.</p>
+    </div>`;
+  const text = [
+    'Hung Fashion',
+    `Xin chào ${order.customer_name || 'Quý khách'},`,
+    message.heading + '.',
+    message.intro,
+    `Mã đơn hàng: #${order.order_id}`,
+    `Thời gian đặt hàng: ${date}`,
+    ...itemLines,
+    `Tổng giá trị đơn hàng: ${formatMoney(order.total_amount)}`,
+    `Nếu cần hỗ trợ, vui lòng liên hệ cửa hàng và cung cấp mã đơn hàng #${order.order_id}.`,
+    'Đây là thư tự động từ Hung Fashion. Vui lòng không trả lời thư này.',
+  ].join('\\n');
+  return { subject: message.subject, html, text };
+}
+
 export async function enqueueOrderConfirmationEmail(client, {
   orderId, customerId, recipientEmail, payload,
 }) {
@@ -99,7 +154,7 @@ export async function enqueueOrderConfirmationEmail(client, {
        (order_id, customer_id, recipient_email, payload, status, next_attempt_at)
      VALUES ($1, $2, $3, $4::jsonb, 'queued', NOW() + INTERVAL '15 seconds')
      ON CONFLICT (order_id) DO NOTHING`,
-    [orderId, customerId, recipientEmail.trim().toLowerCase(), JSON.stringify(payload)],
+    [orderId, customerId, recipientEmail.trim().toLowerCase(), JSON.stringify(payload), eventType],
   );
   return true;
 }
@@ -109,7 +164,7 @@ async function claimNextEmail() {
   try {
     await client.query('BEGIN');
     const { rows: [job] } = await client.query(
-      `SELECT email_id, order_id, customer_id, recipient_email, payload, attempts
+      `SELECT email_id, order_id, customer_id, recipient_email, payload, event_type, attempts
        FROM order_confirmation_email
        WHERE attempts < $1
          AND payload IS NOT NULL
@@ -130,7 +185,7 @@ async function claimNextEmail() {
       `UPDATE order_confirmation_email
        SET status='sending', attempts=attempts+1, updated_at=NOW()
        WHERE email_id=$1
-       RETURNING email_id, order_id, customer_id, recipient_email, payload, attempts`,
+       RETURNING email_id, order_id, customer_id, recipient_email, payload, event_type, attempts`,
       [job.email_id],
     );
     await client.query('COMMIT');
@@ -192,7 +247,7 @@ async function sendClaimedEmail(job, { fetchImpl, apiKey, mailFrom }) {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'Idempotency-Key': `order-confirmation/${job.order_id}`,
+        'Idempotency-Key': `order-email/${job.order_id}/${job.event_type}`,
       },
       body: JSON.stringify({
         from: mailFrom,
