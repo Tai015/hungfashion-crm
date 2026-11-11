@@ -160,10 +160,10 @@ async function saveAttempt(job, { status, errorMessage = null, providerMessageId
     const retrySeconds = RETRY_DELAYS_SECONDS[Math.min(job.attempts - 1, RETRY_DELAYS_SECONDS.length - 1)];
     await client.query(
       `UPDATE order_confirmation_email
-       SET status=$2,
-           sent_at=CASE WHEN $2='sent' THEN NOW() ELSE sent_at END,
+       SET status=$2::varchar,
+           sent_at=CASE WHEN $2::varchar='sent' THEN NOW() ELSE sent_at END,
            last_error=$3,
-           next_attempt_at=CASE WHEN $2='failed' THEN NOW() + ($4 * INTERVAL '1 second') ELSE next_attempt_at END,
+           next_attempt_at=CASE WHEN $2::varchar='failed' THEN NOW() + ($4 * INTERVAL '1 second') ELSE next_attempt_at END,
            updated_at=NOW()
        WHERE email_id=$1`,
       [job.email_id, status, errorMessage, retrySeconds],
