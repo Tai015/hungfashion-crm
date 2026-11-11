@@ -1,0 +1,16 @@
+# Skylos configuration for Hung Fashion CRM.
+# This config is read from the base branch during PR checks.
+
+exclude = [
+  "**/node_modules/**",
+  "store-admin/client/dist/**",
+  "store-admin/release/**",
+  "store-admin/backups/**",
+  "store-admin/server/uploads/**"
+]
+
+[done]
+# Node's built-in test runner emits JUnit XML so Skylos can verify the JS test run.
+test_command = "cd store-admin/server && mkdir -p ../../reports && node --test --test-reporter=junit --test-reporter-destination=../../reports/skylos-junit.xml test/*.test.js"
+junit_xml = "reports/skylos-junit.xml"
+test_budget_seconds = 300
