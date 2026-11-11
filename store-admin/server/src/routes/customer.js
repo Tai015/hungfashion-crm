@@ -270,8 +270,10 @@ router.patch('/:id/account-status', async (req, res) => {
   if (!['Active', 'Blocked'].includes(status)) {
     return res.status(400).json({ message: 'Trạng thái tài khoản chỉ có thể là Active hoặc Blocked.' });
   }
+  const client = await pool.connect();
   try {
-    const { rows } = await pool.query(
+    await client.query('BEGIN');
+    const { rows } = await client.query(
       `UPDATE account a
        SET status=$1, updated_at=NOW()
        FROM customer c
@@ -280,13 +282,27 @@ router.patch('/:id/account-status', async (req, res) => {
       [status, req.params.id],
     );
     if (!rows.length) {
+      await client.query('ROLLBACK');
       const { rowCount } = await pool.query('SELECT 1 FROM customer WHERE customer_id=$1 AND deleted_at IS NULL', [req.params.id]);
       if (!rowCount) return res.status(404).json({ message: 'Không tìm thấy khách hàng.' });
       return res.status(409).json({ message: 'Hồ sơ này chưa liên kết tài khoản đăng nhập nên không thể khóa/mở khóa.' });
     }
-    return res.json({ ...rows[0], message: status === 'Blocked' ? 'Đã khóa tài khoản khách hàng.' : 'Đã mở khóa tài khoản khách hàng.' });
+    // Khóa tài khoản phải thu hồi các phiên hiện tại; mở khóa không được khôi phục phiên cũ.
+    if (status === 'Blocked') {
+      await client.query(
+        `UPDATE account_sessions
+         SET revoked_at=NOW(), revocation_reason='account_blocked'
+         WHERE account_id=$1 AND revoked_at IS NULL`,
+        [rows[0].account_id],
+      );
+    }
+    await client.query('COMMIT');
+    return res.json({ ...rows[0], message: status === 'Blocked' ? 'Đã khóa tài khoản và đăng xuất các phiên hiện tại.' : 'Đã mở khóa tài khoản khách hàng. Khách hàng cần đăng nhập lại.' });
   } catch {
+    await client.query('ROLLBACK').catch(() => {});
     return res.status(500).json({ message: 'Không thể cập nhật trạng thái tài khoản khách hàng.' });
+  } finally {
+    client.release();
   }
 });
 

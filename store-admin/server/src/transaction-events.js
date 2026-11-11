@@ -70,9 +70,9 @@ export async function persistTransactionEvent(client, event, source, fallbackEve
   await client.query(
     `INSERT INTO transactions
        (event_id, order_id, payment_id, customer_id, user_id, session_id, event_type,
-        transaction_id, benchmark_run_id, amount, currency, status, item_count,
+        transaction_id, benchmark_run_id, amount, currency, status, previous_status, item_count,
         page, action, producer_source, source, occurred_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,COALESCE($18,NOW()))
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,COALESCE($19,NOW()))
      ON CONFLICT (event_id) DO NOTHING`,
     [
       eventId,
@@ -87,6 +87,7 @@ export async function persistTransactionEvent(client, event, source, fallbackEve
       Number.isFinite(parsedAmount) ? parsedAmount : null,
       nullableText(payload.currency),
       nullableText(payload.status),
+      nullableText(payload.previousStatus),
       Number.isInteger(parsedItemCount) ? parsedItemCount : null,
       nullableText(payload.page),
       nullableText(payload.event),

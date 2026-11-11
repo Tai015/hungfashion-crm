@@ -32,6 +32,7 @@ if (pool) {
       amount NUMERIC(15,2),
       currency TEXT,
       status TEXT,
+      previous_status TEXT,
       item_count INTEGER,
       page TEXT,
       action TEXT,
@@ -76,12 +77,12 @@ test('consumer persists all business identifiers and ignores duplicate UUID even
   const event = {
     eventId, eventType: 'payment_completed', orderId: '8103', paymentId: '9103',
     customerId: '7103', transactionId: 'BANK-REAL-123', amount: 99000, currency: 'VND',
-    status: 'Paid', source: 'test', occurredAt: new Date().toISOString(),
+    status: 'Paid', previousStatus: 'Pending', source: 'test', occurredAt: new Date().toISOString(),
   };
   await persistTransactionEvent(client, event, 'transaction-events', 'topic:0:1');
   await persistTransactionEvent(client, event, 'transaction-events', 'topic:0:2');
   const { rows } = await client.query(
-    'SELECT event_id, order_id, payment_id, customer_id, transaction_id FROM transactions WHERE event_id=$1',
+    'SELECT event_id, order_id, payment_id, customer_id, transaction_id, previous_status FROM transactions WHERE event_id=$1',
     [eventId],
   );
   assert.equal(rows.length, 1);
@@ -89,6 +90,7 @@ test('consumer persists all business identifiers and ignores duplicate UUID even
   assert.equal(rows[0].payment_id, '9103');
   assert.equal(rows[0].customer_id, '7103');
   assert.equal(rows[0].transaction_id, 'BANK-REAL-123');
+  assert.equal(rows[0].previous_status, 'Pending');
 });
 
 test('consumer accepts legacy events missing optional identifiers and event id', { skip: !pool }, async () => {

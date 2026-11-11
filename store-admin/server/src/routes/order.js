@@ -661,13 +661,13 @@ router.post('/', async (req, res) => {
 
     if (pointsToRedeem > 0) {
       const { rows: customerRows } = await client.query(
-        'SELECT loyalty_point FROM customer WHERE customer_id = $1 FOR UPDATE', [customer_id],
+        'SELECT points_balance FROM customer WHERE customer_id = $1 FOR UPDATE', [customer_id],
       );
       if (!customerRows.length) {
         await client.query('ROLLBACK');
         return res.status(404).json({ message: 'Không tìm thấy hồ sơ khách hàng để đổi điểm.' });
       }
-      if (customerRows[0].loyalty_point < pointsToRedeem) {
+      if (customerRows[0].points_balance < pointsToRedeem) {
         await client.query('ROLLBACK');
         return res.status(400).json({ message: 'Số dư điểm thưởng không đủ.' });
       }
