@@ -20,7 +20,7 @@ const EXISTING_STAFF = {
   password: 'ExistingStaffPass123!',
 };
 
-async function prepareAuthPage(page, hash) {
+async function prepareAuthPage(page, hash, expectedHeading = /Đăng nhập|Tạo tài khoản/) {
   await page.route('**/api/health', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -32,7 +32,7 @@ async function prepareAuthPage(page, hash) {
     body: JSON.stringify({ message: 'Vui lòng đăng nhập để tiếp tục.' }),
   }));
   await page.goto(hash);
-  await expect(page.getByRole('heading', { name: /Đăng nhập|Tạo tài khoản/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: expectedHeading })).toBeVisible();
 }
 
 async function fillCustomerRegistration(page, account) {
@@ -252,7 +252,7 @@ test('hiển thị đồng hồ đếm ngược và khóa nút khi API giới h�
 
 
 test('trình duyệt thường bị chặn khỏi trang đăng nhập nhân viên', async ({ page }) => {
-  await prepareAuthPage(page, '/#/nhan-vien/login');
+  await prepareAuthPage(page, '/#/nhan-vien/login', 'Không tìm thấy trang');
   await expect(page.getByRole('heading', { name: 'Không tìm thấy trang' })).toBeVisible();
   await expect(page.getByLabel('Tên đăng nhập hoặc email')).toHaveCount(0);
 });
