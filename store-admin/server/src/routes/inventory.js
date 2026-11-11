@@ -277,6 +277,21 @@ router.post('/receipts', async (req, res) => {
       }
     }
 
+    // Validate all variants before creating a receipt/detail. This keeps invalid
+    // variant IDs as a predictable 409 instead of leaking a foreign-key 500.
+    const variantIds = [...new Set(details.map((detail) => Number(detail.variant_id)))];
+    const { rows: existingVariants } = await client.query(
+      'SELECT variant_id FROM product_variant WHERE variant_id = ANY($1::int[])',
+      [variantIds]
+    );
+    const existingVariantIds = new Set(existingVariants.map((variant) => Number(variant.variant_id)));
+    const missingVariantId = variantIds.find((variantId) => !existingVariantIds.has(variantId));
+    if (missingVariantId != null) {
+      const error = new Error(`Không tìm thấy biến thể #${missingVariantId}.`);
+      error.statusCode = 409;
+      throw error;
+    }
+
     // Tính tổng tiền
     const total_amount = details.reduce((sum, d) => sum + Number(d.quantity) * Number(d.unit_price), 0);
 
@@ -315,7 +330,7 @@ router.post('/receipts', async (req, res) => {
       const variantIds = [...new Set(details.map((detail) => Number(detail.variant_id)))];
       await client.query(
         `INSERT INTO product_supplier (product_id, supplier_id)
-         SELECT DISTINCT pv.product_id, $2
+         SELECT DISTINCT pv.product_id, $2::int
          FROM product_variant pv
          WHERE pv.variant_id = ANY($1::int[])
          ON CONFLICT (product_id, supplier_id) DO NOTHING`,
@@ -327,6 +342,13 @@ router.post('/receipts', async (req, res) => {
     res.status(201).json(receipt);
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
+    console.error('[inventory] Failed to create receipt', {
+      code: err.code || null,
+      constraint: err.constraint || null,
+      table: err.table || null,
+      column: err.column || null,
+      message: err.message,
+    });
     if (err.statusCode) return res.status(err.statusCode).json({ message: err.message });
     if (err.code === '22P02' || err.code === '23514' || err.code === '22007') {
       return res.status(400).json({ message: 'Thông tin phiếu kho không hợp lệ.' });
