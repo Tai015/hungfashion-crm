@@ -238,11 +238,14 @@ function App() {
   if (!isElectronApp && (isStaffRoute || (user && user.role !== 'KHACH_HANG'))) {
     return <main className="min-h-screen grid place-items-center bg-stone-100 p-6">
       <section className="max-w-md rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-xl font-bold text-stone-900">Khu vực dành riêng cho ứng dụng Electron</h1>
+        <p className="text-sm font-semibold tracking-widest text-stone-500">ERROR 404</p>
+        <h1 className="mt-2 text-2xl font-bold text-stone-900">Không tìm thấy trang</h1>
         <p className="mt-3 text-sm leading-6 text-stone-600">
-          Trang đăng nhập và quản lý nhân viên chỉ mở trong ứng dụng Hung Fashion Electron.
-          Hãy mở ứng dụng Electron để tiếp tục. Website khách hàng vẫn sử dụng bình thường.
+          Trang bạn đang tìm không tồn tại hoặc không khả dụng.
         </p>
+        <a href="#/" className="mt-6 inline-flex rounded-lg bg-stone-900 px-5 py-3 text-sm font-semibold text-white hover:bg-stone-700">
+          Về trang chủ
+        </a>
       </section>
     </main>;
   }
