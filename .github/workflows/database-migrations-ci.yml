@@ -263,6 +263,7 @@ jobs:
         run: npm run db:migrate --workspace server
 
       - name: Repair a pre-existing email queue missing payload
+        working-directory: store-admin
         env:
           PGPASSWORD: postgres
         run: |
