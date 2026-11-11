@@ -11,6 +11,8 @@ let launcherWindow;
 let testCenterWindow;
 let employeeWindow;
 let devProcess;
+let e2eProcess;
+let e2eBusy = false;
 
 function report(message) {
   if (launcherWindow && !launcherWindow.isDestroyed()) {
@@ -388,6 +390,148 @@ function stopLocal() {
   return { ok: true, message: 'Đã dừng tiến trình web.' };
 }
 
+
+function appendProcessOutput(chunk) {
+  const lines = chunk.toString().split(/\r?\n/).filter(Boolean);
+  for (const line of lines) report(`[E2E] ${line}`);
+}
+
+function runE2eCommand(command, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd: projectDir,
+      shell: process.platform === 'win32',
+      windowsHide: false,
+      detached: process.platform !== 'win32',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    e2eProcess = child;
+    child.stdout.on('data', appendProcessOutput);
+    child.stderr.on('data', appendProcessOutput);
+    child.once('error', (error) => {
+      if (e2eProcess === child) e2eProcess = undefined;
+      reject(error);
+    });
+    child.once('close', (code, signal) => {
+      if (e2eProcess === child) e2eProcess = undefined;
+      if (code === 0) resolve();
+      else reject(new Error(signal ? `Lệnh bị dừng (${signal}).` : `Lệnh thất bại (exit code ${code}).`));
+    });
+  });
+}
+
+async function runE2e(target) {
+  if (e2eBusy || e2eProcess) return { ok: false, message: 'E2E đang chạy. Hãy đợi hoặc dừng phiên hiện tại.' };
+  if (!['local', 'render'].includes(target)) return { ok: false, message: 'Môi trường E2E không hợp lệ.' };
+
+  e2eBusy = true;
+  if (launcherWindow && !launcherWindow.isDestroyed()) launcherWindow.webContents.send('launcher:e2e-status', true);
+  try {
+    let baseUrl;
+    if (target === 'render') {
+      baseUrl = getDeployUrl();
+    } else {
+      const localEnvPath = path.join(projectDir, 'server', '.env');
+      const localEnvironment = existsSync(localEnvPath) ? dotenv.parse(readFileSync(localEnvPath)) : {};
+      baseUrl = String(localEnvironment.LOCAL_URL || 'http://localhost:5173').trim();
+    }
+
+    const parsedBaseUrl = new URL(baseUrl);
+    if (!['http:', 'https:'].includes(parsedBaseUrl.protocol)) throw new Error('E2E_BASE_URL phải là địa chỉ HTTP hoặc HTTPS.');
+
+    const e2eEnvPath = path.join(projectDir, '.env.e2e');
+    const e2eEnvironment = existsSync(e2eEnvPath) ? dotenv.parse(readFileSync(e2eEnvPath)) : {};
+    const environment = {
+      ...process.env,
+      E2E_BASE_URL: parsedBaseUrl.origin,
+      E2E_HEADED: '1',
+      E2E_CUSTOMER_IDENTIFIER: e2eEnvironment.E2E_CUSTOMER_IDENTIFIER || process.env.E2E_CUSTOMER_IDENTIFIER || '',
+      E2E_CUSTOMER_PASSWORD: e2eEnvironment.E2E_CUSTOMER_PASSWORD || process.env.E2E_CUSTOMER_PASSWORD || '',
+      E2E_STAFF_IDENTIFIER: e2eEnvironment.E2E_STAFF_IDENTIFIER || process.env.E2E_STAFF_IDENTIFIER || '',
+      E2E_STAFF_PASSWORD: e2eEnvironment.E2E_STAFF_PASSWORD || process.env.E2E_STAFF_PASSWORD || '',
+    };
+
+    if (target === 'local') {
+      const response = await fetch(parsedBaseUrl.origin, { signal: AbortSignal.timeout(5000) }).catch(() => null);
+      if (!response?.ok) throw new Error(`Local website chưa phản hồi tại ${parsedBaseUrl.origin}. Hãy bấm “Mở bản local” trước, sau đó chạy lại E2E.`);
+    }
+
+    report('Đang chuẩn bị Playwright Test...');
+    const testPackagePath = path.join(projectDir, 'node_modules', '@playwright', 'test');
+    if (!existsSync(testPackagePath)) {
+      await runE2eCommand('npm', ['install', '--no-save', '--package-lock=false', '@playwright/test']);
+    }
+    await runE2eCommand('npx', ['playwright', 'install', 'chromium']);
+
+    report(`Bắt đầu E2E ${target === 'render' ? 'trên Render' : 'Local'}: ${parsedBaseUrl.origin}`);
+    const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+    const testArgs = ['playwright', 'test', 'e2e/auth.spec.js', '--headed'];
+    if (target === 'render') testArgs.push('--grep', 'màn hình đăng nhập');
+    e2eProcess = spawn(command, testArgs, {
+      cwd: projectDir,
+      shell: process.platform === 'win32',
+      windowsHide: false,
+      detached: process.platform !== 'win32',
+      env: environment,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    e2eProcess.stdout.on('data', appendProcessOutput);
+    e2eProcess.stderr.on('data', appendProcessOutput);
+    e2eProcess.once('error', (error) => {
+      report(`Không khởi chạy được Playwright: ${error.message}`);
+      e2eProcess = undefined;
+      e2eBusy = false;
+      if (launcherWindow && !launcherWindow.isDestroyed()) launcherWindow.webContents.send('launcher:e2e-status', false);
+    });
+    e2eProcess.once('close', (code, signal) => {
+      report(signal ? `E2E đã dừng (${signal}).` : `E2E kết thúc với mã ${code} — ${code === 0 ? 'PASS' : 'FAIL'}.`);
+      e2eProcess = undefined;
+      e2eBusy = false;
+      if (launcherWindow && !launcherWindow.isDestroyed()) launcherWindow.webContents.send('launcher:e2e-status', false);
+    });
+    return { ok: true, message: 'Playwright đã bắt đầu. Theo dõi log bên dưới.' };
+  } catch (error) {
+    e2eBusy = false;
+    if (launcherWindow && !launcherWindow.isDestroyed()) launcherWindow.webContents.send('launcher:e2e-status', false);
+    report(`Không thể chạy E2E: ${error.message}`);
+    return { ok: false, message: error.message };
+  }
+}
+
+function killProcessTree(child) {
+  if (!child?.pid) return false;
+  if (process.platform === 'win32') {
+    execFile('taskkill', ['/pid', String(child.pid), '/T', '/F'], () => {});
+  } else {
+    try { process.kill(-child.pid, 'SIGTERM'); } catch { child.kill('SIGTERM'); }
+  }
+  return true;
+}
+
+function stopE2e() {
+  if (!e2eBusy) return { ok: true, message: 'Không có phiên E2E nào đang chạy.' };
+  if (!e2eProcess) return { ok: true, message: 'Đang kiểm tra môi trường; vui lòng đợi bước hiện tại hoàn tất.' };
+  killProcessTree(e2eProcess);
+  report('Đã gửi yêu cầu dừng toàn bộ cây tiến trình E2E/Playwright/Chromium.');
+  return { ok: true, message: 'Đang dừng tiến trình E2E...' };
+}
+
+async function openE2eReport() {
+  const reportPath = path.join(projectDir, 'playwright-report', 'index.html');
+  if (!existsSync(reportPath)) return { ok: false, message: 'Chưa có HTML report. Hãy chạy E2E trước.' };
+  const error = await shell.openPath(reportPath);
+  return error ? { ok: false, message: error } : { ok: true };
+}
+
+async function openGithubActions() {
+  try {
+    await openInBrowser('https://github.com/Tai015/hungfashion-crm/actions/workflows/e2e-auth.yml');
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error.message };
+  }
+}
+
 function createLauncherWindow() {
   launcherWindow = new BrowserWindow({
     width: 620,
@@ -465,6 +609,10 @@ ipcMain.handle('launcher:open-deploy', async () => {
   }
 });
 ipcMain.handle('launcher:stop-local', stopLocal);
+ipcMain.handle('launcher:run-e2e', (_event, target) => runE2e(target));
+ipcMain.handle('launcher:stop-e2e', stopE2e);
+ipcMain.handle('launcher:open-e2e-report', openE2eReport);
+ipcMain.handle('launcher:open-github-actions', openGithubActions);
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(Menu.buildFromTemplate([
@@ -484,6 +632,7 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
+  if (e2eProcess?.pid) killProcessTree(e2eProcess);
   if (!devProcess?.pid) return;
   if (process.platform === 'win32') {
     execFile('taskkill', ['/pid', String(devProcess.pid), '/T', '/F'], () => {});
