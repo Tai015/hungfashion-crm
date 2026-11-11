@@ -129,7 +129,7 @@ async function claimNextEmail() {
       `UPDATE order_confirmation_email
        SET status='sending', attempts=attempts+1, updated_at=NOW()
        WHERE email_id=$1
-       RETURNING email_id, order_id, customer_id, recipient_email, attempts`,
+       RETURNING email_id, order_id, customer_id, recipient_email, payload, attempts`,
       [job.email_id],
     );
     await client.query('COMMIT');
