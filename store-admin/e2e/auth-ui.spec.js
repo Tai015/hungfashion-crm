@@ -20,7 +20,7 @@ const EXISTING_STAFF = {
   password: 'ExistingStaffPass123!',
 };
 
-async function prepareAuthPage(page, hash) {
+async function prepareAuthPage(page, hash, expectedHeading = /Đăng nhập|Tạo tài khoản/) {
   await page.route('**/api/health', route => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -32,7 +32,7 @@ async function prepareAuthPage(page, hash) {
     body: JSON.stringify({ message: 'Vui lòng đăng nhập để tiếp tục.' }),
   }));
   await page.goto(hash);
-  await expect(page.getByRole('heading', { name: /Đăng nhập|Tạo tài khoản/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: expectedHeading })).toBeVisible();
 }
 
 async function fillCustomerRegistration(page, account) {
@@ -193,30 +193,6 @@ test('đăng nhập khách hàng bằng tài khoản cũ và dùng cookie phiên
   )).toBe(true);
 });
 
-test('đăng nhập nhân viên bằng tài khoản cũ và lưu token localStorage khi bật duy trì đăng nhập', async ({ page }) => {
-  await page.route('**/api/auth/login', route => {
-    const submitted = route.request().postDataJSON();
-    expect(submitted.audience).toBe('staff');
-    expect(submitted.identifier).toBe(EXISTING_STAFF.username);
-    expect(submitted.password).toBe(EXISTING_STAFF.password);
-    return route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        token: 'existing-staff-token',
-        user: { account_id: 202, username: EXISTING_STAFF.username, full_name: 'Existing Staff', role: 'ADMIN' },
-      }),
-    });
-  });
-  await page.route('**/api/auth/heartbeat', route => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({ role: 'ADMIN' }),
-  }));
-
-  await login(page, '/#/nhan-vien/login', EXISTING_STAFF, 'staff', true);
-  await expect.poll(() => page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).toBe('existing-staff-token');
-  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
-});
-
 test('hiện lại cảnh báo khi đăng nhập sai cùng thông tin hai lần liên tiếp', async ({ page }) => {
   let attempts = 0;
   await page.route('**/api/auth/login', route => {
@@ -228,8 +204,8 @@ test('hiện lại cảnh báo khi đăng nhập sai cùng thông tin hai lần 
     });
   });
 
-  await prepareAuthPage(page, '/#/nhan-vien/login');
-  await page.getByLabel('Tên đăng nhập hoặc email').fill(EXISTING_STAFF.username);
+  await prepareAuthPage(page, '/#/khach-hang/login');
+  await page.getByLabel('Tên đăng nhập hoặc email').fill(EXISTING_CUSTOMER.username);
   await page.locator('input[autocomplete="current-password"]').fill('WrongPassword123!');
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {
@@ -275,129 +251,8 @@ test('hiển thị đồng hồ đếm ngược và khóa nút khi API giới h�
 });
 
 
-test('nhân viên mở được lịch sử tương tác của khách hàng trong màn hình quản lý khách hàng', async ({ page }) => {
-  await page.route('**/api/**', async route => {
-    const { pathname } = new URL(route.request().url());
-    // The broad matcher also matches Vite modules under /src/api/; let those load normally.
-    if (!pathname.startsWith('/api/')) return route.continue();
-    if (pathname === '/api/auth/me') {
-      return route.fulfill({
-        status: 401,
-        contentType: 'application/json',
-        body: JSON.stringify({ message: 'Vui lòng đăng nhập để tiếp tục.' }),
-      });
-    }
-    if (pathname === '/api/auth/login') {
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        headers: { 'set-cookie': 'hung-fashion-session=timeline-admin-session; Path=/; HttpOnly; SameSite=Lax' },
-        body: JSON.stringify({
-          user: { account_id: 1, username: 'timeline-admin', full_name: 'Timeline Admin', role: 'ADMIN' },
-        }),
-      });
-    }
-    if (pathname === '/api/auth/heartbeat') {
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ role: 'ADMIN' }),
-      });
-    }
-    if (pathname === '/api/reports/summary') {
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          revenue: 0,
-          activeUsers: 0,
-          orders: 0,
-          conversionPercent: 0,
-          growthPercent: 0,
-          conversionChange: 0,
-        }),
-      });
-    }
-    if (pathname === '/api/reports/top-products' || pathname === '/api/reports/revenue') {
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([]),
-      });
-    }
-    if (pathname === '/api/customers') {
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          data: [{
-            customer_id: 12,
-            full_name: 'E2E Timeline Customer',
-            phone: '0900000012',
-            email: 'timeline-customer@example.test',
-            gender: 'Other',
-            customer_tier: 'Regular',
-            points_balance: 25,
-            account_id: 12,
-            account_status: 'Active',
-          }],
-          total: 1,
-        }),
-      });
-    }
-    if (pathname === '/api/customers/12/orders') {
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify([{
-          order_id: 9001,
-          order_status: 'Pending',
-          total_amount: 250000,
-          order_channel: 'Website',
-          ordered_at: '2026-11-10T08:00:00.000Z',
-          item_count: 2,
-        }]),
-      });
-    }
-    if (pathname === '/api/customers/12/interactions') {
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          data: [{
-            interaction_id: 'order:9001',
-            customer_id: 12,
-            interaction_type: 'order',
-            title: 'Đặt đơn hàng #9001',
-            summary: 'Trạng thái: Pending · Tổng tiền: 250.000 ₫',
-            occurred_at: '2026-11-10T08:00:00.000Z',
-          }],
-          limit: 20,
-          hasMore: false,
-          nextCursor: null,
-          olderCursor: null,
-          range: 'last-12-months',
-        }),
-      });
-    }
-    return route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true }),
-    });
-  });
-
-  // Use the mobile layout so the test follows the real menu interaction:
-  // open the navigation drawer, then select the Khách hàng item.
-  await page.setViewportSize({ width: 390, height: 844 });
-  await login(page, '/#/nhan-vien/login', EXISTING_STAFF, 'staff');
-  await page.locator('button.dashboard-mobile-menu').click();
-  await page.getByRole('button', { name: 'Khách hàng', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Quản lý khách hàng' })).toBeVisible();
-  await page.getByRole('button', { name: 'Xem lịch sử tương tác của E2E Timeline Customer' }).click();
-  await expect(page.getByText('Lịch sử tương tác')).toBeVisible();
-  await expect(page.getByText('Lịch sử mua hàng')).toBeVisible();
-  await expect(page.getByText('Đơn hàng #9001', { exact: true })).toBeVisible();
-  await expect(page.getByText('Đặt đơn hàng #9001')).toBeVisible();
-  await expect(page.getByText('250.000 ₫', { exact: true })).toBeVisible();
+test('trình duyệt thường bị chặn khỏi trang đăng nhập nhân viên', async ({ page }) => {
+  await prepareAuthPage(page, '/#/nhan-vien/login', 'Không tìm thấy trang');
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy trang' })).toBeVisible();
+  await expect(page.getByLabel('Tên đăng nhập hoặc email')).toHaveCount(0);
 });

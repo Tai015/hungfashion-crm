@@ -113,7 +113,7 @@ test('API + PostgreSQL thật: đăng ký mới, từ chối trùng tài khoản
 });
 
 
-test('API + PostgreSQL thật: đăng nhập nhân viên bằng tài khoản nội bộ đã tồn tại trong DB', async ({ page }) => {
+test('API + PostgreSQL thật: nhân viên đăng nhập bằng tài khoản nội bộ qua API', async ({ request }) => {
   const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
   const username = `e2e_staff_${suffix}`;
   const password = 'E2eStaffPass123!';
@@ -125,20 +125,16 @@ test('API + PostgreSQL thật: đăng nhập nhân viên bằng tài khoản n�
     [username, passwordHash, `e2e-staff+${suffix}@example.test`],
   );
 
-  await page.goto('/#/nhan-vien/login');
-  await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toBeVisible();
-  await page.getByLabel('Tên đăng nhập hoặc email').fill(username);
-  await page.locator('input[autocomplete="current-password"]').fill(password);
-  await page.getByLabel('Duy trì đăng nhập').check();
-  await page.getByRole('button', { name: 'Đăng nhập' }).click();
-  await dismissSuccess(page);
-  await expect(page).toHaveURL(/#\/admin\/dashboard$/);
-  await expect.poll(() => page.evaluate(key => localStorage.getItem(key), TOKEN_KEY)).not.toBeNull();
-  expect(await page.evaluate(key => sessionStorage.getItem(key), TOKEN_KEY)).toBeNull();
+  const response = await request.post('/api/auth/login', {
+    data: { identifier: username, password, audience: 'staff', rememberMe: true },
+  });
+  expect(response.status()).toBe(200);
+  const body = await response.json();
+  expect(body.token).toEqual(expect.any(String));
+  expect(body.user.username).toBe(username);
+  expect(body.user.role).toBe('ADMIN');
 });
-
-
-
+ 
 test('API + PostgreSQL thật: cho phép đăng ký khi bỏ trống ngày sinh và sở thích', async ({ page }) => {
   const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
   const account = {

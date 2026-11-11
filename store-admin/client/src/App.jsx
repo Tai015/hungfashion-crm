@@ -90,6 +90,8 @@ function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authRoute, setAuthRoute] = useState(window.location.hash);
+  const isElectronApp = window.storeAdminLauncher?.isElectronApp === true;
+  const isStaffRoute = authRoute.startsWith('#/nhan-vien/');
   const [staffUnreadChatCount, setStaffUnreadChatCount] = useState(0);
   const pageViewTracked = useRef(null);
 
@@ -233,6 +235,20 @@ function App() {
   };
 
   if (authLoading) return <main className="app-loading-screen"><Spinner /></main>;
+  if (!isElectronApp && (isStaffRoute || (user && user.role !== 'KHACH_HANG'))) {
+    return <main className="min-h-screen grid place-items-center bg-stone-100 p-6">
+      <section className="max-w-md rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
+        <p className="text-sm font-semibold tracking-widest text-stone-500">ERROR 404</p>
+        <h1 className="mt-2 text-2xl font-bold text-stone-900">Không tìm thấy trang</h1>
+        <p className="mt-3 text-sm leading-6 text-stone-600">
+          Trang bạn đang tìm không tồn tại hoặc không khả dụng.
+        </p>
+        <a href="#/" className="mt-6 inline-flex rounded-lg bg-stone-900 px-5 py-3 text-sm font-semibold text-white hover:bg-stone-700">
+          Về trang chủ
+        </a>
+      </section>
+    </main>;
+  }
   if (!user && (!authRoute || authRoute === '#/')) {
     return <Suspense fallback={<main className="app-loading-screen"><Spinner /></main>}><GuestStorefront
       onLogin={() => { window.location.hash = '#/khach-hang/login'; }}

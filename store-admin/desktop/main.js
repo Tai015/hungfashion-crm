@@ -9,6 +9,7 @@ const desktopDir = __dirname;
 const projectDir = path.resolve(desktopDir, '..');
 let launcherWindow;
 let testCenterWindow;
+let employeeWindow;
 let devProcess;
 
 function report(message) {
@@ -147,6 +148,72 @@ async function openInBrowser(url) {
   await shell.openExternal(url);
 }
 
+function openEmployeeWindow(url) {
+  const target = new URL(url);
+  if (!['http:', 'https:'].includes(target.protocol)) {
+    throw new Error('Địa chỉ đăng nhập nhân viên không hợp lệ.');
+  }
+
+  if (employeeWindow && !employeeWindow.isDestroyed()) {
+    let currentOrigin;
+    try {
+      currentOrigin = new URL(employeeWindow.webContents.getURL()).origin;
+    } catch {}
+
+    if (currentOrigin === target.origin) {
+      employeeWindow.show();
+      employeeWindow.focus();
+      if (employeeWindow.webContents.getURL() !== target.href) {
+        employeeWindow.loadURL(target.href);
+      }
+      return employeeWindow;
+    }
+
+    employeeWindow.close();
+    employeeWindow = undefined;
+  }
+
+  employeeWindow = new BrowserWindow({
+    width: 1280,
+    height: 860,
+    minWidth: 900,
+    minHeight: 650,
+    title: 'Hung Fashion — Khu vực nhân viên',
+    backgroundColor: '#f4f4ef',
+    webPreferences: {
+      preload: path.join(desktopDir, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  employeeWindow.webContents.setWindowOpenHandler(({ url: requestedUrl }) => {
+    try {
+      const requested = new URL(requestedUrl);
+      if (['http:', 'https:'].includes(requested.protocol)) {
+        shell.openExternal(requested.href).catch(() => {});
+      }
+    } catch {}
+    return { action: 'deny' };
+  });
+
+  employeeWindow.webContents.on('will-navigate', (event, requestedUrl) => {
+    try {
+      if (new URL(requestedUrl).origin !== target.origin) {
+        event.preventDefault();
+        shell.openExternal(requestedUrl).catch(() => {});
+      }
+    } catch {
+      event.preventDefault();
+    }
+  });
+
+  employeeWindow.on('closed', () => { employeeWindow = undefined; });
+  employeeWindow.loadURL(target.href);
+  return employeeWindow;
+}
+
 function getDeployUrl() {
   const environmentDir = path.join(projectDir, 'server');
   const examplePath = path.join(environmentDir, '.env.example');
@@ -238,6 +305,18 @@ async function openLocal(target = 'employee') {
     if (!apiHost || !Number.isInteger(apiPort) || apiPort < 1 || apiPort > 65535) {
       throw new Error('Cấu hình LOCAL_HOST hoặc PORT không hợp lệ trong server/.env.');
     }
+
+    // CI-only path: Playwright starts disposable PostgreSQL/Kafka and the local
+    // API/Vite processes itself, then exercises this real Electron launcher button.
+    // Normal desktop use always follows the Docker startup path below.
+    if (process.env.E2E_ELECTRON_TEST_MODE === 'true') {
+      if (target !== 'employee') throw new Error('Electron E2E mode only supports the employee login flow.');
+      await Promise.all([waitForWeb(localBaseUrl), waitForApi(apiHost, apiPort, false)]);
+      openEmployeeWindow(targetUrl);
+      report('Electron E2E: đã mở cửa sổ đăng nhập nhân viên.');
+      return { ok: true };
+    }
+
     await runCommand('docker', ['compose', '--env-file', envFile, 'up', '-d', '--remove-orphans', 'postgres', 'kafka'], projectDir);
     await Promise.all([
       waitForPort(apiHost, Number(environment.POSTGRES_PORT)),
@@ -281,7 +360,8 @@ async function openLocal(target = 'employee') {
     }
 
     await Promise.all([waitForWeb(localBaseUrl), waitForApi(apiHost, apiPort, isDatabaseViewer)]);
-    await openInBrowser(targetUrl);
+    if (isDatabaseViewer) await openInBrowser(targetUrl);
+    else openEmployeeWindow(targetUrl);
     report(isDatabaseViewer
       ? 'Đã mở trang database trong trình duyệt.'
       : 'Đã mở trang đăng nhập nhân viên trong trình duyệt.');
@@ -365,8 +445,8 @@ async function openDeployUrl(url) {
       throw new Error('DEPLOY_URL chỉ được dùng giao thức http hoặc https.');
     }
     parsedUrl.hash = '/nhan-vien/login';
-    await openInBrowser(parsedUrl.href);
-    report('Đã mở trang đăng nhập nhân viên / quản trị trong trình duyệt mặc định.');
+    openEmployeeWindow(parsedUrl.href);
+    report('Đã mở trang đăng nhập nhân viên / quản trị trong cửa sổ Hung Fashion Electron.');
     return { ok: true };
   } catch (error) {
     return { ok: false, message: error.message || 'Không thể mở địa chỉ website đã cấu hình.' };
