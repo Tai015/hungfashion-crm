@@ -154,6 +154,7 @@ async function expirePendingBankTransfers() {
         itemCount: details.reduce((sum, detail) => sum + Number(detail.quantity), 0),
         previousStatus: 'Pending', reason: 'payment_expired',
       });
+      await enqueueOrderLifecycleEmail(client, order.order_id, order.customer_id, 'order_cancelled');
     }
     await client.query('COMMIT');
   } catch (error) {
@@ -995,6 +996,7 @@ router.patch('/:id/payment', async (req, res) => {
           status: 'Cancelled', previousStatus: 'Pending', source: 'payment_expiry_guard',
           customerId: order.customer_id, reason: 'payment_expired',
         });
+        await enqueueOrderLifecycleEmail(client, Number(req.params.id), order.customer_id, 'order_cancelled');
       }
       await client.query('COMMIT');
       return res.status(409).json({ message: `Đã hết thời hạn thanh toán ${ttlMinutes} phút. Thanh toán đã hết hạn và không thể xác nhận.` });
