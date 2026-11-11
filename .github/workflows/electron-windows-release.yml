@@ -2,6 +2,8 @@ name: Electron Windows x64 release package
 
 on:
   push:
+    branches:
+      - "feature/electron-windows-release-package"
     tags:
       - "v*"
   workflow_dispatch:
@@ -24,7 +26,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     env:
-      DEPLOY_URL: ${{ github.event.inputs.deploy_url || vars.HUNG_FASHION_DEPLOY_URL }}
+      DEPLOY_URL: ${{ github.event.inputs.deploy_url || vars.HUNG_FASHION_DEPLOY_URL || 'https://taitechshop.store' }}
     steps:
       - name: Checkout exact release tag or selected ref
         uses: actions/checkout@v4
