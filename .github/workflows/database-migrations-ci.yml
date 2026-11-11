@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   fresh-database-migrations:
-    name: Fresh PostgreSQL migration (000-032)
+    name: Fresh PostgreSQL migration (000-033)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -83,10 +83,10 @@ jobs:
           set -euo pipefail
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "32"
+          test "$applied_count" = "33"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "032"
+          test "$latest_version" = "033"
 
           view_exists="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT to_regclass('public.customer_interaction_timeline') IS NOT NULL")"
           test "$view_exists" = "t"
@@ -169,7 +169,7 @@ jobs:
           supplier_delete_rules="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT string_agg(confdeltype::text, ',' ORDER BY confdeltype) FROM pg_constraint WHERE conrelid='public.product_supplier'::regclass AND contype='f'")"
           test "$supplier_delete_rules" = "c,r"
 
-          echo "Verified: 32 migrations, latest 032, customer gender defaults to Other, timeline view, UUID event_id, previous order status, loyalty tiers and nullable default-variant attributes."
+          echo "Verified: 32 migrations, latest 033, customer gender defaults to Other, timeline view, UUID event_id, previous order status, loyalty tiers and nullable default-variant attributes."
 
       - name: Verify migration runner is safe to rerun
         working-directory: store-admin
@@ -181,7 +181,7 @@ jobs:
         run: |
           set -euo pipefail
           applied_count="$(psql -h localhost -U postgres -d store_admin_migration_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "32"
+          test "$applied_count" = "33"
           echo "Verified: rerunning migrations does not create duplicate migration records."
 
   legacy-database-upgrade:
@@ -267,7 +267,7 @@ jobs:
 
           echo "Prepared a database at migration 017 with valid UUID, legacy text, NULL event IDs and a customer with NULL gender."
 
-      - name: Upgrade existing database through migrations 018-032
+      - name: Upgrade existing database through migrations 018-033
         working-directory: store-admin
         run: npm run db:migrate --workspace server
 
@@ -321,10 +321,10 @@ jobs:
           test "$null_event_count" = "1"
 
           latest_version="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT MAX(version) FROM store_admin_schema_migrations")"
-          test "$latest_version" = "032"
+          test "$latest_version" = "033"
 
           applied_count="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM store_admin_schema_migrations WHERE version ~ '^[0-9]{3,}$' AND version <> '000'")"
-          test "$applied_count" = "32"
+          test "$applied_count" = "33"
 
           legacy_gender="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT gender::text FROM customer WHERE email = 'legacy-gender@hungfashion.test'")"
           test "$legacy_gender" = "Other"
@@ -345,4 +345,4 @@ jobs:
           removed_legacy_supplier_column="$(psql -h localhost -U postgres -d store_admin_legacy_test -tAc "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='product' AND column_name='supplier_id'")"
           test "$removed_legacy_supplier_column" = "0"
 
-          echo "Verified: legacy transaction rows preserved, migrations 018-032 completed and a legacy product with no variants received exactly one default variant."
+          echo "Verified: legacy transaction rows preserved, migrations 018-033 completed and a legacy product with no variants received exactly one default variant."
