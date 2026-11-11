@@ -46,7 +46,7 @@ jobs:
 
       - name: Install Chromium
         working-directory: store-admin
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       - name: Inspect the live site in desktop and mobile Chromium
         working-directory: store-admin
