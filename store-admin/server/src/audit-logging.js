@@ -42,26 +42,23 @@ function safeChangedFields(body) {
 
 export function createAuditMiddleware({ database = pool, log = logger } = {}) {
   return function auditMiddleware(req, res, next) {
-    if (!MUTATING_METHODS.has(req.method) || !req.user?.account_id) return next();
+    if (!MUTATING_METHODS.has(req.method)) return next();
 
-    const { objectType, objectId } = classifyObject(req.path || req.originalUrl || '/');
-    const action = actionName(req.method, req.path || req.originalUrl || '/');
+    const requestPath = String(req.originalUrl || req.path || '/').split('?')[0];
+    const { objectType, objectId } = classifyObject(requestPath);
+    const action = actionName(req.method, requestPath);
     const changedFields = safeChangedFields(req.body);
-    const actor = {
-      accountId: req.user.account_id,
-      username: String(req.user.username || 'unknown').slice(0, 150),
-      role: String(req.user.role_name || 'unknown').slice(0, 80),
-    };
-
     res.once('finish', () => {
+      const actor = req.user || {};
       const outcome = res.statusCode >= 400 ? 'failure' : 'success';
       database.query(
         `INSERT INTO audit_logs
           (actor_account_id, actor_username, actor_role, action, object_type, object_id,
            outcome, http_method, http_status, route, request_id, changed_fields)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)`,
-        [actor.accountId, actor.username, actor.role, action, objectType, objectId,
-          outcome, req.method, res.statusCode, req.route ? `${req.baseUrl || ''}${req.route.path}` : req.path,
+        [actor.account_id ?? null, String(actor.username || 'unknown').slice(0, 150),
+          String(actor.role_name || 'unknown').slice(0, 80), action, objectType, objectId,
+          outcome, req.method, res.statusCode, requestPath.slice(0, 500),
           req.requestId || null, JSON.stringify(changedFields)],
       ).catch(error => log.error({
         err: error, requestId: req.requestId, objectType, objectId, action,
