@@ -1,0 +1,67 @@
+name: Electron UI inspection
+
+on:
+  push:
+    branches: [feat/playwright-remote-site-inspector]
+    paths:
+      - "store-admin/e2e/electron-inspection.spec.js"
+      - "store-admin/playwright.electron-inspection.config.js"
+      - ".github/workflows/electron-ui-inspection.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "store-admin/e2e/electron-inspection.spec.js"
+      - "store-admin/playwright.electron-inspection.config.js"
+      - ".github/workflows/electron-ui-inspection.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture-electron-ui:
+    name: Capture actual Electron desktop windows
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install project dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Install Playwright runner
+        working-directory: store-admin
+        run: npm install --no-save --package-lock=false @playwright/test
+
+      - name: Configure deployed test URL for Electron launcher
+        working-directory: store-admin
+        run: |
+          mkdir -p server
+          printf 'DEPLOY_URL=https://test.taitechshop.store\n' > server/.env
+
+      - name: Capture Electron windows under virtual desktop
+        working-directory: store-admin
+        env:
+          ELECTRON_DISABLE_SANDBOX: "1"
+        run: xvfb-run -a npx playwright test --config=playwright.electron-inspection.config.js
+
+      - name: Upload Electron screenshots and test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hung-fashion-electron-ui-inspection
+          path: |
+            store-admin/test-results/electron-inspection/
+            store-admin/test-results/electron-inspection-run/
+            store-admin/playwright-report/electron-inspection/
+          if-no-files-found: warn
+          retention-days: 14
