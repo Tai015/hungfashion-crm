@@ -12,7 +12,7 @@ import { CUSTOMER_GENDER_LABELS, CUSTOMER_TIER_LABELS } from '../utils/viLabels'
 
 const formatAge = age => Number.isInteger(age) && age >= 0 ? `${age} tuổi` : 'Chưa cập nhật';
 const GENDERS = [['','Tất cả'],['Female','Nữ'],['Male','Nam'],['Other','Khác']];
-const EMPTY   = { full_name:'', phone:'', email:'', gender:'Other', date_of_birth:'' };
+const EMPTY   = { full_name:'', phone:'', email:'', address:'', gender:'Other', date_of_birth:'' };
 const LIMIT   = 20;
 
 const INPUT  = 'w-full h-10 px-3 bg-white/[0.07] border border-white/[0.12] rounded-xl text-[#f5f0eb] text-sm placeholder-white/22 outline-none focus:border-violet-400/60 focus:bg-white/10 focus:ring-2 focus:ring-violet-400/[0.15] transition-all dark-input';
@@ -42,11 +42,26 @@ function CustomerModal({ customer, onClose, onSaved }) {
   useModalEffects(true, onClose);
   const isEdit = Boolean(customer);
   const [form, setForm] = useState(customer
-    ? { full_name:customer.full_name||'', phone:customer.phone||'', email:customer.email||'', gender:customer.gender||'Other', date_of_birth:customer.date_of_birth ? String(customer.date_of_birth).slice(0,10) : '' }
+    ? { full_name:customer.full_name||'', phone:customer.phone||'', email:customer.email||'', address:customer.address||'', gender:customer.gender||'Other', date_of_birth:customer.date_of_birth ? String(customer.date_of_birth).slice(0,10) : '' }
     : EMPTY);
+  const [interestText, setInterestText] = useState('');
+  const [detailsLoading, setDetailsLoading] = useState(Boolean(customer));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   useSweetAlertMessages({ error });
+  useEffect(() => {
+    if (!isEdit) return;
+    let active = true;
+    apiFetch('/api/customers/' + customer.customer_id)
+      .then(details => {
+        if (!active) return;
+        setForm(current => ({ ...current, address:details.address || '' }));
+        setInterestText((details.interests || []).join(', '));
+      })
+      .catch(err => { if (active) setError(err.message); })
+      .finally(() => { if (active) setDetailsLoading(false); });
+    return () => { active = false; };
+  }, [customer?.customer_id, isEdit]);
   const save = async e => {
     e.preventDefault(); setBusy(true); setError('');
     try {
@@ -59,8 +74,8 @@ function CustomerModal({ customer, onClose, onSaved }) {
           throw new Error('Ngày sinh không hợp lệ. Tuổi khách hàng phải từ 0 đến 120.');
         }
       }
-      const existingDetails = isEdit ? await apiFetch(`/api/customers/${customer.customer_id}`) : null;
-      const payload = { ...form, gender:form.gender || 'Other', interests:existingDetails?.interests || [] };
+      const interests = [...new Set(interestText.split(',').map(value => value.trim()).filter(Boolean))];
+      const payload = { ...form, gender:form.gender || 'Other', interests };
       if (isEdit) await apiFetch(`/api/customers/${customer.customer_id}`, { method:'PUT', body:payload });
       else await apiFetch('/api/customers', { method:'POST', body:payload });
       onSaved();
@@ -71,7 +86,7 @@ function CustomerModal({ customer, onClose, onSaved }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/55 backdrop-blur-md p-5" onClick={onClose}>
       <motion.div initial={{ scale:0.94, opacity:0 }} animate={{ scale:1, opacity:1 }}
         exit={{ scale:0.94, opacity:0 }} transition={{ duration:0.18 }}
-        className="popup-surface w-full max-w-[520px] p-7 border border-white/[0.16] rounded-3xl bg-[rgba(32,27,48,0.97)] shadow-[0_32px_80px_rgba(0,0,0,0.65)] text-[#f5f0eb]"
+        className="popup-surface w-full max-w-[600px] p-7 border border-white/[0.16] rounded-3xl bg-[rgba(32,27,48,0.97)] shadow-[0_32px_80px_rgba(0,0,0,0.65)] text-[#f5f0eb]"
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-white/[0.08]">
           <h2 className="m-0 text-[1.1rem] font-bold">{isEdit ? 'Chỉnh sửa khách hàng' : 'Thêm khách hàng mới'}</h2>
@@ -89,10 +104,16 @@ function CustomerModal({ customer, onClose, onSaved }) {
                 <option value="Female">Nữ</option><option value="Male">Nam</option>
               </select>
             </Field>
+            <Field label="Địa chỉ">
+              <input maxLength={255} placeholder="Số nhà, đường, phường/xã, tỉnh/thành" className={INPUT} value={form.address} onChange={e => setForm({...form, address:e.target.value})} />
+            </Field>
+            <Field label="Sở thích (phân cách bằng dấu phẩy)">
+              <input maxLength={2000} placeholder="Áo thun, Quần jean, Phụ kiện..." className={INPUT} value={interestText} onChange={e => setInterestText(e.target.value)} />
+            </Field>
           </div>
           <div className="flex justify-end gap-2.5 pt-3 border-t border-white/[0.08]">
             <button type="button" className={BTN_GHOST} onClick={onClose}>Hủy</button>
-            <button type="submit" className={`${BTN_PRIMARY} admin-primary-action`} disabled={busy}>{busy ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : <><UserPlus size={14}/> Thêm khách hàng</>}</button>
+            <button type="submit" className={`${BTN_PRIMARY} admin-primary-action`} disabled={busy || detailsLoading}>{detailsLoading ? 'Đang tải...' : busy ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : <><UserPlus size={14}/> Thêm khách hàng</>}</button>
           </div>
         </form>
       </motion.div>

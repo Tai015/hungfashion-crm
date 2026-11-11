@@ -58,6 +58,7 @@ test('returns a bounded first page and a cursor for older records', async () => 
   assert.equal(typeof result.body.nextCursor, 'string');
   assert.equal(typeof result.body.olderCursor, 'string');
   assert.match(app.queries[0].sql, /customer_interaction_timeline/);
+  assert.match(app.queries[0].sql, /c\.deleted_at IS NULL/);
   assert.match(app.queries[0].sql, /occurred_at DESC, interaction_id DESC/);
   assert.match(app.queries[0].sql, /INTERVAL '12 months'/);
   assert.deepEqual(app.queries[0].params, [12, 3]);
