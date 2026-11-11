@@ -87,7 +87,7 @@ openTestCenterButton.addEventListener('click', async () => {\n  openTestCenterBu
   try {
     const result = await window.storeAdminLauncher.openDeploy();
     if (result.ok) {
-      log('Đã mở trang đăng nhập nhân viên / quản trị trong trình duyệt mặc định.');
+      log('Đã mở trang đăng nhập nhân viên / quản trị trong cửa sổ Electron.');
     } else {
       log(result.message);
       await showError(result.message);
