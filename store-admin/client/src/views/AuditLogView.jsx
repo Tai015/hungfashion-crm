@@ -79,7 +79,7 @@ export default function AuditLogView() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  {['Thời gian','Người thực hiện','Hành động','Đối tượng','Kết quả','Request ID'].map(h => <th key={h} className={TH}>{h}</th>)}
+                  {['Thời gian','Người thực hiện','Hành động','Đối tượng','Thay đổi','Kết quả','Request ID'].map(h => <th key={h} className={TH}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -99,6 +99,9 @@ export default function AuditLogView() {
                       <code className="px-2 py-0.5 rounded-md border border-white/[0.08] bg-white/[0.07] text-white/60 text-[0.78rem] font-mono">{log.entity_type}{log.entity_id ? ` #${log.entity_id}` : ''}</code>
                     </td>
                     <td className={TD}>
+                      <span className="text-white/45 text-[0.75rem]">{Object.entries(log.changes || {}).map(([key, value]) => `${key}: ${String(value)}`).join(' · ') || 'Không ghi nhận trường thay đổi'}</span>
+                    </td>
+                    <td className={TD}>
                       <span className={`text-[0.7rem] font-bold tracking-[0.06em] uppercase px-2 py-0.5 rounded-md ${log.outcome === 'success' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300'}`}>{log.outcome === 'success' ? 'Thành công' : 'Thất bại'} · {log.status_code}</span>
                     </td>
                     <td className={TD}>
@@ -107,7 +110,7 @@ export default function AuditLogView() {
                   </tr>
                 ))}
                 {!logs.length && !loading && (
-                  <tr><td colSpan={6} className="py-10 text-center text-white/25 text-sm">Chưa có nhật ký hoạt động nào.</td></tr>
+                  <tr><td colSpan={7} className="py-10 text-center text-white/25 text-sm">Chưa có nhật ký hoạt động nào.</td></tr>
                 )}
               </tbody>
             </table>
