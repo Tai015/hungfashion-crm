@@ -10,6 +10,7 @@ import {
 } from '../domain/index.js';
 import { pool } from '../db.js';
 import { enqueueTransactionEvent } from '../transaction-events.js';
+import { buildOrderConfirmationEmail, enqueueOrderConfirmationEmail, isValidEmail } from '../order-confirmation-email.js';
 
 const router = Router();
 const CUSTOMER_PAYMENT_METHODS = new Set(['Cash', 'BankTransfer']);
@@ -725,6 +726,54 @@ router.post('/', async (req, res) => {
          VALUES ($1, $2, NOW() + ($3 * INTERVAL '1 minute'))`,
         [order.order_id, tokenHash, DEMO_PAYMENT_TTL_MINUTES],
       );
+    }
+
+    await client.query('SAVEPOINT order_confirmation_email_enqueue');
+    try {
+      if (customer_id) {
+        const { rows: [customerEmail] } = await client.query(
+          'SELECT email FROM customer WHERE customer_id=$1',
+          [customer_id],
+        );
+        if (isValidEmail(customerEmail?.email)) {
+          const [{ rows: [emailOrder] }, { rows: emailDetails }] = await Promise.all([
+            client.query(
+              `SELECT o.order_id, o.ordered_at, o.subtotal, o.discount_amt, o.total_amount,
+                      o.shipping_address, c.full_name AS customer_name,
+                      p.method AS payment_method, p.status AS payment_status
+               FROM "order" o
+               JOIN customer c ON c.customer_id=o.customer_id
+               JOIN payment p ON p.order_id=o.order_id
+               WHERE o.order_id=$1 AND c.customer_id=$2`,
+              [order.order_id, customer_id],
+            ),
+            client.query(
+              `SELECT pr.product_name, pv.sku, od.quantity, od.unit_price, od.subtotal
+               FROM order_detail od
+               JOIN product_variant pv ON pv.variant_id=od.variant_id
+               JOIN product pr ON pr.product_id=pv.product_id
+               WHERE od.order_id=$1 ORDER BY od.detail_id`,
+              [order.order_id],
+            ),
+          ]);
+          const emailPayload = buildOrderConfirmationEmail({ order: emailOrder, details: emailDetails });
+          await enqueueOrderConfirmationEmail(client, {
+            orderId: order.order_id,
+            customerId: customer_id,
+            recipientEmail: customerEmail.email,
+            payload: emailPayload,
+          });
+        }
+      }
+      await client.query('RELEASE SAVEPOINT order_confirmation_email_enqueue');
+    } catch (emailQueueError) {
+      await client.query('ROLLBACK TO SAVEPOINT order_confirmation_email_enqueue');
+      await client.query('RELEASE SAVEPOINT order_confirmation_email_enqueue');
+      console.error('[orders] could not queue confirmation email; order will still commit:', {
+        orderId: order.order_id,
+        code: emailQueueError.code,
+        message: emailQueueError.message,
+      });
     }
 
     await enqueueTransactionEvent(client, {
