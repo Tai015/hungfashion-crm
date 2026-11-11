@@ -111,8 +111,8 @@ jobs:
           WHERE s.title = 'Timeline CI survey'
             AND c.full_name = 'Timeline CI customer';
 
-          INSERT INTO order_confirmation_email (order_id, customer_id, recipient_email)
-          SELECT o.order_id, c.customer_id, c.email
+          INSERT INTO order_confirmation_email (order_id, customer_id, recipient_email, payload)
+          SELECT o.order_id, c.customer_id, c.email, '{"subject":"CI","html":"<p>CI</p>","text":"CI"}'::jsonb
           FROM "order" o JOIN customer c USING (customer_id)
           WHERE c.full_name = 'Timeline CI customer';
           INSERT INTO order_confirmation_email_attempt
