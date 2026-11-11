@@ -112,6 +112,7 @@ async function claimNextEmail() {
       `SELECT email_id, order_id, customer_id, recipient_email, payload, attempts
        FROM order_confirmation_email
        WHERE attempts < $1
+         AND payload IS NOT NULL
          AND (
            (status IN ('queued', 'failed') AND next_attempt_at <= NOW())
            OR (status = 'sending' AND updated_at < NOW() - INTERVAL '${CLAIM_STALE_AFTER}')
@@ -129,7 +130,7 @@ async function claimNextEmail() {
       `UPDATE order_confirmation_email
        SET status='sending', attempts=attempts+1, updated_at=NOW()
        WHERE email_id=$1
-       RETURNING email_id, order_id, customer_id, recipient_email, attempts`,
+       RETURNING email_id, order_id, customer_id, recipient_email, payload, attempts`,
       [job.email_id],
     );
     await client.query('COMMIT');
