@@ -205,11 +205,11 @@ async function saveAttempt(job, { status, errorMessage = null, providerMessageId
     await client.query('BEGIN');
     await client.query(
       `INSERT INTO order_confirmation_email_attempt
-         (email_id, order_id, customer_id, recipient_email, status,
+         (email_id, order_id, customer_id, recipient_email, event_type, status,
           error_message, provider_message_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
       [job.email_id, job.order_id, job.customer_id, job.recipient_email,
-        status, errorMessage, providerMessageId],
+        job.event_type || 'order_confirmation', status, errorMessage, providerMessageId],
     );
     const sent = status === 'sent';
     const retrySeconds = RETRY_DELAYS_SECONDS[Math.min(job.attempts - 1, RETRY_DELAYS_SECONDS.length - 1)];
@@ -223,7 +223,7 @@ async function saveAttempt(job, { status, errorMessage = null, providerMessageId
        WHERE email_id=$1`,
       [job.email_id, status, errorMessage, retrySeconds],
     );
-    if (sent) {
+    if (sent && (job.event_type || 'order_confirmation') === 'order_confirmation') {
       await client.query(
         `UPDATE "order" SET confirmation_email_sent_at=NOW()
          WHERE order_id=$1 AND confirmation_email_sent_at IS NULL`,
