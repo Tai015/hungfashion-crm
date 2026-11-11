@@ -64,11 +64,12 @@ test('queues one confirmation per order with a stable recipient and conflict pro
     orderId: 42,
     customerId: 7,
     recipientEmail: ' Customer@Example.com ',
+    payload: { subject: 'Test', html: '<p>Test</p>', text: 'Test' },
   });
   assert.equal(queued, true);
   assert.equal(calls.length, 1);
   assert.match(calls[0].sql, /ON CONFLICT \(order_id\) DO NOTHING/);
-  assert.deepEqual(calls[0].params, [42, 7, 'customer@example.com']);
+  assert.deepEqual(calls[0].params, [42, 7, 'customer@example.com', JSON.stringify({ subject: 'Test', html: '<p>Test</p>', text: 'Test' })]);
 });
 
 test('skips customers without a valid email and does not touch the queue', async () => {
