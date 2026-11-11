@@ -10,6 +10,7 @@ import {
 } from '../domain/index.js';
 import { pool } from '../db.js';
 import { enqueueTransactionEvent } from '../transaction-events.js';
+import { enqueueOrderConfirmationEmail, isValidEmail } from '../order-confirmation-email.js';
 
 const router = Router();
 const CUSTOMER_PAYMENT_METHODS = new Set(['Cash', 'BankTransfer']);
@@ -725,6 +726,20 @@ router.post('/', async (req, res) => {
          VALUES ($1, $2, NOW() + ($3 * INTERVAL '1 minute'))`,
         [order.order_id, tokenHash, DEMO_PAYMENT_TTL_MINUTES],
       );
+    }
+
+    if (customer_id) {
+      const { rows: [customerEmail] } = await client.query(
+        'SELECT email FROM customer WHERE customer_id=$1',
+        [customer_id],
+      );
+      if (isValidEmail(customerEmail?.email)) {
+        await enqueueOrderConfirmationEmail(client, {
+          orderId: order.order_id,
+          customerId: customer_id,
+          recipientEmail: customerEmail.email,
+        });
+      }
     }
 
     await enqueueTransactionEvent(client, {
