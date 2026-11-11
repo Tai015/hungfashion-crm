@@ -144,7 +144,6 @@ function App() {
   }, [user?.account_id, user?.role]);
 
   useEffect(() => {
-    const token = getAuthToken();
     let active = true;
     const expire = event => {
       pageViewTracked.current = null;
