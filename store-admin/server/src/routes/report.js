@@ -551,15 +551,16 @@ router.get('/audit-logs', async (req, res) => {
     const [{ rows }, { rows: countRows }] = await Promise.all([
       pool.query(
         `SELECT audit_id AS event_id, occurred_at, actor_username AS username,
-                actor_role AS role_name, action AS event_type, entity_type,
-                entity_id, request_path AS page, request_method, status_code,
-                outcome, request_id, changes, error_message, source
-         FROM business_audit_logs ${where}
+                actor_role AS role_name, action AS event_type, object_type AS entity_type,
+                object_id AS entity_id, route AS page, http_method AS request_method,
+                http_status AS status_code, outcome, request_id,
+                changed_fields AS changes, NULL::text AS error_message, 'api'::text AS source
+         FROM audit_logs ${where}
          ORDER BY occurred_at DESC, audit_id DESC
          LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
         [...values, limit, offset],
       ),
-      pool.query(`SELECT COUNT(*)::int AS total FROM business_audit_logs ${where}`, values),
+      pool.query(`SELECT COUNT(*)::int AS total FROM audit_logs ${where}`, values),
     ]);
     return res.json({ data: rows, total: countRows[0].total, page, limit });
   } catch (err) {
