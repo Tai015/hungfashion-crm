@@ -117,8 +117,8 @@ async function claimNextEmail() {
            OR (status = 'sending' AND updated_at < NOW() - INTERVAL '${CLAIM_STALE_AFTER}')
          )
        ORDER BY next_attempt_at, email_id
-       FOR UPDATE SKIP LOCKED
-       LIMIT 1`,
+       LIMIT 1
+       FOR UPDATE SKIP LOCKED`,
       [MAX_ATTEMPTS],
     );
     if (!job) {
