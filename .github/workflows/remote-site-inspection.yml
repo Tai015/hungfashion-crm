@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   inspect-public-test-site:
-    name: Render and inspect test.taitechshop.store
+    name: Render storefront and customer authentication pages
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -48,7 +48,7 @@ jobs:
         working-directory: store-admin
         run: npx playwright install chromium
 
-      - name: Inspect the live site in desktop and mobile Chromium
+      - name: Capture storefront, customer login and customer registration in desktop Chromium
         working-directory: store-admin
         run: npx playwright test --config=playwright.remote-inspection.config.js
 
