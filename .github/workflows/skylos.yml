@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - "store-admin/**"
-      - "skylos.toml"
+      - "pyproject.toml"
       - ".github/workflows/skylos.yml"
   workflow_dispatch:
 
@@ -34,10 +34,11 @@ jobs:
     env:
       TEST_DATABASE_URL: postgres://postgres:skylos-ci-only-password@127.0.0.1:5432/hungfashion_skylos_test
     steps:
-      - name: Checkout PR with full history
+      - name: Checkout PR head with full history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Set up Python
@@ -52,7 +53,7 @@ jobs:
           cache: npm
           cache-dependency-path: store-admin/package-lock.json
 
-      - name: Install Skylos
+      - name: Install pinned Skylos verifier
         run: python -I -m pip install "skylos==4.47.2"
 
       - name: Install Hung Fashion dependencies
@@ -64,7 +65,15 @@ jobs:
 
       - name: Check whether the PR is finished (advisory during initial rollout)
         continue-on-error: true
-        run: skylos done --base "origin/${GITHUB_BASE_REF:-main}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_ref="origin/${GITHUB_BASE_REF:-main}"
+          if git show "${base_ref}:pyproject.toml" 2>/dev/null | grep -Fq '[tool.skylos.done]'; then
+            skylos done --base "$base_ref"
+          else
+            echo "::notice::Skylos Done is skipped for the bootstrap PR. It reads trusted settings from the base branch; subsequent PRs will run the configured Node.js test suite."
+          fi
 
       - name: Upload Skylos receipts
         if: always()
