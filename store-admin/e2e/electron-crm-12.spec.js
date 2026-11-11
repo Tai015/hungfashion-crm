@@ -32,6 +32,8 @@ test('Electron CRM: hoàn tất 12 chức năng quản lý và khách hàng bằ
   let accountId;
   let surveyId;
   let feedbackId;
+  let seededProductId;
+  let seededCategoryId;
   let customerToken;
   let staffToken;
   const results = [];
@@ -96,10 +98,32 @@ test('Electron CRM: hoàn tất 12 chức năng quản lý và khách hàng bằ
     results.push('C03');
 
     // C04 + M04 — Gửi phản hồi sản phẩm, sau đó nhân viên xử lý và trả lời.
-    const product = await db.query(
-      `SELECT product_id FROM product WHERE is_active=TRUE ORDER BY product_id LIMIT 1`,
+    // Tạo dữ liệu sản phẩm riêng cho test: CI database mới migrate thường chưa có catalog.
+    // Dùng category/product/variant trong PostgreSQL tạm, không phụ thuộc seed hoặc dữ liệu production.
+    const categorySeed = await db.query(
+      `INSERT INTO category (category_name, description)
+       VALUES ($1, $2) RETURNING category_id`,
+      [`E2E Feedback Category ${suffix}`, 'Disposable category for Electron CRM integration test'],
     );
-    expect(product.rowCount, 'CI database cần ít nhất một sản phẩm hoạt động để kiểm thử phản hồi').toBeGreaterThan(0);
+    seededCategoryId = categorySeed.rows[0].category_id;
+    const productSeed = await db.query(
+      `INSERT INTO product
+         (category_id, product_name, description, import_price, selling_price)
+       VALUES ($1, $2, $3, 10000, 25000)
+       RETURNING product_id`,
+      [seededCategoryId, `E2E Feedback Product ${suffix}`, 'Disposable product for feedback integration test'],
+    );
+    seededProductId = productSeed.rows[0].product_id;
+    await db.query(
+      `INSERT INTO product_variant (product_id, size_id, color_id, sku, quantity, is_default)
+       VALUES ($1, NULL, NULL, $2, 0, TRUE)`,
+      [seededProductId, `E2E-FEEDBACK-${suffix}`],
+    );
+    const product = await db.query(
+      `SELECT product_id FROM product WHERE product_id=$1 AND is_active=TRUE`,
+      [seededProductId],
+    );
+    expect(product.rowCount, 'Sản phẩm fixture phải được tạo trong PostgreSQL CI').toBe(1);
     const feedback = await page.evaluate(async ({ token, productId, suffix }) => {
       const form = new FormData();
       form.set('product_id', String(productId));
@@ -205,6 +229,8 @@ test('Electron CRM: hoàn tất 12 chức năng quản lý và khách hàng bằ
   } finally {
     if (surveyId) await db.query('DELETE FROM survey WHERE survey_id=$1', [surveyId]).catch(() => {});
     if (feedbackId) await db.query('DELETE FROM feedback WHERE feedback_id=$1', [feedbackId]).catch(() => {});
+    if (seededProductId) await db.query('DELETE FROM product WHERE product_id=$1', [seededProductId]).catch(() => {});
+    if (seededCategoryId) await db.query('DELETE FROM category WHERE category_id=$1', [seededCategoryId]).catch(() => {});
     if (customerId && accountId) {
       await db.query('UPDATE account SET status=\'Active\' WHERE account_id=$1', [accountId]).catch(() => {});
       await db.query('UPDATE account_sessions SET revoked_at=NOW() WHERE account_id=$1', [accountId]).catch(() => {});
