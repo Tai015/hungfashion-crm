@@ -10,7 +10,7 @@ import {
 } from '../domain/index.js';
 import { pool } from '../db.js';
 import { enqueueTransactionEvent } from '../transaction-events.js';
-import { buildOrderConfirmationEmail, enqueueOrderConfirmationEmail, isValidEmail } from '../order-confirmation-email.js';
+import { buildOrderConfirmationEmail, buildOrderStatusEmail, enqueueOrderConfirmationEmail, isValidEmail } from '../order-confirmation-email.js';
 
 const router = Router();
 const CUSTOMER_PAYMENT_METHODS = new Set(['Cash', 'BankTransfer']);
@@ -18,6 +18,48 @@ const BANK_TRANSFER_TTL_MINUTES = 10;
 const DEMO_PAYMENT_TTL_MINUTES = 15;
 const paymentTtlMinutes = () => process.env.DEMO_PAYMENT === 'true'
   ? DEMO_PAYMENT_TTL_MINUTES : BANK_TRANSFER_TTL_MINUTES;
+
+async function enqueueOrderLifecycleEmail(client, orderId, customerId, eventType) {
+  if (!customerId) return;
+  await client.query('SAVEPOINT order_lifecycle_email_enqueue');
+  try {
+    const { rows: [recipient] } = await client.query(
+      'SELECT full_name, email FROM customer WHERE customer_id=$1',
+      [customerId],
+    );
+    if (!isValidEmail(recipient?.email)) {
+      await client.query('RELEASE SAVEPOINT order_lifecycle_email_enqueue');
+      return;
+    }
+    const { rows: [order] } = await client.query(
+      `SELECT o.order_id, o.ordered_at, o.total_amount, c.full_name AS customer_name
+       FROM "order" o JOIN customer c ON c.customer_id=o.customer_id
+       WHERE o.order_id=$1 AND o.customer_id=$2`,
+      [orderId, customerId],
+    );
+    const { rows: details } = await client.query(
+      `SELECT p.product_name, od.quantity, od.subtotal
+       FROM order_detail od
+       JOIN product_variant pv ON pv.variant_id=od.variant_id
+       JOIN product p ON p.product_id=pv.product_id
+       WHERE od.order_id=$1 ORDER BY od.detail_id`,
+      [orderId],
+    );
+    if (order) {
+      const payload = buildOrderStatusEmail({ order, details, eventType });
+      await enqueueOrderConfirmationEmail(client, {
+        orderId, customerId, recipientEmail: recipient.email, payload, eventType,
+      });
+    }
+    await client.query('RELEASE SAVEPOINT order_lifecycle_email_enqueue');
+  } catch (error) {
+    await client.query('ROLLBACK TO SAVEPOINT order_lifecycle_email_enqueue');
+    await client.query('RELEASE SAVEPOINT order_lifecycle_email_enqueue');
+    console.error('[orders] could not queue lifecycle email; order update will still commit:', {
+      orderId, eventType, code: error.code, message: error.message,
+    });
+  }
+}
 
 async function addLoyaltyTransaction(client, { customerId, orderId, type, delta, note }) {
   const { rows: existing } = await client.query(
@@ -112,6 +154,7 @@ async function expirePendingBankTransfers() {
         itemCount: details.reduce((sum, detail) => sum + Number(detail.quantity), 0),
         previousStatus: 'Pending', reason: 'payment_expired',
       });
+      await enqueueOrderLifecycleEmail(client, order.order_id, order.customer_id, 'order_cancelled');
     }
     await client.query('COMMIT');
   } catch (error) {
@@ -890,6 +933,11 @@ router.patch('/:id/status', async (req, res) => {
       previousStatus: currentStatus, source: 'orders_status_api',
       userId: req.user.account_id, customerId: orderRows[0].customer_id,
     });
+    if (status === 'Cancelled') {
+      await enqueueOrderLifecycleEmail(client, Number(req.params.id), orderRows[0].customer_id, 'order_cancelled');
+    } else if (status === 'Delivered') {
+      await enqueueOrderLifecycleEmail(client, Number(req.params.id), orderRows[0].customer_id, 'order_delivered');
+    }
     await client.query('COMMIT');
     res.json(rows[0]);
   } catch (err) {
@@ -948,6 +996,7 @@ router.patch('/:id/payment', async (req, res) => {
           status: 'Cancelled', previousStatus: 'Pending', source: 'payment_expiry_guard',
           customerId: order.customer_id, reason: 'payment_expired',
         });
+        await enqueueOrderLifecycleEmail(client, Number(req.params.id), order.customer_id, 'order_cancelled');
       }
       await client.query('COMMIT');
       return res.status(409).json({ message: `Đã hết thời hạn thanh toán ${ttlMinutes} phút. Thanh toán đã hết hạn và không thể xác nhận.` });
@@ -1011,6 +1060,9 @@ router.patch('/:id/payment', async (req, res) => {
         paymentMethod: order.payment_method,
         transactionId: rows[0].transaction_ref || null,
       });
+    }
+    if (status === 'Paid' && order.payment_status !== 'Paid') {
+      await enqueueOrderLifecycleEmail(client, Number(req.params.id), order.customer_id, 'payment_paid');
     }
     await client.query('COMMIT');
     res.json(rows[0]);

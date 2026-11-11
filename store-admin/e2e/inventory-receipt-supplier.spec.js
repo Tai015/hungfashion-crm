@@ -51,10 +51,11 @@ test.beforeAll(async () => {
 
 test.beforeEach(async ({ request }) => {
   const login = await request.post('/api/auth/login', {
-    data: { identifier: staffIdentifier, password: staffPassword, audience: 'staff' },
+    data: { identifier: staffIdentifier, password: staffPassword, audience: 'staff', rememberMe: true },
   });
   expect(login.status(), 'E2E staff login').toBe(200);
   token = (await login.json()).token;
+  expect(token, 'rememberMe login must return a bearer token for API E2E').toBeTruthy();
 });
 
 test.afterAll(async () => {
