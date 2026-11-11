@@ -96,7 +96,7 @@ function CustomerModal({ customer, onClose, onSaved }) {
           <div className="grid grid-cols-2 gap-3.5">
             <Field label="Họ tên *"><input required maxLength={150} placeholder="Nguyễn Văn A" className={INPUT} value={form.full_name} onChange={e => setForm({...form, full_name:e.target.value})} /></Field>
             <Field label="Số điện thoại"><input type="tel" maxLength={30} placeholder="09xxxxxxxx" className={INPUT} value={form.phone} onChange={e => setForm({...form, phone:e.target.value})} /></Field>
-            <Field label="Email"><input type="email" maxLength={150} placeholder="email@example.com" className={INPUT} value={form.email} onChange={e => setForm({...form, email:e.target.value})} /></Field>
+            <Field label="Email *"><input required type="email" maxLength={150} placeholder="email@example.com" className={INPUT} value={form.email} onChange={e => setForm({...form, email:e.target.value})} /></Field>
             <Field label="Ngày sinh (không bắt buộc)"><input type="date" max={new Date().toISOString().slice(0,10)} className={INPUT} value={form.date_of_birth} onChange={e => setForm({...form, date_of_birth:e.target.value})} /></Field>
             <Field label="Giới tính">
               <select className={SELECT} value={form.gender} onChange={e => setForm({...form, gender:e.target.value})}>
