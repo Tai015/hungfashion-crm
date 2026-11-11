@@ -48,7 +48,7 @@ test('màn hình đăng nhập khách hàng hiển thị đúng', async ({ page 
 
 test('trình duyệt thường bị chặn khỏi khu vực đăng nhập nhân viên', async ({ page }) => {
   await gotoApp(page, staffPath);
-  await expect(page.getByRole('heading', { name: 'Khu vực dành riêng cho ứng dụng Electron' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Không tìm thấy trang' })).toBeVisible();
   await expect(page.getByLabel('Tên đăng nhập hoặc email')).toHaveCount(0);
 });
 
