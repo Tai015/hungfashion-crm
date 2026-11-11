@@ -182,7 +182,7 @@ export async function apiFetch(url, options = {}) {
     ? null
     : await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && url !== '/api/auth/me') {
       clearAuthToken();
       window.dispatchEvent(new CustomEvent('auth:expired', {
         detail: { code: result?.code, message: result?.message },
