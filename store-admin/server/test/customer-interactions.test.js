@@ -145,3 +145,16 @@ test('does not expose a message body field in the timeline response', async () =
   assert.equal(result.status, 200);
   assert.equal(Object.hasOwn(result.body.data[0], 'content'), false);
 });
+ 
+import { readFile } from 'node:fs/promises';
+
+test('timeline migration omits recipient addresses and raw email provider errors', async () => {
+  const migration = await readFile(
+    new URL('../sql/migrations/034_customer_timeline_email_privacy.sql', import.meta.url),
+    'utf8',
+  );
+  const emailSection = migration.slice(migration.lastIndexOf("'email'::text"));
+  assert.match(emailSection, /Trạng thái: gửi thành công/);
+  assert.match(emailSection, /Trạng thái: gửi thất bại/);
+  assert.doesNotMatch(emailSection, /recipient_email|error_message/);
+});
