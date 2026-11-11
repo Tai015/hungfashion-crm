@@ -39,7 +39,8 @@ router.get('/', async (req, res) => {
       conditions.push(`c.gender = $${params.length}`);
     }
 
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    conditions.unshift('c.deleted_at IS NULL');
+    const where = `WHERE ${conditions.join(' AND ')}`;
     params.push(limit, offset);
 
     const { rows } = await pool.query(
@@ -70,11 +71,11 @@ router.get('/stats/overview', async (_req, res) => {
     const [tierStats, genderStats, ageStats] = await Promise.all([
       pool.query(
         `SELECT customer_tier_for_points(lifetime_points) AS customer_tier, COUNT(*)::int AS count
-         FROM customer GROUP BY customer_tier_for_points(lifetime_points) ORDER BY count DESC`
+         FROM customer WHERE deleted_at IS NULL GROUP BY customer_tier_for_points(lifetime_points) ORDER BY count DESC`
       ),
       pool.query(
         `SELECT gender, COUNT(*)::int AS count
-         FROM customer GROUP BY gender`
+         FROM customer WHERE deleted_at IS NULL GROUP BY gender`
       ),
       pool.query(
         `WITH customer_ages AS (
@@ -91,7 +92,7 @@ router.get('/stats/overview', async (_req, res) => {
              FROM customer
            ) all_customers
          ), total AS (
-           SELECT COUNT(*)::numeric AS customer_count FROM customer
+           SELECT COUNT(*)::numeric AS customer_count FROM customer WHERE deleted_at IS NULL
          )
          SELECT customer_ages.age_group,
                 COUNT(*)::int AS count,
@@ -120,7 +121,7 @@ router.get('/:id', async (req, res) => {
               EXTRACT(YEAR FROM AGE(c.date_of_birth))::int AS age
        FROM customer c
        LEFT JOIN account a ON a.account_id = c.account_id
-       WHERE c.customer_id = $1`,
+       WHERE c.customer_id = $1 AND c.deleted_at IS NULL`,
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ message: 'Không tìm thấy khách hàng' });
@@ -208,7 +209,7 @@ router.put('/:id', async (req, res) => {
       `UPDATE customer
        SET full_name=$1, gender=$2, date_of_birth=$3, phone=$4,
            email=$5, address=$6, updated_at=NOW()
-       WHERE customer_id=$7 RETURNING *`,
+       WHERE customer_id=$7 AND deleted_at IS NULL RETURNING *`,
       [full_name.trim(), normalizedGender, normalizedDateOfBirth, phone, normalizedEmail, address, req.params.id]
     );
     if (!rows.length) {
@@ -269,65 +270,54 @@ router.patch('/:id/account-status', async (req, res) => {
   }
 });
 
-// DELETE /api/customers/:id – chỉ xóa hồ sơ không có tài khoản hoặc dữ liệu lịch sử
+// DELETE /api/customers/:id – ẩn danh hóa hồ sơ, giữ nguyên khóa liên kết và lịch sử nghiệp vụ
 router.delete('/:id', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const { rows: customerRows } = await client.query(
-      `SELECT customer_id, account_id FROM customer WHERE customer_id=$1 FOR UPDATE`, [req.params.id]
+      `SELECT customer_id, account_id, deleted_at
+       FROM customer WHERE customer_id=$1 FOR UPDATE`, [req.params.id]
     );
-    if (!customerRows.length) {
+    if (!customerRows.length || customerRows[0].deleted_at) {
       await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Không tìm thấy khách hàng.' });
     }
 
-    if (customerRows[0].account_id) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({
-        message: 'Không thể xóa hồ sơ đang liên kết tài khoản đăng nhập. Hãy dùng thao tác “Khóa tài khoản” riêng nếu cần ngừng quyền truy cập.',
-      });
-    }
-
-    const { rows: [references] } = await client.query(
-      `SELECT
-         (SELECT COUNT(*)::int FROM "order" WHERE customer_id=$1) AS orders,
-         (SELECT COUNT(*)::int FROM feedback WHERE customer_id=$1) AS feedbacks,
-         (SELECT COUNT(*)::int FROM survey_response WHERE customer_id=$1) AS survey_responses,
-         (SELECT COUNT(*)::int FROM survey_invitation WHERE customer_id=$1) AS survey_invitations,
-         (SELECT COUNT(*)::int FROM user_promotion WHERE customer_id=$1) AS promotions,
-         (SELECT COUNT(*)::int FROM conversation WHERE customer_id=$1) AS conversations,
-         (SELECT COUNT(*)::int FROM loyalty_point_transaction WHERE customer_id=$1) AS loyalty_transactions`,
-      [req.params.id],
+    const customer = customerRows[0];
+    // Xóa PII nhưng giữ customer_id để bảo toàn đơn hàng, phản hồi và báo cáo lịch sử.
+    await client.query(
+      `UPDATE customer
+       SET full_name=$1, gender='Other', date_of_birth=NULL, phone=NULL,
+           email=$2, address=NULL, deleted_at=NOW(), updated_at=NOW()
+       WHERE customer_id=$3`,
+      [`Khách hàng đã xóa #${customer.customer_id}`, `deleted-customer-${customer.customer_id}@privacy.invalid`, customer.customer_id]
     );
-    const blockers = [
-      ['orders', 'đơn hàng'],
-      ['feedbacks', 'phản hồi'],
-      ['survey_responses', 'kết quả khảo sát'],
-      ['survey_invitations', 'lời mời khảo sát'],
-      ['promotions', 'mã ưu đãi đã cấp'],
-      ['conversations', 'hội thoại hỗ trợ'],
-      ['loyalty_transactions', 'lịch sử điểm thưởng'],
-    ].filter(([key]) => references[key] > 0)
-      .map(([key, label]) => `${references[key]} ${label}`);
+    await client.query('DELETE FROM customer_interest WHERE customer_id=$1', [customer.customer_id]);
 
-    if (blockers.length) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({
-        message: `Không thể xóa hồ sơ vì còn dữ liệu liên quan: ${blockers.join(', ')}. Hãy giữ hồ sơ để bảo toàn lịch sử.`,
-        blockers: references,
-      });
+    if (customer.account_id) {
+      await client.query(
+        `UPDATE account
+         SET status='Blocked', username=$1, email=NULL, phone=NULL, updated_at=NOW()
+         WHERE account_id=$2`,
+        [`deleted_customer_${customer.customer_id}`, customer.account_id]
+      );
+      // Thu hồi phiên đăng nhập hiện có ngay khi xóa hồ sơ.
+      await client.query(
+        `UPDATE account_sessions SET revoked_at=NOW()
+         WHERE account_id=$1 AND revoked_at IS NULL`,
+        [customer.account_id]
+      );
     }
 
-    await client.query('DELETE FROM customer WHERE customer_id=$1', [req.params.id]);
     await client.query('COMMIT');
-    return res.json({ message: 'Đã xóa hồ sơ khách hàng.' });
+    return res.json({
+      message: 'Đã xóa hồ sơ khách hàng bằng cách ẩn danh hóa thông tin. Lịch sử đơn hàng và giao dịch vẫn được bảo toàn.',
+    });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    if (err.code === '23503') {
-      return res.status(409).json({
-        message: 'Không thể xóa hồ sơ vì vừa phát sinh dữ liệu liên quan. Hãy tải lại danh sách rồi thử lại.',
-      });
+    if (err.code === '23505') {
+      return res.status(409).json({ message: 'Không thể ẩn danh hồ sơ do xung đột định danh. Vui lòng tải lại và thử lại.' });
     }
     return res.status(500).json({ message: 'Không thể xóa hồ sơ khách hàng.' });
   } finally {
