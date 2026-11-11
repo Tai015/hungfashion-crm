@@ -1,0 +1,14 @@
+[tool.skylos]
+exclude = [
+  "**/node_modules/**",
+  "store-admin/client/dist/**",
+  "store-admin/release/**",
+  "store-admin/backups/**",
+  "store-admin/server/uploads/**",
+]
+
+[tool.skylos.done]
+# Skylos runs this command itself and checks the JUnit report.
+test_command = "cd store-admin/server && mkdir -p ../../reports && node --test --test-reporter=junit --test-reporter-destination=../../reports/skylos-junit.xml test/*.test.js"
+junit_xml = "reports/skylos-junit.xml"
+test_budget_seconds = 600
