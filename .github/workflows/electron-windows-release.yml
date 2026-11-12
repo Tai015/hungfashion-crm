@@ -1,0 +1,90 @@
+name: Electron Windows x64 release package
+
+on:
+  push:
+    branches:
+      - "feature/electron-windows-release-package"
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: electron-windows-package-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package-windows:
+    name: Build and verify Windows x64 Electron app
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact release tag or selected ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Build Windows x64 ZIP and NSIS installer
+        working-directory: store-admin
+        run: npm run package:win
+
+      - name: Verify portable ZIP contains executable and Electron runtime
+        working-directory: store-admin
+        shell: pwsh
+        run: |
+          $archives = @(Get-ChildItem release -Filter *.zip -File)
+          if ($archives.Count -ne 1) {
+            throw "Expected exactly one portable ZIP in store-admin/release; found $($archives.Count)."
+          }
+          $extract = Join-Path $env:RUNNER_TEMP "hung-fashion-electron-zip-check"
+          if (Test-Path $extract) { Remove-Item $extract -Recurse -Force }
+          Expand-Archive -LiteralPath $archives[0].FullName -DestinationPath $extract
+          $exe = Get-ChildItem $extract -Filter "*.exe" -File -Recurse | Select-Object -First 1
+          if (-not $exe) { throw "Portable ZIP does not contain an Electron executable." }
+          $asar = Get-ChildItem $extract -Filter "app.asar" -File -Recurse | Select-Object -First 1
+          if (-not $asar) { throw "Portable ZIP does not contain resources/app.asar." }
+          $runtimeFiles = @("resources.pak", "icudtl.dat", "v8_context_snapshot.bin", "snapshot_blob.bin")
+          foreach ($file in $runtimeFiles) {
+            if (-not (Get-ChildItem $extract -Filter $file -File -Recurse | Select-Object -First 1)) {
+              throw "Portable ZIP is missing Electron runtime file: $file"
+            }
+          }
+          if (-not (Get-ChildItem $extract -Directory -Recurse | Where-Object { $_.Name -eq "locales" } | Select-Object -First 1)) {
+            throw "Portable ZIP is missing Electron locales runtime directory."
+          }
+          Write-Host "Verified portable executable: $($exe.FullName)"
+          Write-Host "Verified app archive: $($asar.FullName)"
+          Write-Host "Verified Electron runtime files and locales."
+
+      - name: Verify NSIS installer exists
+        working-directory: store-admin
+        shell: pwsh
+        run: |
+          $installers = @(Get-ChildItem release -Filter *.exe -File)
+          if ($installers.Count -lt 1) {
+            throw "No NSIS installer .exe was generated."
+          }
+          $installers | ForEach-Object { Write-Host "Installer: $($_.FullName) ($($_.Length) bytes)" }
+
+      - name: Upload verified ZIP and installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: hung-fashion-electron-win-x64-${{ github.ref_name }}
+          path: |
+            store-admin/release/*.zip
+            store-admin/release/*.exe
+          if-no-files-found: error
+          retention-days: 30
