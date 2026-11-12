@@ -1,0 +1,65 @@
+name: Remote website inspection (Playwright)
+
+on:
+  push:
+    branches: [feat/playwright-remote-site-inspector]
+    paths:
+      - "store-admin/e2e/remote-site-inspection.spec.js"
+      - "store-admin/playwright.remote-inspection.config.js"
+      - ".github/workflows/remote-site-inspection.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "store-admin/e2e/remote-site-inspection.spec.js"
+      - "store-admin/playwright.remote-inspection.config.js"
+      - ".github/workflows/remote-site-inspection.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-public-test-site:
+    name: Render storefront and customer authentication pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      E2E_INSPECT_URL: https://test.taitechshop.store/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: store-admin/package-lock.json
+
+      - name: Install project dependencies
+        working-directory: store-admin
+        run: npm ci
+
+      - name: Install Playwright test runner
+        working-directory: store-admin
+        run: npm install --no-save --package-lock=false @playwright/test
+
+      - name: Install Chromium
+        working-directory: store-admin
+        run: npx playwright install chromium
+
+      - name: Capture storefront, customer login and customer registration in desktop Chromium
+        working-directory: store-admin
+        run: npx playwright test --config=playwright.remote-inspection.config.js
+
+      - name: Upload screenshots, rendered text, DOM summary, traces and HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hung-fashion-remote-site-inspection
+          path: |
+            store-admin/test-results/remote-site-inspection/
+            store-admin/test-results/remote-site-inspection-run/
+            store-admin/playwright-report/remote-site-inspection/
+          if-no-files-found: warn
+          retention-days: 14
