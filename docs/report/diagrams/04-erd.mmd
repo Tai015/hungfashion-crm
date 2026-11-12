@@ -2,6 +2,7 @@ erDiagram
     ROLE ||--o{ ACCOUNT : grants
     ACCOUNT ||--o| CUSTOMER : profile
     ACCOUNT ||--o| EMPLOYEE : profile
+    ACCOUNT ||--o{ ACCOUNT_SESSIONS : owns
     CUSTOMER ||--o{ CUSTOMER_INTEREST : has
     INTEREST ||--o{ CUSTOMER_INTEREST : classifies
     CATEGORY ||--o{ PRODUCT : contains
@@ -28,4 +29,3 @@ erDiagram
     SURVEY_QUESTION ||--o{ SURVEY_OPTION : offers
     SURVEY ||--o{ SURVEY_RESPONSE : receives
     SURVEY_RESPONSE ||--o{ SURVEY_ANSWER : contains
-    OUTBOX_EVENTS ||--o{ TRANSACTIONS : relays

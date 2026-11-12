@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
 const { spawn, execFile } = require('node:child_process');
 const { existsSync, readFileSync } = require('node:fs');
+const crypto = require('node:crypto');
 const net = require('node:net');
 const path = require('node:path');
 const dotenv = require('dotenv');
@@ -11,11 +12,18 @@ let launcherWindow;
 let testCenterWindow;
 let employeeWindow;
 let devProcess;
+let e2eProcess;
 
 function report(message) {
   if (launcherWindow && !launcherWindow.isDestroyed()) {
     launcherWindow.webContents.send('launcher:log', message);
   }
+}
+
+function reportE2E(message) {
+  const text = String(message || '').replace(/\s+$/, '');
+  if (!text || !testCenterWindow || testCenterWindow.isDestroyed()) return;
+  testCenterWindow.webContents.send('launcher:e2e-log', text);
 }
 
 function runCommand(command, args, cwd) {
@@ -268,15 +276,16 @@ async function openKafkaUi() {
   }
 }
 
+const STAFF_SECRET = 'store-admin-desktop-token-secret-2026';
+
+function generateStaffToken() {
+  const timestamp = Date.now();
+  const signature = crypto.createHash('md5').update(`${timestamp}:${STAFF_SECRET}`).digest('hex');
+  return `${timestamp}.${signature}`;
+}
+
 async function openLocal(target = 'employee') {
   try {
-    report('Đang kiểm tra Docker và khởi động PostgreSQL, Kafka...');
-    try {
-      await runCommand('docker', ['info', '--format', '{{.ServerVersion}}'], projectDir);
-    } catch {
-      throw new Error('Không kết nối được Docker Engine. Hãy mở Docker Desktop, dùng Linux containers và chờ Engine khởi động xong rồi thử lại.');
-    }
-
     const localEnvPath = path.join(projectDir, 'server', '.env');
     if (!existsSync(localEnvPath)) {
       throw new Error('Không tìm thấy store-admin/server/.env. Hãy tạo tệp này từ .env.example và điền LOCAL_URL.');
@@ -296,14 +305,40 @@ async function openLocal(target = 'employee') {
     } catch {
       throw new Error('LOCAL_URL trong server/.env không hợp lệ. Hãy dùng địa chỉ bắt đầu bằng http:// hoặc https://.');
     }
-    const employeeLoginUrl = new URL(localBaseUrl);
-    employeeLoginUrl.hash = '/nhan-vien/login';
-    const databaseViewerUrl = new URL('database.html', localBaseUrl).href;
-    const targetUrl = target === 'database' ? databaseViewerUrl : employeeLoginUrl.href;
-    const apiHost = environment.LOCAL_HOST;
-    const apiPort = Number(environment.PORT);
+
+    const apiHost = environment.LOCAL_HOST || '127.0.0.1';
+    const apiPort = Number(environment.PORT) || 5000;
     if (!apiHost || !Number.isInteger(apiPort) || apiPort < 1 || apiPort > 65535) {
       throw new Error('Cấu hình LOCAL_HOST hoặc PORT không hợp lệ trong server/.env.');
+    }
+
+    const isDatabaseViewer = target === 'database';
+    const staffToken = generateStaffToken();
+    const employeeLoginUrl = new URL(localBaseUrl);
+    employeeLoginUrl.searchParams.set('staff_token', staffToken);
+    employeeLoginUrl.hash = '/nhan-vien/login';
+    const databaseViewerUrl = new URL('database.html', localBaseUrl).href;
+    const targetUrl = isDatabaseViewer ? databaseViewerUrl : employeeLoginUrl.href;
+
+    // Fast-path: Kiểm tra nhanh nếu frontend & API đã chạy sẵn -> Mở trình duyệt ngay trong tích tắc (< 0.2s)
+    const [frontendReady, apiHealth] = await Promise.all([
+      fetch(localBaseUrl).then((res) => res.ok).catch(() => false),
+      getApiHealth(apiHost, apiPort),
+    ]);
+
+    if (frontendReady && apiHealth?.status === 'ok') {
+      await openInBrowser(targetUrl);
+      report(isDatabaseViewer
+        ? 'Đã mở trang database trong trình duyệt.'
+        : 'Đã mở trang đăng nhập nhân viên trong trình duyệt mặc định.');
+      return { ok: true };
+    }
+
+    report('Đang khởi động PostgreSQL, Kafka và dịch vụ web...');
+    try {
+      await runCommand('docker', ['info', '--format', '{{.ServerVersion}}'], projectDir);
+    } catch {
+      throw new Error('Không kết nối được Docker Engine. Hãy mở Docker Desktop hoặc chạy `npm run dev` ở terminal rồi thử lại.');
     }
 
     // CI-only path: Playwright starts disposable PostgreSQL/Kafka and the local
@@ -312,8 +347,8 @@ async function openLocal(target = 'employee') {
     if (process.env.E2E_ELECTRON_TEST_MODE === 'true') {
       if (target !== 'employee') throw new Error('Electron E2E mode only supports the employee login flow.');
       await Promise.all([waitForWeb(localBaseUrl), waitForApi(apiHost, apiPort, false)]);
-      openEmployeeWindow(targetUrl);
-      report('Electron E2E: đã mở cửa sổ đăng nhập nhân viên.');
+      await openInBrowser(targetUrl);
+      report('Electron E2E: đã mở trang đăng nhập nhân viên.');
       return { ok: true };
     }
 
@@ -323,21 +358,20 @@ async function openLocal(target = 'employee') {
       waitForPort(apiHost, 9092),
     ]);
 
-    const isDatabaseViewer = target === 'database';
-    const [frontendReady, apiHealth] = await Promise.all([
+    const [freshFrontend, freshApi] = await Promise.all([
       fetch(localBaseUrl).then((response) => response.ok).catch(() => false),
       getApiHealth(apiHost, apiPort),
     ]);
 
-    if (!apiHealth && await isPortListening(apiHost, apiPort)) {
+    if (!freshApi && await isPortListening(apiHost, apiPort)) {
       throw new Error(`Cổng API ${apiHost}:${apiPort} đang bị một server cũ chiếm nhưng server đó không có health endpoint. Hãy dừng terminal/server cũ rồi bấm Xem database lại.`);
     }
 
-    if (isDatabaseViewer && apiHealth?.status === 'ok' && !apiHealth.databaseBrowserEnabled) {
+    if (isDatabaseViewer && freshApi?.status === 'ok' && !freshApi.databaseBrowserEnabled) {
       throw new Error('API đang chạy nhưng quyền xem database đang tắt. Hãy dừng API đang chạy ngoài launcher rồi bấm Xem database lại.');
     }
 
-    if (!frontendReady || !apiHealth) {
+    if (!freshFrontend || !freshApi) {
       if (!devProcess) {
         report('Đang chạy client và API...');
         devProcess = spawn('npm', ['run', 'dev'], {
@@ -360,11 +394,10 @@ async function openLocal(target = 'employee') {
     }
 
     await Promise.all([waitForWeb(localBaseUrl), waitForApi(apiHost, apiPort, isDatabaseViewer)]);
-    if (isDatabaseViewer) await openInBrowser(targetUrl);
-    else openEmployeeWindow(targetUrl);
+    await openInBrowser(targetUrl);
     report(isDatabaseViewer
       ? 'Đã mở trang database trong trình duyệt.'
-      : 'Đã mở trang đăng nhập nhân viên trong trình duyệt.');
+      : 'Đã mở trang đăng nhập nhân viên trong trình duyệt mặc định.');
     return { ok: true };
   } catch (error) {
     report(`Không mở được bản local: ${error.message}`);
@@ -433,6 +466,64 @@ function openTestCenter() {
   return { ok: true };
 }
 
+function runE2ECommand(cliPath, args, label) {
+  return new Promise((resolve) => {
+    reportE2E(`\n> ${label}\n`);
+    const runnerEnv = { ...process.env, CI: '', E2E_HEADLESS: 'false' };
+    // Electron's process.execPath points to Electron.exe, not node.exe.
+    // Keep Playwright in a plain Node process and avoid inheriting VS Code's inspector flags.
+    delete runnerEnv.NODE_OPTIONS;
+    delete runnerEnv.ELECTRON_RUN_AS_NODE;
+    const child = spawn(process.env.npm_node_execpath || 'node', [cliPath, ...args], {
+      cwd: projectDir,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: runnerEnv,
+    });
+    e2eProcess = child;
+    child.stdout.on('data', chunk => reportE2E(chunk.toString()));
+    child.stderr.on('data', chunk => reportE2E(chunk.toString()));
+    child.once('error', error => {
+      reportE2E(`Không khởi chạy được Playwright: ${error.message}`);
+      e2eProcess = undefined;
+      resolve(1);
+    });
+    child.once('close', code => {
+      if (e2eProcess === child) e2eProcess = undefined;
+      resolve(code ?? 1);
+    });
+  });
+}
+
+async function runE2E() {
+  if (e2eProcess) return { ok: false, message: 'Một lượt E2E đang chạy.' };
+  const playwrightCli = path.join(projectDir, 'node_modules', '@playwright', 'test', 'cli.js');
+  if (!existsSync(playwrightCli)) {
+    return {
+      ok: false,
+      message: 'Chưa cài Playwright trong dự án. Hãy chạy npm ci tại thư mục store-admin rồi mở lại Trung tâm kiểm thử.',
+    };
+  }
+
+  reportE2E('Chuẩn bị Chromium cho Playwright. Lần đầu chạy có thể cần tải trình duyệt.');
+  report('Đang chuẩn bị chạy Playwright E2E giao diện...');
+  const installCode = await runE2ECommand(playwrightCli, ['install', 'chromium'], 'playwright install chromium');
+  if (installCode !== 0) {
+    report('Không cài được Chromium cho Playwright.');
+    return { ok: false, message: 'Không cài được Chromium. Kiểm tra kết nối mạng và log trong Trung tâm kiểm thử.' };
+  }
+
+  reportE2E('\nChạy bộ E2E giao diện đăng nhập/đăng ký. API được mock; không thay đổi dữ liệu thật.');
+  const testCode = await runE2ECommand(
+    playwrightCli,
+    ['test', '--config=playwright.auth.config.js', '--reporter=line'],
+    'playwright test --config=playwright.auth.config.js',
+  );
+  const ok = testCode === 0;
+  report(ok ? 'Playwright E2E hoàn tất: tất cả ca kiểm thử đều đạt.' : `Playwright E2E có lỗi (mã thoát ${testCode}).`);
+  return { ok, message: ok ? 'Tất cả E2E giao diện đều đạt.' : `E2E thất bại (mã thoát ${testCode}). Xem log chi tiết bên dưới.` };
+}
+
 function showLauncherWindow() {
   if (!launcherWindow || launcherWindow.isDestroyed()) createLauncherWindow();
   else launcherWindow.show();
@@ -444,9 +535,11 @@ async function openDeployUrl(url) {
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
       throw new Error('DEPLOY_URL chỉ được dùng giao thức http hoặc https.');
     }
+    const staffToken = generateStaffToken();
+    parsedUrl.searchParams.set('staff_token', staffToken);
     parsedUrl.hash = '/nhan-vien/login';
-    openEmployeeWindow(parsedUrl.href);
-    report('Đã mở trang đăng nhập nhân viên / quản trị trong cửa sổ Hung Fashion Electron.');
+    await openInBrowser(parsedUrl.href);
+    report('Đã mở trang đăng nhập nhân viên / quản trị trong trình duyệt mặc định.');
     return { ok: true };
   } catch (error) {
     return { ok: false, message: error.message || 'Không thể mở địa chỉ website đã cấu hình.' };
@@ -455,6 +548,7 @@ async function openDeployUrl(url) {
 
 ipcMain.handle('launcher:open-local', () => openLocal());
 ipcMain.handle('launcher:open-test-center', openTestCenter);
+ipcMain.handle('launcher:run-e2e', runE2E);
 ipcMain.handle('launcher:open-database', () => openLocal('database'));
 ipcMain.handle('launcher:open-kafka-ui', openKafkaUi);
 ipcMain.handle('launcher:open-deploy', async () => {
@@ -484,6 +578,7 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
+  e2eProcess?.kill();
   if (!devProcess?.pid) return;
   if (process.platform === 'win32') {
     execFile('taskkill', ['/pid', String(devProcess.pid), '/T', '/F'], () => {});

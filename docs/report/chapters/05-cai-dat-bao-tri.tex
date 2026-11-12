@@ -6,14 +6,13 @@
 \IfFileExists{diagrams/05-trien-khai-su-kien.pdf}{\begin{figure}[htbp]\centering\includegraphics[width=0.96\textwidth]{diagrams/05-trien-khai-su-kien.pdf}\caption{Triển khai và luồng sự kiện outbox/Kafka}\label{fig:deployment}\end{figure}}{\begin{figure}[htbp]\centering\fbox{\parbox[c][2cm][c]{0.82\textwidth}{\centering Cần kết xuất Mermaid từ \texttt{diagrams/05-trien-khai-su-kien.mmd}}}\caption{Triển khai và luồng sự kiện outbox/Kafka}\label{fig:deployment}\end{figure}}
 
 \section{Cài đặt môi trường local}
-Các lệnh dưới đây dựa trên scripts đã có trong \texttt{\detokenize{store-admin/package.json}}. Chuẩn bị Node.js/npm, Docker Desktop, PostgreSQL client tools nếu cần backup/restore và file môi trường local do người vận hành tự tạo từ danh sách biến trong \texttt{\detokenize{server/.env.example}}. Không đưa file môi trường thật vào source archive.
+Các lệnh dưới đây dựa trên scripts và cấu hình trong \texttt{\detokenize{store-admin/package.json}}, \texttt{\detokenize{docker-compose.yml}} và \texttt{\detokenize{server/.env.example}}. Chuẩn bị Node.js/npm 22, Docker Desktop; cài PostgreSQL client tools nếu cần backup/restore. Không đưa file môi trường thật vào source archive.
 \begin{enumerate}
-\item Tại thư mục \texttt{\detokenize{store-admin}}, cài phụ thuộc bằng \texttt{\detokenize{npm install}}.
-\item Khởi chạy dịch vụ local PostgreSQL/Kafka và frontend/backend bằng \texttt{\detokenize{npm run dev:local}}; hoặc khởi động dịch vụ qua Compose rồi chạy \texttt{\detokenize{npm run dev}}.
-\item Chạy migration bằng \texttt{\detokenize{npm run db:migrate --workspace server}}.
-\item Nếu cần dữ liệu mẫu, đặt \texttt{\detokenize{SEED_DEMO_PASSWORD}} trong môi trường shell (8--72 byte UTF-8, không ghi vào file/log), rồi chạy \texttt{\detokenize{npm run seed}}. Script chỉ in xác nhận biến đã được dùng, không in giá trị mật khẩu. Seed có thể truy cập nguồn catalog bên ngoài; chỉ chạy trong local/test.
-\item Để có thêm event, lịch sử điểm, gán khuyến mãi và hội thoại mẫu, chạy \texttt{\detokenize{node scripts/seed-report-demo.mjs}} sau seed chính; script yêu cầu các biến \texttt{\detokenize{SEED_DB_*}} trỏ về loopback.
-\item Tạo production client build bằng \texttt{\detokenize{npm run build}}; chạy server bằng \texttt{\detokenize{npm start}} theo script hiện có.
+\item Tại thư mục \texttt{\detokenize{store-admin}}, cài phụ thuộc bằng \texttt{\detokenize{npm ci}}; tạo \texttt{\detokenize{server/.env}} từ file mẫu và thay \texttt{\detokenize{JWT_SECRET}} cho môi trường dùng chung.
+\item Mở Docker Desktop; khởi chạy PostgreSQL/Kafka bằng \texttt{\detokenize{docker compose --env-file server/.env up -d postgres kafka}}. Lệnh \texttt{\detokenize{npm run dev:local}} trong package dùng \texttt{\detokenize{server/.env.example}} trực tiếp, vì vậy cần phân biệt với cấu hình cá nhân tại \texttt{\detokenize{server/.env}}.
+\item Chạy migration bằng \texttt{\detokenize{npm run db:migrate --workspace server}}; server cũng gọi migration runner khi khởi động.
+\item Nếu cần dữ liệu mẫu, bảo đảm có \texttt{\detokenize{data/clean/products.json}}, đặt \texttt{\detokenize{SEED_TARGET=local}} và nhập \texttt{\detokenize{SEED_DEMO_PASSWORD}} (8--72 byte UTF-8) trong terminal, rồi chạy \texttt{\detokenize{npm run seed}}. Script seed có thể cần tải catalog nếu chưa có dữ liệu sạch; chỉ chạy trên database local/test đã xác nhận.
+\item Chạy giao diện và API bằng \texttt{\detokenize{npm run dev}}. Tạo bản client production bằng \texttt{\detokenize{npm run build}}; lệnh \texttt{\detokenize{npm start}} chạy server.
 \end{enumerate}
 
 \section{Cấu hình biến môi trường}
@@ -22,7 +21,8 @@ Bảng liệt kê tên biến từ \texttt{\detokenize{server/.env.example}} và
 \begin{longtable}{|p{0.45\textwidth}|p{0.42\textwidth}|}\hline
 \textbf{Tên biến}&\textbf{Mục đích}\\
 \hline\endhead
-\texttt{\detokenize{PORT}}, \texttt{\detokenize{LOCAL_HOST}}&Cổng và địa chỉ bind của HTTP server.\\
+\texttt{\detokenize{PORT}}&Cổng API Express.\\
+\texttt{\detokenize{LOCAL_HOST}}, \texttt{\detokenize{LOCAL_URL}}, \texttt{\detokenize{DEPLOY_URL}}&Địa chỉ host API local, URL giao diện local và website deploy mà Electron mở.\\
 \hline
 \texttt{\detokenize{JWT_SECRET}}&Chữ ký token đăng nhập; bí mật, tự cấp riêng cho môi trường.\\
 \hline
@@ -56,20 +56,30 @@ Bảng liệt kê tên biến từ \texttt{\detokenize{server/.env.example}} và
 \normalsize
 
 \section{Chạy migration và khởi tạo dữ liệu}
-Schema ban đầu nằm ở \texttt{\detokenize{server/sql/schema.sql}}; migrations 001--015 được thực thi theo runner. \texttt{\detokenize{database/schema.sql}} là dump schema-only và \texttt{\detokenize{database/demo-data.sql}} là dump data-only sinh từ database local đã seed ngày 03/11/2026. Hai file đã được nạp lần lượt vào database rỗng; row count khớp trên 40/40 bảng. Dump data chứa hash bcrypt của mật khẩu các tài khoản demo; không chứa mật khẩu dạng rõ. Mật khẩu rõ chỉ được cung cấp khi chạy seed qua biến môi trường.
+Schema baseline nằm ở \texttt{\detokenize{store-admin/server/sql/schema.sql}}; runner áp dụng migrations 001--017. \texttt{\detokenize{store-admin/server/sql/bootstrap.sql}} gộp baseline và migrations 001--013 để khởi tạo một lần cho database trống; API sau đó áp dụng các migration còn lại. Hai dump \texttt{\detokenize{database/schema.sql}} và \texttt{\detokenize{database/demo_data.sql}} được tạo ngày 03/11/2026 tại migration 015, gồm 40 bảng. Chúng đã được nạp vào database rỗng và so khớp số dòng 40/40 bảng. Không coi hai dump này là schema mới nhất: migrations 016--017 bổ sung thêm bảng \texttt{\detokenize{account_sessions}} và trường IP/nguyên nhân thu hồi. Dump data có password hash, không có mật khẩu rõ.
 
-Sau lần chạy riêng \texttt{\detokenize{npm run seed}} trước khi bổ sung seed báo cáo, các bảng rỗng là:
-\begin{itemize}
-\item \texttt{conversation}, \texttt{chat\_message}, \texttt{chat\_message\_attachment}, \texttt{demo\_payment\_tokens}, \texttt{feedback\_attachment};
-\item \texttt{loyalty\_point\_transaction}, \texttt{outbox\_events}, \texttt{transactions}, \texttt{user\_events}, \texttt{user\_promotion}.
-\end{itemize}
-Sau khi chạy thêm seed báo cáo, chỉ còn \texttt{demo\_payment\_tokens} (token dùng một lần, chỉ tồn tại trong checkout demo đang hoạt động) và hai bảng đính kèm (chỉ phát sinh khi người dùng tải file thật vào chat/phản hồi) rỗng. Schema hiện không có bảng \texttt{task}, vì vậy chưa thể tạo bản ghi công việc nếu không bổ sung nghiệp vụ/schema.
+Script hiện hành \texttt{\detokenize{store-admin/scripts/seed.mjs}} yêu cầu \texttt{\detokenize{SEED_DEMO_PASSWORD}} và catalog sạch; tạo sáu role, tài khoản demo, hồ sơ nhân viên/khách, nhà cung cấp, catalog, một phiếu nhập, đơn hàng mẫu, phản hồi, khảo sát và khuyến mãi. Trong dump ngày 03/11/2026 có 41 đơn (gồm đơn chặn xóa), 1 phiếu nhập và các dữ liệu demo được lưu tại thời điểm xuất. Dump có thêm hội thoại, tin nhắn, event mirror và lịch sử loyalty, nhưng script \texttt{\detokenize{seed.mjs}} hiện không tạo đủ các bản ghi đó; không mô tả chúng là kết quả chắc chắn của lệnh seed hiện tại. Tệp đính kèm thật chỉ phát sinh khi tải tệp qua ứng dụng. Schema không có bảng/công việc \texttt{task}; đây là hạng mục cần xác nhận với biên bản chấm trước khi nộp.
 
 \section{Backup, phục hồi và an toàn dữ liệu}
 \label{sec:backup-restore}
 Ngày 03/11/2026, nhóm thực hiện drill trên PostgreSQL 16 Alpine trong container Docker tạm chỉ bind vào loopback; không kết nối dịch vụ managed. Lệnh dump custom format: \texttt{\detokenize{docker exec hf-report-pg-20261103 pg_dump -Fc -U report_user -d report_demo -f /tmp/report-demo.dump}}; thời gian đo tại máy chạy Docker là 0,276 giây, kích thước dump 161,9 KiB. Tạo database đích rỗng bằng \texttt{\detokenize{docker exec hf-report-pg-20261103 createdb -U report_user report_restore}} mất 0,186 giây. Lệnh phục hồi \texttt{\detokenize{docker exec hf-report-pg-20261103 pg_restore -U report_user -d report_restore --no-owner --no-privileges /tmp/report-demo.dump}} mất 3,860 giây. Sau restore, truy vấn COUNT trên từng bảng public cho kết quả bằng nhau ở 40/40 bảng (0 sai khác). Đây là một lần đo trên máy local, không phải cam kết RTO cho production.
 
-Đối chiếu row count từng bảng (nguồn = database đã seed; đích = database restore):
+\subsection{Lệnh PostgreSQL và lịch sao lưu đề xuất}
+Các lệnh dưới đây dùng PostgreSQL client tools và placeholder cần thay bằng giá trị cấu hình đã xác nhận. Nếu mật khẩu chưa nằm trong \texttt{PGPASSWORD}, chương trình sẽ hỏi tương tác; không ghi mật khẩu trực tiếp vào lệnh hoặc báo cáo.
+\begin{verbatim}
+pg_dump -h <POSTGRES_HOST> -p <POSTGRES_PORT> -U <POSTGRES_USER> \
+  -d <POSTGRES_DB> -Fc -f .\backups\hung-fashion-YYYYMMDD.dump
+createdb -h <POSTGRES_HOST> -p <POSTGRES_PORT> -U <POSTGRES_USER> \
+  <DATABASE_RESTORE_TEST>
+pg_restore -h <POSTGRES_HOST> -p <POSTGRES_PORT> -U <POSTGRES_USER> \
+  -d <DATABASE_RESTORE_TEST> --no-owner --no-privileges \
+  .\backups\hung-fashion-YYYYMMDD.dump
+\end{verbatim}
+Chạy restore trước trên database đích rỗng/kiểm thử, so sánh số dòng và kiểm tra đăng nhập, catalog, tạo đơn mẫu; không phục hồi đè lên database đang hoạt động khi chưa có phê duyệt và bản backup khác. Repository cũng có lệnh \texttt{\detokenize{npm run db:backup}} và \texttt{\detokenize{npm run db:restore -- <file>}}.
+
+Lịch đề xuất cho môi trường vận hành nhỏ: tạo backup custom-format hằng ngày ngoài giờ bán hàng; giữ 7 bản ngày, 4 bản tuần và 3 bản tháng ở nơi lưu trữ riêng có phân quyền; tạo thêm bản backup trước khi chạy migration hoặc thay đổi lớn; mỗi tháng phục hồi thử một bản vào database cô lập. Ảnh/video tải lên phải được sao lưu riêng cùng lịch và kiểm tra khả năng khôi phục. Đây là đề xuất tài liệu, chưa có job sao lưu tự động trong code. RPO/RTO thực tế: [CẦN BỔ SUNG theo yêu cầu đơn vị].
+
+Đối chiếu row count 40 bảng trong snapshot 03/11/2026 (nguồn = database mẫu; đích = database restore). Bảng \texttt{account\_sessions} chưa tồn tại ở snapshot này vì migration 016 được thêm sau thời điểm dump:
 \scriptsize
 \begin{longtable}{|p{0.55\textwidth}|r|r|}\hline
 \textbf{Bảng}&\textbf{Nguồn}&\textbf{Restore}\\\hline\endhead
@@ -116,18 +126,17 @@ user\_promotion&8&8\\\hline
 \end{longtable}
 \normalsize
 
-\section{Kế hoạch chuyển đổi và triển khai môi trường demo}
-Môi trường demo sử dụng PostgreSQL managed với SSL và xác minh CA, cùng Kafka managed trên Aiven với xác thực client certificate qua cổng SSL. Hai topic \texttt{\detokenize{user-events}} và \texttt{\detokenize{transaction-events}} được tạo trước; cấu hình auto-create topic tắt. Không ghi hostname, chuỗi kết nối, mật khẩu, token hay nội dung chứng thư trong tài liệu. Người vận hành lấy giá trị từ các biến môi trường tương ứng và kho bí mật của nền tảng.
+\section{Phương án chuyển đổi và triển khai}
+Repository có cấu hình PostgreSQL/Kafka local bằng Docker Compose và hỗ trợ điền endpoint/chứng thư qua biến môi trường. Mã nguồn không xác định hệ thống cũ, doanh nghiệp đích, lịch cutover hoặc bằng chứng triển khai managed; các thông tin đó cần nhóm xác nhận: [CẦN BỔ SUNG: hệ thống nguồn, đích, người phụ trách, thời gian và phạm vi dữ liệu]. Phương án đề xuất:
 \begin{enumerate}
-\item Đóng băng thay đổi dữ liệu ở nguồn local, xác nhận phiên bản schema/migration và tạo bản dump PostgreSQL dạng custom bằng \texttt{\detokenize{pg_dump -Fc}}.
-\item Kiểm tra checksum và quyền truy cập bản backup; chuẩn bị PostgreSQL đích, CA tin cậy, tài khoản giới hạn quyền, Kafka SSL client credentials và tạo trước hai topic với cấu hình retention/partition đã thống nhất.
-\item Khôi phục dữ liệu lên PostgreSQL managed bằng \texttt{\detokenize{pg_restore --no-owner --no-privileges}}; không thay đổi bản nguồn. Cấu hình ứng dụng qua secret manager/biến môi trường, xác minh CA và xác thực Kafka trước khi chuyển lưu lượng.
-\item So sánh số hàng của từng bảng nguồn/đích, kiểm tra constraints và migration version; xác nhận backlog outbox được relay, consumer xử lý được transaction event, rồi chạy smoke test đăng nhập, đọc dữ liệu, tạo đơn thử nghiệm và luồng QR demo.
-\item Chuyển lưu lượng sau khi đối chiếu hoàn tất. Theo dõi lỗi API, kết nối SSL, Kafka consumer lag và outbox backlog trong thời gian đầu.
+\item Khảo sát hệ thống cũ và lập bản đồ dữ liệu nguồn--đích. Xác nhận mã định danh, trường bắt buộc, dữ liệu trùng/lỗi, cách chuyển file đính kèm và thời điểm chốt dữ liệu.
+\item Chạy thử nhập dữ liệu trên môi trường cô lập; sao lưu nguồn; chuẩn bị PostgreSQL đích và cấu hình Kafka, ACL/TLS nếu có. Không ghi hostname, chuỗi kết nối, mật khẩu, token hoặc chứng thư vào báo cáo.
+\item Dừng ghi ở nguồn tại thời điểm cutover đã thống nhất; xuất backup PostgreSQL định dạng custom bằng \texttt{\detokenize{pg_dump -Fc}} và kiểm tra checksum.
+\item Khôi phục vào database đích rỗng bằng \texttt{\detokenize{pg_restore --no-owner --no-privileges}}; áp dụng migration theo runner, so sánh số dòng/khóa/ràng buộc và đối chiếu tệp lưu ngoài database.
+\item Chạy kiểm tra đăng nhập theo role, catalog/tồn, đơn thử, CRM và báo cáo; xác nhận luồng outbox/Kafka nếu môi trường đích bật Kafka.
+\item Chỉ chuyển người dùng sang hệ thống mới sau khi người phụ trách nghiệm thu. Nếu lỗi, tạm dừng ghi, giữ nguồn và backup, rồi thực hiện phương án quay lui đã thống nhất.
 \end{enumerate}
-Nếu kiểm tra sau chuyển đổi thất bại, người phụ trách triển khai tạm dừng thao tác ghi, giữ nguyên nguồn local và bản backup, chuyển cấu hình ứng dụng về nguồn trước đó, rồi đối chiếu các thay đổi phát sinh sau thời điểm dump trước khi mở lại ghi. Không phục hồi đè lên môi trường managed đang có dữ liệu mới mà chưa có quyết định và bản sao lưu phù hợp.
-
-Phân công tối thiểu: quản trị CSDL chịu trách nhiệm backup/restore, CA, quyền truy cập và đối chiếu số hàng; người vận hành triển khai chịu trách nhiệm biến môi trường, chứng thư Kafka, topic và chuyển lưu lượng; người điều phối nhóm ghi nhận thời điểm chuyển đổi và phê duyệt kết quả. Tên người và biên bản thực tế cần được nhóm bổ sung.
+Không thực hiện chuyển đổi trên production chỉ dựa trên kế hoạch này. Phân công, kết quả diễn tập và quyết định cutover: [CẦN BỔ SUNG bằng biên bản thực tế].
 
 \section{Vận hành Kafka và thanh toán demo}
 Outbox writer ghi sự kiện cùng giao dịch nghiệp vụ. Relay lấy bản ghi chưa gửi bằng khóa hàng \texttt{\detokenize{SKIP LOCKED}}, gửi theo topic, rồi đánh dấu \texttt{\detokenize{published_at}}; nếu gửi thành công nhưng chưa kịp đánh dấu, có thể phát lại. Consumer dùng \texttt{\detokenize{event_id}} để chống ghi lặp. Các topic nghiệp vụ hiện có là \texttt{\detokenize{user-events}} và \texttt{\detokenize{transaction-events}}; trong demo chúng phải được tạo trước, auto-create tắt.
@@ -151,7 +160,7 @@ Ma trận giao diện lấy từ route visibility ở \texttt{\detokenize{client
 \hline\endhead
 ADMIN&Quản trị tài khoản và phân quyền; truy cập các module quản trị, báo cáo, cài đặt theo quyền được triển khai.\\
 \hline
-QL\_NHAN\_SU&Chức năng nhân sự/tài khoản được phân quyền trong dashboard; không có bằng chứng module chấm công, lương, nghỉ phép đầy đủ.\\
+QL\_NHAN\_SU&Danh sách, tạo/sửa hồ sơ nhân viên và báo cáo nhân sự; không có chấm công, lương, nghỉ phép.\\
 \hline
 QL\_KHO&Sản phẩm, kho, nhà cung cấp và các chức năng vận hành kho được router/UI cho phép.\\
 \hline
@@ -176,8 +185,8 @@ Các bước dưới đây bám theo màn hình và route hiện có. Menu có t
 
 \subsection*{ADMIN}
 \begin{enumerate}
-\item Mở \textbf{Tài khoản}, tìm tài khoản theo tên/email, tạo tài khoản với vai trò phù hợp hoặc dùng hộp xác nhận để đổi vai trò, khóa/mở khóa hay xóa khi đủ điều kiện.
-\item Mở \textbf{Sản phẩm} hoặc \textbf{Tồn kho} để tra cứu sản phẩm/nhà cung cấp, xem thông tin và thực hiện thao tác quản trị được cấp.
+\item Mở \textbf{Tài khoản}, tìm tài khoản theo tên/email, tạo tài khoản với role phù hợp hoặc dùng hộp xác nhận để đổi role, khóa/mở hay xóa khi đủ điều kiện. Giao diện đổi role hiện không chỉnh từng permission trong bảng role/permission.
+\item Mở \textbf{Sản phẩm} để tìm theo tên/mô tả, lọc danh mục, thương hiệu, nhà cung cấp và giá; dùng bộ sắp xếp ngày/tên/giá. Mở \textbf{Tồn kho} để lập phiếu, tìm nhà cung cấp, lọc trường liên hệ và sắp xếp danh sách.
 \item Mở \textbf{Đơn hàng} để tra cứu đơn, xem chi tiết và xác nhận thanh toán theo nghiệp vụ; chỉ dùng QR DEMO nếu môi trường trình diễn đã bật.
 \item Mở các mục \textbf{Khách hàng}, \textbf{Phản hồi}, \textbf{Khảo sát}, \textbf{Trò chuyện CSKH}, \textbf{Báo cáo} hoặc \textbf{Nhật ký} để theo dõi và xử lý dữ liệu tương ứng.
 \end{enumerate}
@@ -185,8 +194,8 @@ Các bước dưới đây bám theo màn hình và route hiện có. Menu có t
 \subsection*{QL\_KHO}
 \begin{enumerate}
 \item Đăng nhập và mở \textbf{Sản phẩm}; nhập từ khóa hoặc dùng bộ lọc đang hiển thị để tìm sản phẩm.
-\item Mở \textbf{Tồn kho} để tra cứu nhà cung cấp/phiếu nhập và xem số lượng tồn; chỉ xác nhận nhập khi có chứng từ nghiệp vụ.
-\item Dùng \textbf{Báo cáo} nếu mục này xuất hiện trong menu được cấp quyền; chức năng ngoài phạm vi menu cần quản trị viên hỗ trợ.
+\item Mở \textbf{Tồn kho} > \textbf{Phiếu kho} > \textbf{Tạo phiếu nhập / xuất}. Khi nhập, chọn nhà cung cấp, sản phẩm và biến thể; nhập số lượng nhận và giá nhập mỗi đơn vị theo hóa đơn. Khi xuất, nhập số lượng xuất; hệ thống không cho xuất vượt tồn.
+\item Dùng \textbf{Báo cáo} để lọc khoảng ngày, xem biến động nhập/xuất, giá trị tồn, hàng sắp hết và nhập theo nhà cung cấp; xuất CSV ở từng bảng.
 \end{enumerate}
 
 \subsection*{QL\_BAN\_HANG}
@@ -207,7 +216,7 @@ Các bước dưới đây bám theo màn hình và route hiện có. Menu có t
 \subsection*{QL\_NHAN\_SU}
 \begin{enumerate}
 \item Mở mục \textbf{Nhân viên} để tra cứu và quản lý hồ sơ nhân viên theo quyền được cấp.
-\item Xem \textbf{Báo cáo} nếu có trong menu. Chức năng chấm công, tính lương và nghỉ phép chưa được xác nhận trong ứng dụng: [CẦN BỔ SUNG nếu thuộc yêu cầu đồ án].
+\item Mở \textbf{Báo cáo} để xem thống kê nhân viên theo trạng thái/chức vụ và số nhân viên mới theo tháng; có thể xuất CSV. Đây là dữ liệu hồ sơ, không phải chấm công, bảng lương hay đơn nghỉ phép.
 \end{enumerate}
 
 \subsection*{KHACH\_HANG}

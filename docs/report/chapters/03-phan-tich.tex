@@ -6,7 +6,16 @@ Khi khách tạo đơn, API kiểm tra thông tin đơn, tồn kho, khuyến mã
 
 Quy trình CRM gồm quản lý hồ sơ và thuộc tính khách, liên kết sở thích, phân nhóm theo hạng/độ tuổi/giới tính, ghi phản hồi, tạo câu hỏi khảo sát, mời khách, nhận câu trả lời và xem thống kê. Khách tự đăng ký/đăng nhập, cập nhật hồ sơ, gửi đánh giá, thực hiện khảo sát, theo dõi đơn và liên hệ CSKH.
 
-Các hạn chế có căn cứ trong source: không có HRM chấm công/tính lương hoặc yêu cầu nghỉ; không có MRP/BOM/sản xuất; chưa tích hợp xác nhận thanh toán từ ngân hàng; không có bằng chứng CRM automation hay gửi thông báo marketing ngoài các route khảo sát/voucher. Repository không có kết quả đo tải; không kết luận hệ thống đã đạt SLA.
+Các hoạt động nghiệp vụ được triển khai có thể tóm tắt theo trình tự sau:
+\begin{enumerate}
+\item \textbf{Quản lý catalog và nhập hàng:} người có quyền tạo/cập nhật sản phẩm, danh mục, biến thể size/màu, SKU, giá nhập, giá bán và nhà cung cấp. Khi lập phiếu nhập, người dùng chọn nhà cung cấp, biến thể, số lượng và giá nhập mỗi đơn vị; API ghi phiếu cùng dòng chi tiết và cộng lượng tồn. Phiếu xuất ghi số lượng, đơn giá ghi nhận và trừ tồn; API từ chối số lượng vượt tồn. Các thao tác nằm tại \texttt{client/src/views/InventoryManagementView.jsx}, \texttt{server/src/routes/inventory.js} và \texttt{server/src/domain/inventory.js}.
+\item \textbf{Bán hàng:} khách duyệt catalog, đưa sản phẩm vào giỏ, chọn địa chỉ giao hàng và gửi đơn; nhân viên có thể tạo đơn tại quầy. API xác thực từng biến thể, giá, số lượng, khuyến mãi và điểm thưởng, lưu đơn/chi tiết/thanh toán trong PostgreSQL và điều chỉnh tồn theo luồng nghiệp vụ. Nhân viên cập nhật trạng thái đơn và thanh toán theo quyền.
+\item \textbf{Chăm sóc khách hàng:} khách đăng ký và cập nhật hồ sơ, sở thích; nhân viên CRM tra cứu hồ sơ, tiếp nhận đánh giá, trả lời/cập nhật trạng thái, tạo khảo sát và xem kết quả. Khách chỉ xem và thao tác trên hồ sơ, đơn, phản hồi, khảo sát, hội thoại của mình theo các route được bảo vệ.
+\item \textbf{Quản trị và nhân sự:} ADMIN tạo tài khoản, đổi role, khóa/mở và xóa tài khoản khi đáp ứng ràng buộc an toàn. Quản lý nhân sự quản lý hồ sơ nhân viên và xem thống kê theo trạng thái, chức vụ, ngày vào làm. Chưa có bản ghi công việc, chấm công, lương hay nghỉ phép.
+\item \textbf{Báo cáo và sự kiện:} người dùng có quyền xem đúng nhóm báo cáo; bảng/biểu đồ lọc theo khoảng ngày và có thể xuất CSV. Sự kiện nghiệp vụ được ghi vào outbox cùng giao dịch, sau đó relay chuyển tới Kafka và consumer ghi dữ liệu event mirror theo mã sự kiện.
+\end{enumerate}
+
+Các hạn chế có căn cứ trong source: không có HRM chấm công/tính lương hoặc yêu cầu nghỉ; không có bảng/công việc (task) hay MRP/BOM/sản xuất; chưa tích hợp xác nhận thanh toán từ ngân hàng; không có bằng chứng CRM automation hay gửi thông báo marketing tự động ngoài luồng khảo sát/voucher được cài đặt. Repository không có kết quả đo tải; không kết luận hệ thống đã đạt SLA.
 
 \section{Sơ đồ chức năng}
 \IfFileExists{diagrams/01-chuc-nang.pdf}{\begin{figure}[htbp]\centering\includegraphics[width=0.88\textwidth]{diagrams/01-chuc-nang.pdf}\caption{Sơ đồ phân rã chức năng theo module đã cài đặt}\label{fig:functions}\end{figure}}{\begin{figure}[htbp]\centering\fbox{\parbox[c][2cm][c]{0.82\textwidth}{\centering Cần kết xuất Mermaid từ \texttt{diagrams/01-chuc-nang.mmd}}}\caption{Sơ đồ phân rã chức năng theo module đã cài đặt}\label{fig:functions}\end{figure}}

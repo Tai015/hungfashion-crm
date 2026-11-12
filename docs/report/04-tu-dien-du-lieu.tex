@@ -1,5 +1,5 @@
 \chapter{Từ điển dữ liệu chi tiết}
-Từ điển này được sinh từ schema-only dump hiện hành \texttt{database/schema.sql}, gồm 40 bảng như bảng đối chiếu số dòng tại Mục~\ref{sec:backup-restore}. Kiểu, giá trị mặc định, khóa và chỉ mục lấy từ dump; ý nghĩa cột được diễn giải theo nghiệp vụ ứng dụng.
+Từ điển mô tả 40 bảng trong snapshot \texttt{database/schema.sql} (migration 015) và bảng \texttt{account\_sessions} được bổ sung bởi migrations 016--017; schema hiện tại có 41 bảng. Kiểu, giá trị mặc định, khóa và chỉ mục lấy từ dump/migration; ý nghĩa cột được diễn giải theo nghiệp vụ ứng dụng.
 Bảng \texttt{customer\_interest\_map} chỉ là bảng chuyển tiếp trong migration cũ; sau khi chuyển đổi, bảng chính thức là \texttt{customer\_interest} và không được tính như một bảng riêng.
 \small
 \section{Bảng account}
@@ -522,5 +522,20 @@ assigned\_at & timestamp with time zone DEFAULT now() NOT NULL & Thời điểm 
 used\_at & timestamp with time zone & Thời điểm sử dụng\\\hline
 \multicolumn{3}{|p{0.93\textwidth}|}{Ràng buộc: UNIQUE (customer\_id, promotion\_id)}\\\hline
 \multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: user\_promo\_customer\_idx (btree: customer\_id); user\_promo\_status\_idx (btree: status)}\\\hline
+\end{longtable}
+\normalsize
+\section{Bảng account\_sessions}
+\begin{longtable}{|p{0.17\textwidth}|p{0.47\textwidth}|p{0.23\textwidth}|}\hline
+\textbf{Thuộc tính}&\textbf{Kiểu và ràng buộc}&\textbf{Ý nghĩa}\\\hline\endhead
+session\_id & UUID NOT NULL PRIMARY KEY & Mã phiên đăng nhập\\\hline
+account\_id & INTEGER NOT NULL REFERENCES account(account\_id) ON DELETE CASCADE & Tài khoản sở hữu phiên\\\hline
+created\_at & TIMESTAMPTZ NOT NULL DEFAULT NOW() & Thời điểm tạo phiên\\\hline
+last\_seen\_at & TIMESTAMPTZ NOT NULL DEFAULT NOW() & Thời điểm hoạt động gần nhất\\\hline
+expires\_at & TIMESTAMPTZ NOT NULL & Thời điểm phiên hết hạn\\\hline
+revoked\_at & TIMESTAMPTZ & Thời điểm thu hồi; NULL nếu phiên còn hiệu lực\\\hline
+ip\_address & INET & Địa chỉ IP ghi nhận cho phiên; NULL với phiên cũ trước migration 017\\\hline
+revocation\_reason & TEXT & Lý do thu hồi phiên, nếu có\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Ràng buộc: CHECK (expires\_at > created\_at)}\\\hline
+\multicolumn{3}{|p{0.93\textwidth}|}{Chỉ mục: account\_sessions\_active\_account\_idx (btree: account\_id, expires\_at WHERE revoked\_at IS NULL)}\\\hline
 \end{longtable}
 \normalsize

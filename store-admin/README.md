@@ -92,6 +92,8 @@ npm run dev
 
 Trang đăng nhập nhân viên thường ở `#/nhan-vien/login`; trang khách hàng ở `#/khach-hang/login`. Khi đang ở trang đăng nhập nhân viên chưa đăng nhập, có thể đổi hash URL sang trang khách hàng để chuyển màn hình.
 
+Trung tâm kiểm thử trong desktop launcher chạy Playwright E2E cho giao diện đăng nhập/đăng ký. Lệnh tương đương là `npm run test:e2e:ui`; lần đầu có thể cần tải Chromium. Bộ này mock API, không ghi hoặc xóa dữ liệu thật. E2E tích hợp PostgreSQL/Kafka được chạy riêng bằng cấu hình CI tương ứng.
+
 ## Tài khoản demo
 
 Sau khi seed, các tài khoản dùng mật khẩu đã nhập ở bước trên:
@@ -135,7 +137,7 @@ Bản mẫu ở [server/.env.example](./server/.env.example). Tạo `server/.env
 | `PORT` | Cổng API, local mặc định 5000 |
 | `LOCAL_URL` | Địa chỉ giao diện local Electron mở |
 | `LOCAL_HOST` | Host API local mà Electron kiểm tra |
-| `DEPLOY_URL` | Website Electron mở khi chọn **Mở deploy** |
+| `DEPLOY_URL` | Website được mở trong trình duyệt mặc định khi chọn **Mở deploy** |
 | `JWT_SECRET` | Khóa ký phiên đăng nhập; thay bằng chuỗi bí mật riêng |
 | `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Kết nối PostgreSQL |
 | `POSTGRES_SSL`, `POSTGRES_CA_PATH` | TLS và CA khi dùng PostgreSQL từ xa |

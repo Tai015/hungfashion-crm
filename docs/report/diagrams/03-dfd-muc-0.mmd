@@ -2,6 +2,7 @@ flowchart LR
     Customer[Khách hàng]
     Admin[ADMIN]
     CRM[QL KHÁCH HÀNG]
+    HR[QL NHÂN SỰ]
     Sales[QL BÁN HÀNG]
     Warehouse[QL KHO]
     P1((1. Quản lý tài khoản và hồ sơ))
@@ -33,6 +34,8 @@ flowchart LR
     Sales --> P5
     Warehouse --> P5
     CRM --> P5
+    HR --> P1
+    HR --> P5
     D1 --> P5
     D2 --> P5
     D3 --> P5
@@ -42,3 +45,4 @@ flowchart LR
     P5 --> Sales
     P5 --> Warehouse
     P5 --> CRM
+    P5 --> HR

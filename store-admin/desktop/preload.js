@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('storeAdminLauncher', {
   isElectronApp: true,
   openLocal: () => ipcRenderer.invoke('launcher:open-local'),
   openTestCenter: () => ipcRenderer.invoke('launcher:open-test-center'),
+  runE2E: () => ipcRenderer.invoke('launcher:run-e2e'),
   openDatabase: () => ipcRenderer.invoke('launcher:open-database'),
   openKafkaUi: () => ipcRenderer.invoke('launcher:open-kafka-ui'),
   openDeploy: () => ipcRenderer.invoke('launcher:open-deploy'),
@@ -12,5 +13,10 @@ contextBridge.exposeInMainWorld('storeAdminLauncher', {
     const listener = (_event, message) => callback(message);
     ipcRenderer.on('launcher:log', listener);
     return () => ipcRenderer.removeListener('launcher:log', listener);
+  },
+  onE2ELog: (callback) => {
+    const listener = (_event, message) => callback(message);
+    ipcRenderer.on('launcher:e2e-log', listener);
+    return () => ipcRenderer.removeListener('launcher:e2e-log', listener);
   },
 });

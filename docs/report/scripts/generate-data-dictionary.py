@@ -155,9 +155,39 @@ def main() -> None:
     if len(tables) != 40:
         raise SystemExit(f"Expected 40 tables in {SCHEMA}, found {len(tables)}")
 
+    # The checked-in dump predates migrations 016-017. Keep its 40-table
+    # snapshot intact, then describe the session table from those migrations.
+    tables.append({
+        "name": "account_sessions",
+        "columns": {
+            "session_id": {"declaration": "UUID NOT NULL", "constraints": ["PRIMARY KEY"]},
+            "account_id": {"declaration": "INTEGER NOT NULL", "constraints": ["REFERENCES account(account_id) ON DELETE CASCADE"]},
+            "created_at": {"declaration": "TIMESTAMPTZ NOT NULL DEFAULT NOW()", "constraints": []},
+            "last_seen_at": {"declaration": "TIMESTAMPTZ NOT NULL DEFAULT NOW()", "constraints": []},
+            "expires_at": {"declaration": "TIMESTAMPTZ NOT NULL", "constraints": []},
+            "revoked_at": {"declaration": "TIMESTAMPTZ", "constraints": []},
+            "ip_address": {"declaration": "INET", "constraints": []},
+            "revocation_reason": {"declaration": "TEXT", "constraints": []},
+        },
+        "checks": ["CHECK (expires_at > created_at)"],
+    })
+    indexes["account_sessions"] = [
+        "account_sessions_active_account_idx (btree: account_id, expires_at WHERE revoked_at IS NULL)"
+    ]
+    meanings["account_sessions"] = {
+        "session_id": "Mã phiên đăng nhập",
+        "account_id": "Tài khoản sở hữu phiên",
+        "created_at": "Thời điểm tạo phiên",
+        "last_seen_at": "Thời điểm hoạt động gần nhất",
+        "expires_at": "Thời điểm phiên hết hạn",
+        "revoked_at": "Thời điểm thu hồi; NULL nếu phiên còn hiệu lực",
+        "ip_address": "Địa chỉ IP ghi nhận cho phiên; NULL với phiên cũ trước migration 017",
+        "revocation_reason": "Lý do thu hồi phiên, nếu có",
+    }
+
     lines = [
         r"\chapter{Từ điển dữ liệu chi tiết}",
-        r"Từ điển này được sinh từ schema-only dump hiện hành \texttt{database/schema.sql}, gồm 40 bảng như bảng đối chiếu số dòng tại Mục~\ref{sec:backup-restore}. Kiểu, giá trị mặc định, khóa và chỉ mục lấy từ dump; ý nghĩa cột được diễn giải theo nghiệp vụ ứng dụng.",
+        r"Từ điển mô tả 40 bảng trong snapshot \texttt{database/schema.sql} (migration 015) và bảng \texttt{account\_sessions} được bổ sung bởi migrations 016--017; schema hiện tại có 41 bảng. Kiểu, giá trị mặc định, khóa và chỉ mục lấy từ dump/migration; ý nghĩa cột được diễn giải theo nghiệp vụ ứng dụng.",
         r"Bảng \texttt{customer\_interest\_map} chỉ là bảng chuyển tiếp trong migration cũ; sau khi chuyển đổi, bảng chính thức là \texttt{customer\_interest} và không được tính như một bảng riêng.",
         r"\small",
     ]

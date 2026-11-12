@@ -19,7 +19,12 @@ function base64url(value) {
   return Buffer.from(value).toString('base64url');
 }
 
-export function createAccessToken(accountId, sessionId, lifetimeSeconds = DEFAULT_TOKEN_LIFETIME_SECONDS) {
+export function createAccessToken(
+  accountId,
+  sessionId,
+  lifetimeSeconds = DEFAULT_TOKEN_LIFETIME_SECONDS,
+  rememberMe = true,
+) {
   const now = Math.floor(Date.now() / 1000);
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = base64url(JSON.stringify({
@@ -27,6 +32,7 @@ export function createAccessToken(accountId, sessionId, lifetimeSeconds = DEFAUL
     jti: sessionId,
     iat: now,
     exp: now + lifetimeSeconds,
+    rememberMe,
   }));
   const unsigned = `${header}.${payload}`;
   const signature = createHmac('sha256', jwtSecret()).update(unsigned).digest('base64url');
@@ -118,6 +124,7 @@ export async function requireAuth(req, res, next) {
     req.user = rows[0];
     req.sessionId = token.jti;
     req.authExpiresAt = token.exp * 1000;
+    req.rememberMe = token.rememberMe !== false;
     return next();
   } catch (error) {
     return res.status(500).json({ message: 'Không thể xác thực tài khoản.' });

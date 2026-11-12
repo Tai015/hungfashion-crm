@@ -10,6 +10,9 @@ const router = Router();
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GENDERS = new Set(['Male', 'Female', 'Other']);
 const PHONE_PATTERN = /^\+?[0-9][0-9\s().-]{7,19}$/;
+const SESSION_LIFETIME_SECONDS = 8 * 60 * 60;
+const SESSION_IDLE_TIMEOUT_SECONDS = 2 * 60;
+const SESSION_TOKEN_REFRESH_THRESHOLD_MS = 60 * 60 * 1000;
 const DUMMY_PASSWORD_HASH = bcrypt.hashSync('auth-timing-padding', 12);
 const authRateLimitWindowMs = Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 5 * 60 * 1000);
 const loginRateLimitMax = Number(process.env.AUTH_LOGIN_RATE_LIMIT_MAX || 10);
@@ -249,7 +252,9 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
   }
   const { identifier, password, audience } = req.body || {};
   const rememberMe = req.body?.rememberMe === true;
-  const sessionLifetimeSeconds = 8 * 60 * 60;
+  const initialSessionLifetimeSeconds = rememberMe
+    ? SESSION_LIFETIME_SECONDS
+    : SESSION_IDLE_TIMEOUT_SECONDS;
   if (!['customer', 'staff'].includes(audience)) {
     return res.status(400).json({ message: 'Vui lòng chọn đúng trang đăng nhập khách hàng hoặc nội bộ.' });
   }
@@ -309,7 +314,7 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
       await client.query(
         `INSERT INTO account_sessions (session_id, account_id, expires_at, ip_address)
          VALUES ($1, $2, NOW() + ($4 * INTERVAL '1 second'), $3::inet)`,
-        [sessionId, account.account_id, clientIp, sessionLifetimeSeconds],
+        [sessionId, account.account_id, clientIp, initialSessionLifetimeSeconds],
       );
       await enqueueAuthEventBestEffort(client, {
         accountId: account.account_id,
@@ -326,7 +331,7 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
     }
     const user = await loadUser(account.account_id);
     if (!user) return res.status(401).json({ message: 'Tài khoản không còn tồn tại.' });
-    const token = createAccessToken(account.account_id, sessionId, sessionLifetimeSeconds);
+    const token = createAccessToken(account.account_id, sessionId, SESSION_LIFETIME_SECONDS, rememberMe);
     if (rememberMe) {
       res.setHeader('Cache-Control', 'no-store');
       return res.json({ token, user: publicUser(user) });
@@ -437,17 +442,38 @@ router.post('/heartbeat', requireAuth, async (req, res) => {
       return res.status(401).json({ message: 'Tài khoản không tồn tại hoặc đã bị khóa.' });
     }
     const { rows: [session] } = await client.query(
-      `UPDATE account_sessions SET last_seen_at = clock_timestamp()
+      `UPDATE account_sessions
+       SET last_seen_at = clock_timestamp(),
+           expires_at = CASE
+             WHEN $3::boolean THEN expires_at
+             ELSE clock_timestamp() + ($4 * INTERVAL '1 second')
+           END
        WHERE session_id = $1 AND account_id = $2
          AND revoked_at IS NULL AND expires_at > clock_timestamp()
        RETURNING session_id`,
-      [req.sessionId, req.user.account_id],
+      [req.sessionId, req.user.account_id, req.rememberMe, SESSION_IDLE_TIMEOUT_SECONDS],
     );
     if (!session) {
       await client.query('ROLLBACK');
       return res.status(401).json({ message: 'Phiên đăng nhập đã kết thúc.' });
     }
     await client.query('COMMIT');
+    if (!req.rememberMe && req.authExpiresAt - Date.now() < SESSION_TOKEN_REFRESH_THRESHOLD_MS) {
+      const token = createAccessToken(
+        req.user.account_id,
+        req.sessionId,
+        SESSION_LIFETIME_SECONDS,
+        false,
+      );
+      const secure = req.secure || req.get('x-forwarded-proto') === 'https';
+      res.cookie('hung-fashion-session', token, {
+        httpOnly: true,
+        secure,
+        sameSite: 'lax',
+        path: '/',
+      });
+      res.setHeader('Cache-Control', 'no-store');
+    }
     return res.json({ role: account.role_name });
   } catch {
     await client.query('ROLLBACK').catch(() => {});

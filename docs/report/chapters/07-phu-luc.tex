@@ -3,18 +3,55 @@
 \section{Lệnh thường dùng}
 Từ thư mục \texttt{\detokenize{store-admin}}:
 \begin{verbatim}
-npm install
+npm ci
 npm run dev:local
 npm run db:migrate --workspace server
 npm run seed
 npm run build
-npm run db:backup
-npm run db:restore -- backups/<file>.dump
 \end{verbatim}
-Restore có thể xóa/ghi đè schema trong database đích; chỉ thực hiện ở database test đã xác nhận.
+Lệnh backup/restore và quy trình kiểm tra được trình bày tại Mục~\ref{sec:backup-restore}. Restore có thể ghi đè dữ liệu database đích; chỉ thực hiện trên database kiểm thử đã xác nhận.
 
 \section{Tài khoản demo}
-Không đưa mật khẩu vào báo cáo. Tạo/seed tài khoản theo cơ chế trong source ở môi trường local rồi ghi lại username, role, ngày tạo và người quản lý tài khoản ở bảng nội bộ của nhóm. Không dùng tài khoản demo mặc định trên môi trường công khai. Không coi tài khoản hoặc dữ liệu seed là khách hàng/nghiệp vụ thực.
+Các tên đăng nhập dưới đây được khai báo trong \texttt{\detokenize{store-admin/scripts/seed.mjs}}. Mật khẩu không cố định trong source: khi seed, người vận hành nhập qua biến môi trường \texttt{\detokenize{SEED_DEMO_PASSWORD}}. Không ghi mật khẩu rõ trong báo cáo và không dùng tài khoản demo trên hệ thống công khai.
+\small
+\begin{longtable}{|p{0.22\textwidth}|p{0.24\textwidth}|p{0.35\textwidth}|}\hline
+\textbf{Tên đăng nhập}&\textbf{Vai trò}&\textbf{Email demo}\\\hline\endhead
+admin&ADMIN&admin@hungfashion.local\\\hline
+admin2&ADMIN&admin2@hungfashion.local\\\hline
+qlnhansu&QL\_NHAN\_SU&nhansu@hungfashion.local\\\hline
+qlkho&QL\_KHO&kho@hungfashion.local\\\hline
+qlbanhang&QL\_BAN\_HANG&banhang@hungfashion.local\\\hline
+qlkhachhang&QL\_KHACH\_HANG&crm@hungfashion.local\\\hline
+khach1&KHACH\_HANG&khach1@hungfashion.local\\\hline
+khach2&KHACH\_HANG&khach2@hungfashion.local\\\hline
+khach3&KHACH\_HANG&khach3@hungfashion.local\\\hline
+demo\_khach\_khoa&KHACH\_HANG (Blocked)&demo-khach-khoa@hungfashion.local\\\hline
+\end{longtable}
+\normalsize
+
+Script còn tạo hồ sơ mẫu \texttt{demo-xoa-khach@hungfashion.local} chưa có tài khoản đăng nhập và hồ sơ \texttt{demo-chan-xoa@hungfashion.local} có đơn hàng liên quan để minh họa điều kiện xóa. Đây là dữ liệu giả lập.
+
+\section{Việc cần làm trước khi nộp}
+\begin{itemize}
+\item Bổ sung tên nhóm, lớp, giảng viên, thành viên/MSSV, phân công, phần trăm đóng góp và tự đánh giá điểm dựa trên xác nhận của nhóm.
+\item Xác nhận tên pháp lý, địa chỉ, hoạt động, mô hình và quy mô nhân sự của doanh nghiệp; không lấy suy luận từ seed làm thông tin thực.
+\item Thu thập khảo sát HTTT thật, điền số phiếu/tỷ lệ/kết luận; không dùng dữ liệu demo thay cho khảo sát.
+\item Chụp ảnh giao diện/triển khai thực tế và thay các placeholder [CHÈN ẢNH]; che mật khẩu, token, thông tin cá nhân và chứng thư.
+\item Xác nhận môi trường deploy, lịch chuyển đổi, backup, RPO/RTO và quota dịch vụ từ bằng chứng vận hành thật.
+\item Repository hiện không có bảng \texttt{task} hoặc module công việc. Xác nhận với giảng viên xem đây là yêu cầu bắt buộc; báo cáo không ghi chức năng này là đã cài đặt.
+\item Thống nhất với giảng viên việc giao diện ADMIN có cần shell riêng; code hiện dùng shell chung, menu thay đổi theo role.
+\end{itemize}
+
+\section{Việc cần làm trước khi nộp}
+\begin{itemize}
+\item Bổ sung tên nhóm, lớp, giảng viên, thành viên/MSSV, phân công, phần trăm đóng góp và tự đánh giá điểm dựa trên xác nhận của nhóm.
+\item Xác nhận tên pháp lý, địa chỉ, hoạt động, mô hình và quy mô nhân sự của doanh nghiệp; không lấy suy luận từ seed làm thông tin thực.
+\item Thu thập khảo sát HTTT thật, điền số phiếu/tỷ lệ/kết luận; không dùng dữ liệu demo thay cho khảo sát.
+\item Chụp ảnh giao diện/triển khai thực tế và thay các placeholder [CHÈN ẢNH]; che mật khẩu, token, thông tin cá nhân và chứng thư.
+\item Xác nhận môi trường deploy, lịch chuyển đổi, backup, RPO/RTO và quota dịch vụ từ bằng chứng vận hành thật.
+\item Rubric yêu cầu dữ liệu công việc/tasks: repository hiện không có bảng \texttt{task} hoặc module công việc. Nhóm cần hỏi giảng viên xem đây là yêu cầu bắt buộc hay ngoài phạm vi; không tự khẳng định đã cài đặt.
+\item Thống nhất với giảng viên việc giao diện ADMIN có cần shell riêng; code hiện dùng shell chung, menu thay đổi theo role.
+\end{itemize}
 
 \section{Môi trường và giới hạn free tier}
 Lưu tên biến môi trường và mục đích ở Chương~\ref{chap:install}; giá trị cụ thể chỉ nằm trong cấu hình triển khai riêng. Giới hạn free tier phụ thuộc nhà cung cấp và gói tại thời điểm sử dụng. Nhóm ghi lại giới hạn đang hiển thị trên console vào ngày demo: [CẦN BỔ SUNG: số liệu và ngày]; cần đối chiếu ảnh console, che thông tin định danh và credential. Xem Hình~\ref{fig:quota-console} ở Mục~\ref{chap:install} (Chờ ảnh \texttt{docs/report/images/5.3.png}).

@@ -1,28 +1,49 @@
-﻿HUNG FASHION CRM — GHI CHÚ BÀN GIAO
+HUNG FASHION CRM — TÀI LIỆU BÀN GIAO ĐỒ ÁN
 
-Mục tiêu: Báo cáo giữa kỳ môn Hệ thống thông tin doanh nghiệp. Nhánh đối chiếu mục III được chọn là CRM (30 điểm) vì code có khách hàng, phản hồi, khảo sát, chat và báo cáo CRM.
+THÔNG TIN NHÓM
+Tên nhóm: [CẦN BỔ SUNG]
+Lớp / giảng viên: [CẦN BỔ SUNG]
+Thành viên, MSSV, phân công và tỷ lệ đóng góp: [CẦN BỔ SUNG]
+Doanh nghiệp khảo sát: [CẦN BỔ SUNG — xác nhận với đơn vị, không suy đoán từ dữ liệu mẫu]
 
-CÀI ĐẶT LOCAL
-1. Mở PowerShell tại thư mục store-admin.
-2. npm install
-3. Chuẩn bị server/.env cục bộ bằng cách tham khảo server/.env.example; không commit .env.
-4. npm run dev:local
-5. Migration: npm run db:migrate --workspace server
-6. Seed (local/test, cần data/clean/products.json): npm run seed
-7. Build: npm run build
-8. Test: cd server; npm test
+MÔ TẢ
+Ứng dụng quản trị cửa hàng thời trang gồm quản lý tài khoản và phân quyền theo vai trò,
+hồ sơ khách hàng/nhân viên, sản phẩm và tồn kho, đơn hàng, báo cáo, phản hồi, khảo sát,
+chat và một số luồng CRM. Nhánh chức năng đối chiếu là CRM. Dữ liệu trong seed là dữ liệu
+giả lập. Thanh toán QR hiện ở chế độ DEMO, không kết nối ngân hàng. Chưa có chấm công,
+lương, nghỉ phép hoặc module công việc/task.
 
-BÁO CÁO
-- Nguồn LaTeX: docs/report/main.tex
-- Biên dịch từ thư mục docs/report bằng XeLaTeX, chạy hai lượt:
-  xelatex -interaction=nonstopmode -halt-on-error main.tex
-- Sơ đồ nguồn ở docs/report/diagrams/*.mmd; render PDF bằng Mermaid CLI trước bản nộp cuối.
-- SQL để tra cứu: database/schema.sql; dữ liệu tham chiếu: database/demo_data.sql.
-- Kiểm kê API/schema: docs/report/00-inventory.md.
-- Các thông tin cần bổ sung: docs/report/TODO-can-bo-sung.md.
-- Checklist bàn giao: submission/SUBMISSION-CHECKLIST.md.
+CÔNG NGHỆ
+- Giao diện: React, Vite.
+- API: Node.js, Express.
+- CSDL: PostgreSQL; cấu trúc nền tại server/sql/schema.sql, migrations 001–017.
+- Sự kiện: Kafka/outbox; Docker Compose phục vụ môi trường local.
+- Báo cáo: docs/report/main.tex, biên dịch bằng XeLaTeX.
 
-CẦN BỔ SUNG TRƯỚC KHI NỘP
-Tên nhóm, đề tài chính thức, giảng viên/lớp, thành viên/MSSV/đóng góp/chữ ký; thông tin doanh nghiệp đã xác nhận; kết quả khảo sát thật; ảnh giao diện thật; ảnh kiến trúc; kết quả test, build và restore drill; quota Kafka đã xác minh; kiểm tra mọi ô [CẦN BỔ SUNG]. Không đưa mật khẩu, token, certificate, private key, .env hoặc database dump vào tài liệu/gói nộp.
+CHẠY LOCAL (PowerShell)
+1. Cài Node.js/npm 22 và Docker Desktop.
+2. Mở terminal tại thư mục store-admin.
+3. npm ci
+4. Sao chép server/.env.example thành server/.env; cấu hình kết nối local và JWT_SECRET riêng.
+5. docker compose --env-file server/.env up -d postgres kafka
+6. npm run db:migrate --workspace server
+7. (Tùy chọn) Có data/clean/products.json, đặt SEED_TARGET=local và SEED_DEMO_PASSWORD
+   trong môi trường terminal, rồi chạy npm run seed. Chỉ seed vào database local/test.
+8. npm run dev
 
-Thanh toán QR hiện là DEMO, không kết nối ngân hàng và không nhận tiền thật. Không dùng dữ liệu seed làm kết quả khảo sát.
+Tài khoản demo được tạo bởi scripts/seed.mjs; mật khẩu do người chạy seed đặt qua
+SEED_DEMO_PASSWORD, không được lưu trong tài liệu. Tên đăng nhập: admin, admin2,
+qlnhansu, qlkho, qlbanhang, qlkhachhang, khach1, khach2, khach3 và demo_khach_khoa
+(tài khoản này bị khóa). Vai trò và email mẫu được liệt kê trong Phụ lục báo cáo.
+
+BUILD VÀ BÁO CÁO
+- npm run build
+- Biên dịch báo cáo từ docs/report: xelatex -interaction=nonstopmode -halt-on-error main.tex
+  (chạy hai lượt để cập nhật mục lục và tham chiếu).
+- SQL dump database/schema.sql và database/demo_data.sql là snapshot migration 015;
+  migrations 016–017 bổ sung account_sessions và thông tin IP phiên.
+
+TRƯỚC KHI NỘP
+Điền các mục [CẦN BỔ SUNG], xác minh thông tin doanh nghiệp, kết quả khảo sát và ảnh giao diện.
+Kiểm tra việc rubric yêu cầu module task: repository hiện chưa cài đặt module/bảng này.
+Không phát hành file .env, mật khẩu, token, certificate, private key hoặc dữ liệu cá nhân.

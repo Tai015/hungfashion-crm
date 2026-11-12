@@ -102,7 +102,7 @@ openDeployButton.addEventListener('click', async () => {
   try {
     const result = await window.storeAdminLauncher.openDeploy();
     if (result.ok) {
-      log('Đã mở trang đăng nhập nhân viên / quản trị trong cửa sổ Electron.');
+      log('Đã mở trang đăng nhập nhân viên / quản trị trong cửa sổ ứng dụng.');
     } else {
       log(result.message);
       await showError(result.message);

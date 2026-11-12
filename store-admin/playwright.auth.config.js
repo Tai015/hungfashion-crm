@@ -10,7 +10,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:5173',
     browserName: 'chromium',
-    headless: true,
+    headless: process.env.E2E_HEADLESS !== 'false',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

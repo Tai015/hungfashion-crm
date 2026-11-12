@@ -2,10 +2,10 @@
 \section{Kết quả}
 Đề tài hiện thực một ứng dụng quản lý bán lẻ thời trang có các miền tài khoản/phân quyền, sản phẩm và tồn kho, đơn hàng/thanh toán, khách hàng/CRM, phản hồi, khảo sát, chat, báo cáo và nhật ký. Backend Express cung cấp API; PostgreSQL lưu dữ liệu; outbox/Kafka hỗ trợ chuyển tiếp sự kiện nghiệp vụ. Luồng thanh toán QR trong phạm vi demo chỉ mô phỏng xác nhận, không xử lý tiền thật.
 
-Phạm vi CRM được chọn để đối chiếu mục III của đề cương đánh giá. Ma trận tại Mục~\ref{subsec:crm-coverage} dùng các trạng thái Có, Có điều kiện, Một phần và Chưa có dựa trên màn hình/route trong source; đây chưa phải kết quả nghiệm thu từ người dùng. Đặc điểm doanh nghiệp chỉ là giả định từ tên, giao diện và dữ liệu catalog cho tới khi nhóm xác minh.
+Phạm vi CRM được chọn để đối chiếu mục III của đề cương đánh giá. Ma trận tại Mục~\ref{subsec:crm-coverage} đối chiếu vai trò quản lý CRM và khách hàng với view/route trong source; trạng thái này chưa thay cho nghiệm thu người dùng. Điểm mạnh thể hiện trong code là có phân quyền route, bộ lọc/tìm kiếm ở các module nghiệp vụ, dữ liệu quan hệ có khóa/ràng buộc và dữ liệu demo cho catalog, tồn kho, đơn hàng, khách hàng, phản hồi và khảo sát. Đây là nhận xét về phạm vi triển khai, không phải đánh giá định lượng chất lượng.
 
 \section{Hạn chế}
-Chưa có chứng cứ khảo sát thực tế, thử nghiệm khôi phục, đo hiệu năng đã chạy, hay ảnh giao diện được xác minh trong gói repo. Seed không cam kết lấp mọi bảng. Một số chức năng mô phỏng và các giới hạn nêu ở Chương 1 cần được ghi nhận trong demo, đặc biệt payment QR không xác thực giao dịch ngân hàng. Các kết luận về bảo mật/hiệu năng không vượt quá những gì có thể đọc từ mã nguồn.
+Hạn chế hiện tại gồm: chưa có dữ liệu khảo sát thực tế trong repository; ảnh giao diện trong báo cáo còn placeholder; dump demo là snapshot migration 015 trong khi schema hiện hành đã tới 017; seed script không tạo đủ event/chat/loyalty records có trong dump; không có bảng task; giao diện ADMIN chưa có shell độc lập và chưa có editor permission chi tiết. Luồng QR thanh toán là mô phỏng, không xác thực giao dịch ngân hàng. Drill backup/restore đã được ghi lại cho một snapshot local nhưng không chứng minh được RPO/RTO môi trường triển khai. Không có kết quả đo hiệu năng nên không kết luận SLA.
 
 \section{Hướng phát triển}
 Ưu tiên tiếp theo là khảo sát và xác nhận quy trình với đơn vị thật; tổ chức backup tự động và diễn tập restore; triển khai giám sát Kafka/outbox và quota; hoàn thiện kiểm soát nội dung upload và lưu trữ media; thay luồng thanh toán demo bằng nhà cung cấp có webhook/chữ ký/đối soát nếu có nhu cầu giao dịch thật. Mọi hướng phát triển cần được đánh giá phạm vi, rủi ro và dữ liệu trước khi triển khai.
@@ -20,19 +20,9 @@ I&Trình bày báo cáo (40 điểm): Chương 1–6, sơ đồ, thiết kế, c
 \hline
 II.a&Cài đặt CSDL, phương án sao lưu và phục hồi (10 điểm): Chương~\ref{chap:design} mô tả thiết kế; Mục~\ref{sec:backup-restore} ghi lại drill pg\_dump/pg\_restore và đối chiếu 40 bảng. Chưa phải diễn tập trên môi trường production.&Có điều kiện\\
 \hline
-II.b&Giao diện ADMIN (20 điểm): các mục giao diện tại Chương~\ref{chap:design} và ảnh minh chứng dự kiến ở các Hình~\ref{fig:ui-dashboard}–\ref{fig:ui-chat}. Ảnh vẫn cần nhóm cung cấp/xác minh.&Một phần\\
+II.b&Giao diện ADMIN (20 điểm): Bảng~\ref{tab:admin-coverage} đối chiếu chức năng và trạng thái code; Bảng~\ref{tab:ui-screens} liệt kê màn hình/ảnh cần chụp. Giao diện hiện dùng shell chung, chưa có shell ADMIN độc lập; ảnh cần nhóm cung cấp/xác minh.&Một phần\\
 \hline
 III – CRM&Ma trận tại Mục~\ref{subsec:crm-coverage}; có các route/màn hình CRM, quy trình cần được xác nhận với đơn vị.&Một phần\\
 \hline
 \end{longtable}
 \normalsize
-
-\chapter*{Tài liệu tham khảo}
-\addcontentsline{toc}{chapter}{Tài liệu tham khảo}
-\begin{enumerate}
-\item Trường Đại học Sài Gòn, Khoa Công nghệ Thông tin, “Phiếu đánh giá đồ án giữa kỳ -- Hệ thống thông tin doanh nghiệp, học kỳ 1, năm học 2026--2027”, tệp PDF được cung cấp trong repository.
-\item Mã nguồn Hung Fashion CRM, các route Express tại \path{store-admin/server/src/routes/}, middleware và mount API tại \path{store-admin/server/src/index.js}.
-\item Lược đồ và lịch sử cấu trúc dữ liệu: \texttt{store-admin/server/sql/schema.sql} và \texttt{store-admin/server/sql/migrations/001--015}.
-\item Seed và scripts vận hành: \texttt{store-admin/scripts/seed.mjs}, backup/restore và \texttt{store-admin/package.json}.
-\item Giao diện và role navigation: \texttt{store-admin/client/src/App.jsx}, Customer Portal và các view trong \texttt{store-admin/client/src/views/}.
-\end{enumerate}
