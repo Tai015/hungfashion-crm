@@ -82,6 +82,26 @@ function sectionFromHash() {
   return window.location.hash.split('/').at(-1) || 'dashboard';
 }
 
+function verifyStaffToken(token) {
+  if (!token || typeof token !== 'string') return false;
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
+  const [timeStr] = parts;
+  const time = parseInt(timeStr, 10);
+  if (isNaN(time)) return false;
+  // Mã có hiệu lực trong 5 phút từ khi Electron mở link
+  return Math.abs(Date.now() - time) <= 300000;
+}
+
+function getEffectiveRoute() {
+  const hash = window.location.hash || '';
+  const pathname = window.location.pathname || '';
+  if (pathname && pathname !== '/' && pathname !== '/index.html') {
+    return `#${pathname}`;
+  }
+  return hash || '#/';
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  ROOT APP
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -89,16 +109,32 @@ function App() {
   const [view, setView] = useState(sectionFromHash);
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [authRoute, setAuthRoute] = useState(window.location.hash);
-  const isElectronApp = window.storeAdminLauncher?.isElectronApp === true;
-  const isStaffRoute = authRoute.startsWith('#/nhan-vien/');
+  const [authRoute, setAuthRoute] = useState(getEffectiveRoute);
+  const normalizedRoute = (authRoute || '').toLowerCase();
+  const isCustomerRoute = !normalizedRoute || normalizedRoute === '#/' || normalizedRoute.startsWith('#/khach-hang');
+  const isStaffRoute = normalizedRoute.includes('/nhan-vien')
+    || normalizedRoute.includes('/admin')
+    || normalizedRoute.includes('/crm')
+    || normalizedRoute.includes('/nhansu')
+    || normalizedRoute.includes('/kho')
+    || normalizedRoute.includes('/banhang')
+    || normalizedRoute.includes('/dashboard')
+    || normalizedRoute.includes('/reports');
+  const currentToken = new URLSearchParams(window.location.search).get('staff_token');
+  const hasValidStaffToken = Boolean(currentToken && verifyStaffToken(currentToken))
+    || window.storeAdminLauncher?.isElectronApp === true;
+  const isAuthorizedStaffLogin = normalizedRoute === '#/nhan-vien/login' && hasValidStaffToken;
   const [staffUnreadChatCount, setStaffUnreadChatCount] = useState(0);
   const pageViewTracked = useRef(null);
 
   useEffect(() => {
-    const syncAuthRoute = () => setAuthRoute(window.location.hash);
+    const syncAuthRoute = () => setAuthRoute(getEffectiveRoute());
     window.addEventListener('hashchange', syncAuthRoute);
-    return () => window.removeEventListener('hashchange', syncAuthRoute);
+    window.addEventListener('popstate', syncAuthRoute);
+    return () => {
+      window.removeEventListener('hashchange', syncAuthRoute);
+      window.removeEventListener('popstate', syncAuthRoute);
+    };
   }, []);
 
   useEffect(() => {
@@ -235,19 +271,25 @@ function App() {
   };
 
   if (authLoading) return <main className="app-loading-screen"><Spinner /></main>;
-  if (!isElectronApp && (isStaffRoute || (user && user.role !== 'KHACH_HANG'))) {
-    return <main className="min-h-screen grid place-items-center bg-stone-100 p-6">
-      <section className="max-w-md rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-sm font-semibold tracking-widest text-stone-500">ERROR 404</p>
-        <h1 className="mt-2 text-2xl font-bold text-stone-900">Không tìm thấy trang</h1>
-        <p className="mt-3 text-sm leading-6 text-stone-600">
-          Trang bạn đang tìm không tồn tại hoặc không khả dụng.
-        </p>
-        <a href="#/" className="mt-6 inline-flex rounded-lg bg-stone-900 px-5 py-3 text-sm font-semibold text-white hover:bg-stone-700">
-          Về trang chủ
-        </a>
-      </section>
-    </main>;
+
+  // 1. Khách hàng đã đăng nhập cố tình đổi URL ra ngoài phạm vi khách hàng -> Chặn 404
+  const isCustomerLeavingScope = user && user.role === 'KHACH_HANG'
+    && !isCustomerRoute && !isAuthorizedStaffLogin;
+  // 2. Chưa đăng nhập mà truy cập route nhân viên mà không có mã từ Electron trên URL -> Chặn 404
+  const isUnauthorizedStaffAccess = !user && isStaffRoute && !hasValidStaffToken;
+
+  if (isCustomerLeavingScope || isUnauthorizedStaffAccess) {
+    return (
+      <main className="min-h-screen grid place-items-center bg-stone-100 p-6">
+        <section className="max-w-md rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
+          <p className="text-sm font-semibold tracking-widest text-stone-500">ERROR 404</p>
+          <h1 className="mt-2 text-2xl font-bold text-stone-900">Không tìm thấy trang</h1>
+          <p className="mt-3 text-sm leading-6 text-stone-600">
+            Trang bạn đang tìm không tồn tại hoặc không khả dụng.
+          </p>
+        </section>
+      </main>
+    );
   }
   if (!user && (!authRoute || authRoute === '#/')) {
     return <Suspense fallback={<main className="app-loading-screen"><Spinner /></main>}><GuestStorefront
@@ -255,7 +297,7 @@ function App() {
       onRegister={() => { window.location.hash = '#/khach-hang/register'; }}
     /></Suspense>;
   }
-  if (!user) return <AuthScreen key={authRoute} onAuthenticated={authenticatedUser => {
+  if (!user || (user.role === 'KHACH_HANG' && isAuthorizedStaffLogin)) return <AuthScreen key={authRoute} authRoute={authRoute} onAuthenticated={authenticatedUser => {
     setUser(authenticatedUser);
     setView(authenticatedUser.role === 'KHACH_HANG' ? 'catalog' : 'dashboard');
     window.location.hash = authenticatedUser.role === 'KHACH_HANG'

@@ -116,13 +116,14 @@ function startChatEventStream() {
           dispatchChatEvent(event);
         }, { signal: chatEventController.signal });
       } catch (error) {
-        if (error.status === 401 || error.status === 403) {
+        if (error.status === 401) {
           clearAuthToken();
           window.dispatchEvent(new CustomEvent('auth:expired', {
             detail: { code: error.code, message: error.message },
           }));
           break;
         }
+        if (error.status === 403) break;
         // Retry after transient network errors or server restarts.
       }
       if (!chatEventListeners.size || generation !== chatEventGeneration) break;

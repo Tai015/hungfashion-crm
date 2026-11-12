@@ -10,8 +10,13 @@ export function createAccountRouter(database = pool) {
   const router = Router();
 
   async function lockActiveAdmins(client) {
-    // Serialize all changes that could remove an active administrator, including when none remain.
-    await client.query('SELECT pg_advisory_xact_lock($1)', [ADMIN_GUARD_LOCK_ID]);
+    await client.query("SET LOCAL lock_timeout = '5s'");
+    await client.query("SET LOCAL statement_timeout = '10s'");
+    const { rows: [guard] } = await client.query(
+      'SELECT pg_try_advisory_xact_lock($1) AS acquired',
+      [ADMIN_GUARD_LOCK_ID],
+    );
+    if (!guard?.acquired) return null;
     const { rows } = await client.query(
       `SELECT a.account_id
        FROM account a JOIN role r ON r.role_id = a.role_id
@@ -157,6 +162,27 @@ export function createAccountRouter(database = pool) {
     }
   });
 
+  router.get('/customer-profile', async (req, res) => {
+    const email = typeof req.query.email === 'string' ? req.query.email.trim().toLowerCase() : '';
+    if (!email || email.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: 'Email không hợp lệ.' });
+    }
+    try {
+      const { rows } = await database.query(
+        `SELECT account_id FROM customer
+         WHERE LOWER(BTRIM(email)) = $1`,
+        [email],
+      );
+      return res.json({
+        exists: rows.length > 0,
+        linked: rows.length > 0 && rows[0].account_id != null,
+      });
+    } catch (err) {
+      logger.error({ err, requestId: req.requestId }, 'Customer profile lookup failed');
+      return res.status(500).json({ message: 'Không thể kiểm tra hồ sơ khách hàng.' });
+    }
+  });
+
   router.get('/:id', async (req, res) => {
     const accountId = parseAccountId(req.params.id);
     if (!accountId) return res.status(400).json({ message: 'Mã tài khoản không hợp lệ.' });
@@ -185,6 +211,7 @@ export function createAccountRouter(database = pool) {
         || typeof password !== 'string' || password.length < 8 || password.length > 128) {
         return res.status(400).json({ message: 'Vai trò, tên đăng nhập hoặc mật khẩu không hợp lệ.' });
       }
+      const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : null;
       const passwordHash = await bcrypt.hash(password, 12);
       client = await database.connect();
       await client.query('BEGIN');
@@ -193,12 +220,53 @@ export function createAccountRouter(database = pool) {
         await client.query('ROLLBACK');
         return res.status(400).json({ message: 'Vai trò được chọn không tồn tại.' });
       }
+      const isCustomerAccount = roleRows[0].role_name === 'KHACH_HANG';
+      if (isCustomerAccount && (!normalizedEmail || normalizedEmail.length > 150
+        || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail))) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: 'Tài khoản khách hàng cần có email hợp lệ.' });
+      }
+      let customerProfile = null;
+      if (isCustomerAccount) {
+        const { rows: customerRows } = await client.query(
+          `SELECT customer_id, account_id
+           FROM customer
+           WHERE LOWER(BTRIM(email)) = $1
+           FOR UPDATE`,
+          [normalizedEmail],
+        );
+        customerProfile = customerRows[0] || null;
+        if (customerProfile?.account_id != null) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({ message: 'Email này đã liên kết với một tài khoản khách hàng khác.' });
+        }
+      }
       const { rows } = await client.query(
         `INSERT INTO account (role_id, username, password_hash, email, phone)
          VALUES ($1,$2,$3,$4,$5) RETURNING account_id, role_id, username, email, phone, status`,
-        [roleId, username.trim(), passwordHash, email, phone],
+        [roleId, username.trim(), passwordHash, normalizedEmail, phone],
       );
       const created = rows[0];
+      if (isCustomerAccount) {
+        if (customerProfile) {
+          const { rows: linkedProfiles } = await client.query(
+            `UPDATE customer SET account_id = $1
+             WHERE customer_id = $2 AND account_id IS NULL
+             RETURNING customer_id`,
+            [created.account_id, customerProfile.customer_id],
+          );
+          if (!linkedProfiles.length) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ message: 'Hồ sơ khách hàng vừa được liên kết với tài khoản khác. Vui lòng tải lại và thử lại.' });
+          }
+        } else {
+          await client.query(
+            `INSERT INTO customer (account_id, full_name, email, phone)
+             VALUES ($1,NULL,$2,$3)`,
+            [created.account_id, normalizedEmail, phone],
+          );
+        }
+      }
       await writeAccountAudit(client, {
         actorAccountId: req.user.account_id,
         eventType: 'account_created',
@@ -228,10 +296,15 @@ export function createAccountRouter(database = pool) {
     if (!['Active', 'Blocked', 'Pending'].includes(status)) {
       return res.status(400).json({ message: 'Trạng thái tài khoản không hợp lệ.' });
     }
-    const client = await database.connect();
+    let client;
     try {
+      client = await database.connect();
       await client.query('BEGIN');
       const activeAdmins = await lockActiveAdmins(client);
+      if (!activeAdmins) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ message: 'Đang có thao tác quản trị tài khoản khác. Vui lòng thử lại sau.' });
+      }
       const target = await loadTarget(client, accountId);
       if (!target) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Không tìm thấy tài khoản.' }); }
       if (Number(req.user.account_id) === accountId && status !== 'Active') {
@@ -267,10 +340,16 @@ export function createAccountRouter(database = pool) {
       await client.query('COMMIT');
       return res.json(rows[0]);
     } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
+      await client?.query('ROLLBACK').catch(() => {});
+      if (err.code === '55P03') {
+        return res.status(409).json({ message: 'Tài khoản đang được cập nhật bởi thao tác khác. Vui lòng thử lại sau.' });
+      }
+      if (err.code === '57014') {
+        return res.status(503).json({ message: 'Cơ sở dữ liệu đang xử lý quá lâu. Vui lòng thử lại sau.' });
+      }
       logger.error({ err, requestId: req.requestId }, 'Account status update failed');
       return res.status(500).json({ message: 'Không thể cập nhật trạng thái tài khoản lúc này.' });
-    } finally { client.release(); }
+    } finally { client?.release(); }
   });
 
   router.patch('/:id/role', async (req, res) => {
@@ -280,10 +359,15 @@ export function createAccountRouter(database = pool) {
     if (!Number.isSafeInteger(Number(role_id)) || Number(role_id) < 1) {
       return res.status(400).json({ message: 'Vai trò không hợp lệ.' });
     }
-    const client = await database.connect();
+    let client;
     try {
+      client = await database.connect();
       await client.query('BEGIN');
       const activeAdmins = await lockActiveAdmins(client);
+      if (!activeAdmins) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ message: 'Đang có thao tác quản trị tài khoản khác. Vui lòng thử lại sau.' });
+      }
       const target = await loadTarget(client, accountId);
       if (!target) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Không tìm thấy tài khoản.' }); }
       const { rows: roleRows } = await client.query('SELECT role_id, role_name FROM role WHERE role_id=$1', [Number(role_id)]);
@@ -319,19 +403,30 @@ export function createAccountRouter(database = pool) {
       await client.query('COMMIT');
       return res.json(rows[0]);
     } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
+      await client?.query('ROLLBACK').catch(() => {});
+      if (err.code === '55P03') {
+        return res.status(409).json({ message: 'Tài khoản đang được cập nhật bởi thao tác khác. Vui lòng thử lại sau.' });
+      }
+      if (err.code === '57014') {
+        return res.status(503).json({ message: 'Cơ sở dữ liệu đang xử lý quá lâu. Vui lòng thử lại sau.' });
+      }
       logger.error({ err, requestId: req.requestId }, 'Account role update failed');
       return res.status(500).json({ message: 'Không thể cập nhật vai trò tài khoản lúc này.' });
-    } finally { client.release(); }
+    } finally { client?.release(); }
   });
 
   router.delete('/:id', async (req, res) => {
     const accountId = parseAccountId(req.params.id);
     if (!accountId) return res.status(400).json({ message: 'Mã tài khoản không hợp lệ.' });
-    const client = await database.connect();
+    let client;
     try {
+      client = await database.connect();
       await client.query('BEGIN');
       const activeAdmins = await lockActiveAdmins(client);
+      if (!activeAdmins) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ message: 'Đang có thao tác quản trị tài khoản khác. Vui lòng thử lại sau.' });
+      }
       const target = await loadTarget(client, accountId);
       if (!target) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Không tìm thấy tài khoản.' }); }
       if (Number(req.user.account_id) === accountId) {
@@ -361,13 +456,19 @@ export function createAccountRouter(database = pool) {
       await client.query('COMMIT');
       return res.json({ message: `Đã xóa tài khoản ${target.username}.` });
     } catch (err) {
-      await client.query('ROLLBACK').catch(() => {});
+      await client?.query('ROLLBACK').catch(() => {});
+      if (err.code === '55P03') {
+        return res.status(409).json({ message: 'Tài khoản đang được cập nhật bởi thao tác khác. Vui lòng thử lại sau.' });
+      }
+      if (err.code === '57014') {
+        return res.status(503).json({ message: 'Cơ sở dữ liệu đang xử lý quá lâu. Vui lòng thử lại sau.' });
+      }
       if (err.code === '23503') {
         return res.status(409).json({ message: 'Tài khoản đã có dữ liệu liên quan, hãy khóa thay vì xóa.' });
       }
       logger.error({ err, requestId: req.requestId }, 'Account deletion failed');
       return res.status(500).json({ message: 'Không thể xóa tài khoản lúc này.' });
-    } finally { client.release(); }
+    } finally { client?.release(); }
   });
 
   return router;

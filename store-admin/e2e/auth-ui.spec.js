@@ -26,6 +26,11 @@ async function prepareAuthPage(page, hash, expectedHeading = /Đăng nhập|Tạ
     contentType: 'application/json',
     body: JSON.stringify({ ok: true }),
   }));
+  await page.route('**/api/events/user', route => route.fulfill({
+    status: 202,
+    contentType: 'application/json',
+    body: JSON.stringify({ success: true, queued: true }),
+  }));
   await page.route('**/api/auth/me', route => route.fulfill({
     status: 401,
     contentType: 'application/json',
@@ -255,4 +260,97 @@ test('trình duyệt thường bị chặn khỏi trang đăng nhập nhân viê
   await prepareAuthPage(page, '/#/nhan-vien/login', 'Không tìm thấy trang');
   await expect(page.getByRole('heading', { name: 'Không tìm thấy trang' })).toBeVisible();
   await expect(page.getByLabel('Tên đăng nhập hoặc email')).toHaveCount(0);
+});
+
+test('link launcher mở trang đăng nhập nhân viên khi trình duyệt còn phiên khách hàng', async ({ page }) => {
+  await page.route('**/api/health', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true }),
+  }));
+  await page.route('**/api/events/user', route => route.fulfill({
+    status: 202,
+    contentType: 'application/json',
+    body: JSON.stringify({ success: true, queued: true }),
+  }));
+  await page.route('**/api/auth/me', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      account_id: 501,
+      username: 'existing-customer',
+      full_name: 'Existing Customer',
+      role: 'KHACH_HANG',
+    }),
+  }));
+  await page.route('**/api/auth/heartbeat', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ role: 'KHACH_HANG' }),
+  }));
+
+  const staffToken = `${Date.now()}.launcher-test`;
+  await page.goto(`/?staff_token=${staffToken}#/nhan-vien/login`);
+
+  await expect(page.getByRole('heading', { name: 'Đăng nhập' })).toBeVisible();
+  await expect(page.getByText('Đăng nhập vào khu vực quản lý')).toBeVisible();
+  await expect(page.getByText('Existing Customer')).toHaveCount(0);
+});
+
+test('tự khóa vai trò khách hàng khi email đã có hồ sơ khách hàng', async ({ page }) => {
+  await page.route('**/api/health', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true }),
+  }));
+  await page.route('**/api/events/user', route => route.fulfill({
+    status: 202,
+    contentType: 'application/json',
+    body: JSON.stringify({ success: true, queued: true }),
+  }));
+  await page.route('**/api/auth/me', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ account_id: 99, username: 'admin', role: 'ADMIN' }),
+  }));
+  await page.route('**/api/auth/heartbeat', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ role: 'ADMIN' }),
+  }));
+  await page.route('**/api/accounts?page=1&limit=20&search=', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ data: [], total: 0, page: 1, limit: 20 }),
+  }));
+  await page.route('**/api/accounts/roles/all', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify([
+      { role_id: 1, role_name: 'ADMIN' },
+      { role_id: 6, role_name: 'KHACH_HANG' },
+    ]),
+  }));
+  await page.route('**/api/accounts/customer-profile?**', route => {
+    const email = new URL(route.request().url()).searchParams.get('email');
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ exists: email === 'existing@example.com', linked: false }),
+    });
+  });
+
+  await page.goto('/#/admin/accounts');
+  await page.getByRole('button', { name: 'Tạo tài khoản' }).click();
+  await page.getByLabel('Email').fill('existing@example.com');
+
+  const roleSelect = page.getByLabel('Vai trò *');
+  await expect(page.getByText('Đã tìm thấy hồ sơ khách hàng. Vai trò được chuyển thành Khách hàng.')).toBeVisible();
+  await expect(roleSelect).toBeDisabled();
+  await expect(roleSelect).toHaveValue('6');
+
+  await page.getByLabel('Email *').fill('new@example.com');
+  await expect(roleSelect).toBeEnabled();
+  await expect(roleSelect).toHaveValue('1');
+  await expect(page.getByText('Chưa có hồ sơ khách hàng với email này.')).toHaveCount(0);
 });

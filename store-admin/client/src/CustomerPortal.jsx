@@ -774,7 +774,6 @@ function PortalInner({ user, onUserUpdated, onLogout }) {
   useEffect(() => {
     const sync = () => { const next = window.location.hash.split('/').at(-1); if (pageKeys.includes(next)) { setView(next); setCheckout(false); } };
     window.addEventListener('hashchange', sync);
-    if (!window.location.hash.startsWith('#/khach-hang/')) window.location.hash = '#/khach-hang/catalog';
     return () => window.removeEventListener('hashchange', sync);
   }, []);
 

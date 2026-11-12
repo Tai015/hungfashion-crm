@@ -97,6 +97,9 @@ export default function AccountsView({ currentAccountId }) {
   const [adding, setAdding]     = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmPending, setConfirmPending] = useState(false);
+  const [customerProfile, setCustomerProfile] = useState(null);
+  const [profileChecking, setProfileChecking] = useState(false);
+  const [profileError, setProfileError] = useState('');
   useModalEffects(adding, () => setAdding(false));
   useSweetAlertMessages({ error, success: message });
 
@@ -114,9 +117,55 @@ export default function AccountsView({ currentAccountId }) {
     return () => window.clearInterval(timer);
   }, [search, page]);
 
+  const normalizedFormEmail = form.email.trim().toLowerCase();
+  const validFormEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedFormEmail);
+  useEffect(() => {
+    if (!adding || !validFormEmail) {
+      setCustomerProfile(null);
+      setProfileChecking(false);
+      setProfileError('');
+      return undefined;
+    }
+    const controller = new AbortController();
+    let disposed = false;
+    let timedOut = false;
+    setProfileChecking(true);
+    setProfileError('');
+    const timer = window.setTimeout(() => {
+      const requestTimeout = window.setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, 10000);
+      apiFetch(`/api/accounts/customer-profile?email=${encodeURIComponent(normalizedFormEmail)}`, {
+        signal: controller.signal,
+      }).then(result => {
+        if (!disposed) setCustomerProfile({ email: normalizedFormEmail, ...result });
+      }).catch(requestError => {
+        if (!disposed) {
+          setCustomerProfile(null);
+          setProfileError(timedOut
+            ? 'Hết thời gian kiểm tra hồ sơ khách hàng. Vui lòng thử lại.'
+            : requestError.message);
+        }
+      }).finally(() => {
+        window.clearTimeout(requestTimeout);
+        if (!disposed) setProfileChecking(false);
+      });
+    }, 300);
+    return () => {
+      disposed = true;
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [adding, normalizedFormEmail, validFormEmail]);
+
   const update = async (account, changes) => {
     const path = changes.role_id ? 'role' : 'status';
-    return apiFetch(`/api/accounts/${account.account_id}/${path}`, { method:'PATCH', body:changes });
+    return apiFetch(`/api/accounts/${account.account_id}/${path}`, {
+      method:'PATCH',
+      body:changes,
+      signal:AbortSignal.timeout(20000),
+    });
   };
 
   const confirmPendingAction = async () => {
@@ -144,15 +193,32 @@ export default function AccountsView({ currentAccountId }) {
   };
 
   const createAccount = async e => {
-    e.preventDefault(); setError(''); setMessage(''); setSaving(true);
+    e.preventDefault(); setError(''); setMessage('');
+    if (profileAlreadyLinked) {
+      setError('Hồ sơ khách hàng này đã được liên kết với một tài khoản khác.');
+      return;
+    }
+    if (profileChecking || profileError) {
+      setError(profileError || 'Đang kiểm tra hồ sơ khách hàng. Vui lòng đợi một chút.');
+      return;
+    }
+    setSaving(true);
     try {
-      await apiFetch('/api/accounts', { method:'POST', body:{ ...form, role_id:Number(form.role_id), email:form.email.trim() || null } });
+      await apiFetch('/api/accounts', {
+        method:'POST',
+        body:{ ...form, role_id:Number(effectiveRoleId), email:form.email.trim() || null },
+      });
       setForm(f => ({...f, username:'', password:'', email:''}));
       setMessage('✓ Đã tạo tài khoản thành công.'); setAdding(false); load();
     } catch(err) { setError(err.message); } finally { setSaving(false); }
   };
 
   const roleColor = name => ROLE_COLORS[name] || '#64748b';
+  const customerRole = roles.find(role => role.role_name === 'KHACH_HANG');
+  const matchedCustomerProfile = customerProfile?.email === normalizedFormEmail && customerProfile.exists;
+  const profileAlreadyLinked = matchedCustomerProfile && customerProfile.linked;
+  const effectiveRoleId = matchedCustomerProfile ? String(customerRole?.role_id || '') : form.role_id;
+  const creatingCustomer = roles.find(role => String(role.role_id) === String(effectiveRoleId))?.role_name === 'KHACH_HANG';
 
   return (
     <div className="flex flex-col gap-5 text-[#f5f0eb]">
@@ -184,17 +250,32 @@ export default function AccountsView({ currentAccountId }) {
                 <PasswordInput required minLength={8} maxLength={128} autoComplete="new-password"
                   value={form.password} onChange={e => setForm({...form, password:e.target.value})} />
               </Field>
-              <Field label="Email">
-                <input type="email" maxLength={150} placeholder="email@company.com" className={INPUT}
+              <Field label={creatingCustomer ? 'Email *' : 'Email'}>
+                <input required={creatingCustomer} type="email" maxLength={150} placeholder="email@company.com" className={INPUT}
                   value={form.email} onChange={e => setForm({...form, email:e.target.value})} />
               </Field>
+              {adding && validFormEmail && (profileChecking || profileError || matchedCustomerProfile) && (
+                <p className="col-span-2 -mt-2 text-xs text-white/55" aria-live="polite">
+                  {profileChecking ? 'Đang kiểm tra hồ sơ khách hàng...'
+                    : profileError ? `Không thể kiểm tra hồ sơ: ${profileError}`
+                      : matchedCustomerProfile
+                        ? profileAlreadyLinked
+                          ? 'Hồ sơ này đã liên kết với tài khoản khác; không thể tạo thêm tài khoản bằng email này.'
+                          : 'Đã tìm thấy hồ sơ khách hàng. Vai trò được chuyển thành Khách hàng.'
+                        : ''}
+                </p>
+              )}
               <Field label="Vai trò *">
-                <select required className={SELECT} value={form.role_id} onChange={e => setForm({...form, role_id:e.target.value})}>
+                <select required className={SELECT} value={effectiveRoleId} disabled={matchedCustomerProfile || profileChecking || Boolean(profileError)}
+                  onChange={e => setForm({...form, role_id:e.target.value})}>
                   {roles.map(r => <option key={r.role_id} value={r.role_id}>{ROLE_LABELS[r.role_name]||r.role_name}</option>)}
                 </select>
               </Field>
             </div>
-            <div><button type="submit" className={`${BTN_PRIMARY} admin-primary-action`} disabled={saving}><UserPlus size={14}/> {saving ? 'Đang tạo...' : 'Tạo tài khoản'}</button></div>
+            <div><button type="submit" className={`${BTN_PRIMARY} admin-primary-action`}
+              disabled={saving || profileChecking || Boolean(profileError) || profileAlreadyLinked}>
+              <UserPlus size={14}/> {saving ? 'Đang tạo...' : 'Tạo tài khoản'}
+            </button></div>
           </motion.form>
           </motion.div>
       ), document.body)}

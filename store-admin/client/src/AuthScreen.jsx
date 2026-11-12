@@ -15,10 +15,11 @@ function authErrorMessage(error, audience) {
   return error?.message || 'Không thể hoàn tất yêu cầu. Vui lòng thử lại.';
 }
 
-export default function AuthScreen({ onAuthenticated }) {
-  const initialCustomer = window.location.hash.startsWith('#/khach-hang/');
+export default function AuthScreen({ onAuthenticated, authRoute }) {
+  const initialRoute = String(authRoute || window.location.hash).toLowerCase();
+  const initialCustomer = initialRoute === '#/khach-hang' || initialRoute.startsWith('#/khach-hang/');
   const [audience, setAudience] = useState(initialCustomer ? 'customer' : 'staff');
-  const [mode, setMode] = useState(initialCustomer && window.location.hash.endsWith('/register') ? 'register' : 'login');
+  const [mode, setMode] = useState(initialCustomer && initialRoute.endsWith('/register') ? 'register' : 'login');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');

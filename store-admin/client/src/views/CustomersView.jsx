@@ -275,11 +275,12 @@ export default function CustomersView({ userRole }) {
   }, [search, tier, gender, page, refresh]);
 
   const changeAccountStatus = async (customer, status) => {
+    const customerName = customer.full_name || 'khách hàng này';
     const confirmed = await confirmDestructiveAction({
       title: status === 'Blocked' ? 'Khóa tài khoản khách hàng?' : 'Mở khóa tài khoản khách hàng?',
       text: status === 'Blocked'
-        ? `Tài khoản của ${customer.full_name} sẽ không thể đăng nhập.`
-        : `Cho phép ${customer.full_name} đăng nhập lại?`,
+        ? `Tài khoản của ${customerName} sẽ không thể đăng nhập.`
+        : `Cho phép ${customerName} đăng nhập lại?`,
       confirmText: status === 'Blocked' ? 'Khóa tài khoản' : 'Mở khóa',
     });
     if (!confirmed) return;
@@ -292,9 +293,10 @@ export default function CustomersView({ userRole }) {
   };
 
   const deleteCustomer = async customer => {
+    const customerName = customer.full_name || 'khách hàng này';
     const confirmed = await confirmDestructiveAction({
       title: 'Xóa hồ sơ khách hàng?',
-      text: `Hồ sơ ${customer.full_name} sẽ được ẩn danh hóa và tài khoản đăng nhập (nếu có) sẽ bị khóa, thu hồi các phiên đang hoạt động. Đơn hàng, phản hồi và lịch sử giao dịch được giữ lại để bảo toàn dữ liệu. Thao tác này không thể hoàn tác.`,
+      text: `Hồ sơ ${customerName} sẽ được ẩn danh hóa và tài khoản đăng nhập (nếu có) sẽ bị khóa, thu hồi các phiên đang hoạt động. Đơn hàng, phản hồi và lịch sử giao dịch được giữ lại để bảo toàn dữ liệu. Thao tác này không thể hoàn tác.`,
       confirmText: 'Xóa hồ sơ',
     });
     if (!confirmed) return;
@@ -359,15 +361,16 @@ export default function CustomersView({ userRole }) {
               <tbody>
                 {customers.length ? customers.map(c => {
                   const tc = TIER_COLOR[c.customer_tier] || '#64748b';
+                  const customerName = c.full_name || 'Chưa cập nhật';
                   return (
                     <Fragment key={c.customer_id}>
                     <tr key={c.customer_id} className="hover:bg-white/[0.04] transition-colors">
                       <td className="px-3.5 py-3 border-b border-white/[0.05] text-white/28 text-xs tabular-nums w-10">{c.customer_id}</td>
                       <td className="px-3.5 py-3 border-b border-white/[0.05]">
                         <div className="flex items-center gap-2">
-                          <strong className="text-[#f5f0eb] font-semibold">{c.full_name}</strong>
+                          <strong className="text-[#f5f0eb] font-semibold">{customerName}</strong>
                           <button type="button" className={ICON_BTN} title="Xem lịch sử tương tác"
-                            aria-label={"Xem lịch sử tương tác của " + c.full_name}
+                            aria-label={"Xem lịch sử tương tác của " + customerName}
                             aria-expanded={expandedCustomerId === c.customer_id}
                             onClick={() => setExpandedCustomerId(current => current === c.customer_id ? null : c.customer_id)}>
                             {expandedCustomerId === c.customer_id ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}

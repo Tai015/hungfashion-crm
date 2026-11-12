@@ -200,7 +200,7 @@ export default function StaffChatView() {
                     <div className="grid w-7 h-7 place-items-center rounded-lg bg-white/[0.07] text-white/60 shrink-0">
                       <MessageSquare size={12}/>
                     </div>
-                    <span className="text-sm font-semibold truncate text-[#f5f0eb]">{c.customer_name}</span>
+                    <span className="text-sm font-semibold truncate text-[#f5f0eb]">{c.customer_name || 'Khách hàng'}</span>
                     {c.unread_count > 0 && (
                       <span className="ml-auto shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[0.65rem] font-bold">{c.unread_count}</span>
                     )}
@@ -226,7 +226,7 @@ export default function StaffChatView() {
                 <MessageSquare size={16}/>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="m-0 text-sm font-semibold">{activeConversation.customer_name}</p>
+                <p className="m-0 text-sm font-semibold">{activeConversation.customer_name || 'Khách hàng'}</p>
                 <p className="m-0 text-xs text-white/35">{activeConversation.customer_email} · {activeConversation.customer_phone||'—'}</p>
               </div>
               <div className="flex items-center gap-2">

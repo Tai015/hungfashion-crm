@@ -129,7 +129,7 @@ function CounterOrderForm({ onClose, onCreated }) {
               Khách hàng <span className="sr-only">(bắt buộc)</span>
               <select required className={`${SELECT} w-full`} value={customerId} onChange={e => setCustomerId(e.target.value)}>
                 <option value="">Chọn khách hàng</option>
-                {customers.map(customer => <option key={customer.customer_id} value={customer.customer_id} style={{ background:'#1a1410', color:'#f5f0eb' }}>{customer.full_name}{customer.phone ? ` · ${customer.phone}` : ''}</option>)}
+                {customers.map(customer => <option key={customer.customer_id} value={customer.customer_id} style={{ background:'#1a1410', color:'#f5f0eb' }}>{customer.full_name || 'Chưa cập nhật'}{customer.phone ? ` · ${customer.phone}` : ''}</option>)}
               </select>
               {!customers.length && <span className="text-xs text-white/40">Không tìm thấy khách hàng.</span>}
             </label>

@@ -197,7 +197,7 @@ function AssignForm({ promotion, onDone }) {
     <div className="max-h-64 overflow-y-auto flex flex-col gap-2">
       {customers.map(customer => <label key={customer.customer_id} className="flex items-center gap-2 text-sm text-white/70">
         <input type="checkbox" checked={selectedIds.has(Number(customer.customer_id))} onChange={event => toggleCustomer(customer, event.target.checked)} />
-        <span>{customer.full_name} · {customer.phone || customer.email || 'Không có liên hệ'}</span>
+        <span>{customer.full_name || 'Chưa cập nhật'} · {customer.phone || customer.email || 'Không có liên hệ'}</span>
       </label>)}
       {!loading && !customers.length && <p className="m-0 text-sm text-white/40">Không tìm thấy khách hàng.</p>}
       {loading && <p className="m-0 text-center text-xs text-white/45">{customers.length ? 'Đang tải thêm khách hàng...' : 'Đang tải danh sách khách hàng...'}</p>}
@@ -205,7 +205,7 @@ function AssignForm({ promotion, onDone }) {
     {customers.length < total && <button type="button" className={BTN} disabled={loading} onClick={loadMore}>{loading ? 'Đang tải...' : 'Tải thêm khách hàng'}</button>}
     {!!selected.length && <div className="flex flex-wrap gap-2">
       {selected.map(customer => <button key={customer.customer_id} type="button" className="rounded-lg border border-violet-300/20 bg-violet-400/10 px-2 py-1 text-xs text-violet-100" onClick={() => toggleCustomer(customer, false)} title="Bỏ chọn khách hàng">
-        {customer.full_name} ×
+        {customer.full_name || 'Chưa cập nhật'} ×
       </button>)}
     </div>}
     <div className="flex flex-wrap gap-2">

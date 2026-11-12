@@ -39,7 +39,16 @@ router.get('/', async (req, res) => {
       conditions.push(`c.gender = $${params.length}`);
     }
 
-    conditions.unshift('c.deleted_at IS NULL');
+    conditions.unshift(
+      'c.deleted_at IS NULL',
+      `(c.account_id IS NULL OR EXISTS (
+        SELECT 1
+        FROM account customer_account
+        JOIN role customer_role ON customer_role.role_id = customer_account.role_id
+        WHERE customer_account.account_id = c.account_id
+          AND customer_role.role_name = 'KHACH_HANG'
+      ))`,
+    );
     const where = `WHERE ${conditions.join(' AND ')}`;
     params.push(limit, offset);
 
