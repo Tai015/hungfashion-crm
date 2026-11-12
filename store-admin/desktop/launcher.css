@@ -45,7 +45,9 @@ h2 { margin: 9px 0 6px; font-size: 20px; line-height: 1.35; }
 .button-secondary:hover, .button-outline:hover { background: #e9ece4; }
 .requirements { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--muted); font-size: 11px; }
 .status-dot, .activity-led { width: 7px; height: 7px; border-radius: 50%; background: #b9853f; }
-.test-section { padding: 22px 0; border-bottom: 1px solid var(--line); }\n.test-section .button { margin-top: 13px; }\n.remote-section { padding-top: 23px; }
+.test-section { padding: 22px 0; border-bottom: 1px solid var(--line); }
+.test-section .button { margin-top: 13px; }
+.remote-section { padding-top: 23px; }
 .remote-section form { margin-top: 15px; }
 label { display: block; margin-bottom: 7px; color: #50554d; font-size: 11px; font-weight: 700; }
 .url-row { display: flex; gap: 8px; }
